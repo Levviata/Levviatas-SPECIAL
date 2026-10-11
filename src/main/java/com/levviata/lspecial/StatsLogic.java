@@ -57,6 +57,9 @@ public class StatsLogic {
     private float originalWear;
     private IMagazine originalMagazine;
 
+    private ItemStack wearTrackedStack;
+    private float previousObservedWear = Float.NaN;
+
     private int gunIndex = -1;
 
     private ItemStack loggedSednaGun = ItemStack.EMPTY;
@@ -128,12 +131,12 @@ public class StatsLogic {
         inst.startBoards();
         inst.startScores(player);
 
-        /*if (heldStack.getItem() instanceof ItemGunBaseNT) {
+        if (heldStack.getItem() instanceof ItemGunBaseNT) {
             applyGunWearPolicy(heldStack);
         } else {
             wearTrackedStack = null;
-            previousWear = 0;
-        }*/
+            previousObservedWear = Float.NaN;
+        }
 
         // strength
         IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
@@ -251,13 +254,13 @@ public class StatsLogic {
     }
 
     public void modifyGuns(ItemStack heldStack, EntityPlayer player, GunConfig cfg) {
-        if (modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory) instanceof FluidType) {
+        if (heldStack.getItem().equals(ModItems.gun_chemthrower)) {
             return;
         }
 
         Receiver[] receivers = cfg.getReceivers(heldStack);
 
-        if (LSPECIALConfig.intelligence && inst.getIntelligenceScore().getScorePoints() >= 5) {
+        if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5) {
             ItemGunBaseNT.setWear(heldStack, 0, 0);
         }
 
@@ -334,7 +337,7 @@ public class StatsLogic {
     }
 
     public void cleanGun(ItemStack heldStack, EntityPlayer player) {
-        if (modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory) instanceof FluidType) {
+        if (heldStack.getItem().equals(ModItems.gun_chemthrower)) {
             return;
         }
 
@@ -412,6 +415,50 @@ public class StatsLogic {
             } catch (NumberFormatException ignored) { }
         }
         return false;
+    }
+
+    private void applyGunWearPolicy(ItemStack stack) {
+        String mode = LSPECIALConfig.gunWearMode;
+
+        if ("INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(mode) || !LSPECIALConfig.intelligence) {
+            return;
+        }
+
+        int intelligence = inst.getIntelligenceScore().getScorePoints();
+        if (intelligence <= 0) {
+            return;
+        }
+
+        float current = ItemGunBaseNT.getWear(stack, 0);
+
+        if (wearTrackedStack != stack || Float.isNaN(previousObservedWear)) {
+            wearTrackedStack = stack;
+            previousObservedWear = current;
+            return;
+        }
+
+        if (current > previousObservedWear) {
+            double reduction;
+
+            if ("PERCENT_REDUCTION".equalsIgnoreCase(mode)) {
+                reduction = intelligence * LSPECIALConfig.gunWearReductionPerIntelligence;
+            } else {
+                Map<String, Double> vars = new HashMap<>();
+                vars.put("intelligence", (double) intelligence);
+                vars.put("originalWear", (double) previousObservedWear);
+
+                reduction = LSPECIALExpression.eval(LSPECIALConfig.gunWearFormula, vars, 0.0);
+            }
+
+            reduction = Math.max(0.0, Math.min(1.0, reduction));
+
+            float adjusted = (float) (previousObservedWear + (current - previousObservedWear) * (1.0 - reduction));
+
+            ItemGunBaseNT.setWear(stack, 0, adjusted);
+            previousObservedWear = adjusted;
+        } else {
+            previousObservedWear = current;
+        }
     }
 
     private static double expression(String formula, String key, double value) {
