@@ -30,7 +30,7 @@ public class GuiSPECIAL extends GuiScreen {
     private int selectedRow = -1;
 
     private static final String[] FOOTER_MESSAGES = {
-            "YOU ARE SPECIAL",
+            "YOU ARE LIKELY NOT SPECIAL",
             "JET FUEL CAN MELT STEEL BEAMS",
             "VAMPIRES ARE NICE",
             "I KNOW WHERE YOU LIVE",
@@ -146,10 +146,10 @@ public class GuiSPECIAL extends GuiScreen {
     }
 
     private void drawHeader() {
-        drawString(fontRenderer, "SPECIAL // CHARACTER STATS", panelLeft + 22, panelTop + 12, AMBER_BRIGHT);
-
+        drawString(fontRenderer, "S.P.E.C.I.A.L // CHARACTER STATS", panelLeft + 22, panelTop + 12, AMBER_BRIGHT);
+/*
         String brand = "LSPECIAL";
-        drawString(fontRenderer, brand, panelLeft + panelWidth - fontRenderer.getStringWidth(brand) - 18, panelTop + 13, AMBER_MUTED);
+        drawString(fontRenderer, brand, panelLeft + panelWidth - fontRenderer.getStringWidth(brand) - 18, panelTop + 13, AMBER_MUTED);*/
 
         drawRect(panelLeft + 18, panelTop + 30, panelLeft + panelWidth - 18, panelTop + 31, AMBER_MUTED);
     }
@@ -212,7 +212,7 @@ public class GuiSPECIAL extends GuiScreen {
 
         String heading = selectedRow >= 0 && selectedRow < rows.size()
                 ? rows.get(selectedRow).name.toUpperCase()
-                : "S.P.E.C.I.A.L.";
+                : "S.P.E.C.I.A.L";
         drawString(fontRenderer, heading, infoLeft + 8, infoTop + 29, AMBER_BRIGHT);
 
         String description = selectedRow >= 0 && selectedRow < rows.size()
