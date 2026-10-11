@@ -65,6 +65,12 @@ public final class LSPECIALConfig {
     public static boolean hotbarMessages = true;
     public static boolean variedAugLimitMessages = true;
     public static boolean toggleSpecial = true;
+    public static boolean showSystemStatusInfo = true;
+    public static boolean showRandomFooter = true;
+
+    public static String systemStatusText = "SYSTEM STATUS";
+    public static String neuralLinkText = "LEVVIATA NEURA-LINK  //  ACTIVE";
+    public static String randomFooterMessages = "YOU ARE LIKELY NOT SPECIAL|JET FUEL CAN MELT STEEL BEAMS|VAMPIRES ARE NICE|I KNOW WHERE YOU LIVE|LEVVIATAINC|WHO'S TIAMAT|SATAN IS A NICE GUY|WHO'S LEVIATHAN|WHEN YOU SEE IT|ITS ALL A DREAM AND YOU ARE BLIND|BLESSED ARE THE STRONG|CURSED ARE THE WEAK|BE OBEDIENT IF YOU ARE WEAK|CONTROL IF YOU ARE STRONG|NOT EVERYONE IS EQUAL|TAX THE CHURCHES|AI IS FREE SLAVERY";
     public static boolean setSpeedCommand = true;
     public static boolean setFlySpeedCommand = true;
 
@@ -183,6 +189,11 @@ public final class LSPECIALConfig {
 
         // Client interface and commands
         toggleSpecial = b(CLIENT, "toggleSpecial", true, "Enable toggleSpecial keybind");
+        showSystemStatusInfo = b(CLIENT, "showSystemStatusInfo", true, "Show the SYSTEM STATUS and neural-link information in GuiSPECIAL");
+        showRandomFooter = b(CLIENT, "showRandomFooter", true, "Show the randomized footer in GuiSPECIAL");
+        systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in GuiSPECIAL");
+        neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  ACTIVE", "Text used for the neural-link status line in GuiSPECIAL");
+        randomFooterMessages = s(CLIENT, "randomFooterMessages", randomFooterMessages, "Random footer options separated by |. Leave empty to show no random message.");
         setSpeedCommand = b(COMMANDS, "setSpeedCommand", true, "Register /setspeed");
         setFlySpeedCommand = b(COMMANDS, "setFlySpeedCommand", true, "Register /setflyspeed");
 

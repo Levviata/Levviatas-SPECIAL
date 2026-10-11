@@ -29,33 +29,35 @@ public class GuiSPECIAL extends GuiScreen {
     private int panelHeight;
     private int selectedRow = -1;
 
-    private static final String[] FOOTER_MESSAGES = {
-            "YOU ARE LIKELY NOT SPECIAL",
-            "JET FUEL CAN MELT STEEL BEAMS",
-            "VAMPIRES ARE NICE",
-            "I KNOW WHERE YOU LIVE",
-            "LEVVIATAINC",
-            "WHO'S TIAMAT",
-            "SATAN IS A NICE GUY",
-            "WHO'S LEVIATHAN",
-            "WHEN YOU SEE IT",
-            "ITS ALL A DREAM AND YOU ARE BLIND",
-            "BLESSED ARE THE STRONG",
-            "CURSED ARE THE WEAK",
-            "BE OBEDIENT IF YOU ARE WEAK",
-            "CONTROL IF YOU ARE STRONG",
-            "NOT EVERYONE IS EQUAL",
-            "TAX THE CHURCHES",
-            "AI IS FREE SLAVERY"
-    };
-
     private String footerMessage;
+
 
     @Override
     public void initGui() {
         super.initGui();
         rebuildRows();
-        footerMessage = FOOTER_MESSAGES[new java.util.Random().nextInt(FOOTER_MESSAGES.length)];
+        footerMessage = chooseFooterMessage();
+    }
+
+    private String chooseFooterMessage() {
+        String configuredMessages = LSPECIALConfig.randomFooterMessages;
+        if (configuredMessages == null || configuredMessages.trim().isEmpty()) {
+            return "";
+        }
+
+        String[] messages = configuredMessages.split("\\|");
+        List<String> available = new ArrayList<>();
+        for (String message : messages) {
+            String trimmed = message.trim();
+            if (!trimmed.isEmpty()) {
+                available.add(trimmed);
+            }
+        }
+
+        if (available.isEmpty()) {
+            return "";
+        }
+        return available.get(new java.util.Random().nextInt(available.size()));
     }
 
     private void rebuildRows() {
@@ -223,10 +225,13 @@ public class GuiSPECIAL extends GuiScreen {
                 Math.max(90, infoWidth - 16), AMBER);
 
         int statusY = panelTop + panelHeight - 67;
-        drawRect(infoLeft, statusY, infoRight, statusY + 1, AMBER_MUTED);
-        drawString(fontRenderer, "SYSTEM STATUS", infoLeft + 8, statusY + 9, AMBER_MUTED);
-        drawString(fontRenderer, "LEVVIATA NEURA-LINK  //  ACTIVE",
-                infoLeft + 8, statusY + 24, AMBER);
+        if (LSPECIALConfig.showSystemStatusInfo) {
+            drawRect(infoLeft, statusY, infoRight, statusY + 1, AMBER_MUTED);
+            drawString(fontRenderer, LSPECIALConfig.systemStatusText,
+                    infoLeft + 8, statusY + 9, AMBER_MUTED);
+            drawString(fontRenderer, LSPECIALConfig.neuralLinkText,
+                    infoLeft + 8, statusY + 24, AMBER);
+        }
     }
 
     private void drawWrappedText(String text, int x, int y, int maxWidth, int color) {
@@ -256,10 +261,11 @@ public class GuiSPECIAL extends GuiScreen {
 
     private void drawFooter() {
         int footerY = panelTop + panelHeight - 23;
-        drawRect(panelLeft + 18, footerY - 5, panelLeft + panelWidth - 18, footerY - 4, AMBER_MUTED);
-
-        // randomized footer
-        drawString(fontRenderer, "LSPECIAL  /  " + footerMessage, panelLeft + 22, footerY + 2, AMBER_MUTED);
+        if (LSPECIALConfig.showRandomFooter && footerMessage != null && !footerMessage.isEmpty()) {
+            drawRect(panelLeft + 18, footerY - 5, panelLeft + panelWidth - 18, footerY - 4, AMBER_MUTED);
+            drawString(fontRenderer, "LSPECIAL  /  " + footerMessage,
+                    panelLeft + 22, footerY + 2, AMBER_MUTED);
+        }
 
         String hint = "PRESS ESC TO CLOSE";
 
