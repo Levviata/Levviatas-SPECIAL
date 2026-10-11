@@ -1,6 +1,7 @@
 package com.levviata.lspecial;
 
 import com.hbm.inventory.RecipesCommon;
+import com.hbm.inventory.fluid.FluidType;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.*;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
@@ -23,7 +24,6 @@ import java.util.Map;
 
 import static com.levviata.lspecial.LSPECIALMod.LOGGER;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
-import static com.levviata.lspecial.command.CommandSetFlySpeed.getPlayerFlySpeed;
 import static com.levviata.lspecial.command.CommandSetSpeed.getPlayerSpeed;
 import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED_REGENERATION_NAME;
 
@@ -54,14 +54,12 @@ public class StatsLogic {
     private int originalDelay;
     private int originalProjectileAmount;
     private float originalAmmoPiercing;
-    private float originalDurability;
+    private float originalWear;
     private IMagazine originalMagazine;
 
     private int gunIndex = -1;
 
     private ItemStack loggedSednaGun = ItemStack.EMPTY;
-    private ItemStack wearTrackedStack;
-    private float previousObservedWear = Float.NaN;
     private static final List<UUID> uuids = new ArrayList<>();
 
     static List<Item> g = new ArrayList<>();
@@ -130,11 +128,12 @@ public class StatsLogic {
         inst.startBoards();
         inst.startScores(player);
 
-        if (heldStack.getItem() instanceof ItemGunBaseNT) {
+        /*if (heldStack.getItem() instanceof ItemGunBaseNT) {
             applyGunWearPolicy(heldStack);
         } else {
-            wearTrackedStack = null; previousObservedWear = Float.NaN;
-        }
+            wearTrackedStack = null;
+            previousWear = 0;
+        }*/
 
         // strength
         IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
@@ -213,7 +212,7 @@ public class StatsLogic {
         // todo make perception increase found loot, make luck reduce armor durability lose on chance
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
-            ItemGunBaseNT.setWear(heldStack, 0, 0);
+            ItemGunBaseNT.setWear(heldStack , 0, 0);
         }
 
         if (heldStack.getItem() instanceof ItemGunBaseSedna) {
@@ -252,15 +251,21 @@ public class StatsLogic {
     }
 
     public void modifyGuns(ItemStack heldStack, EntityPlayer player, GunConfig cfg) {
+        if (modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory) instanceof FluidType) {
+            return;
+        }
+
         Receiver[] receivers = cfg.getReceivers(heldStack);
 
-        if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5) ItemGunBaseNT.setWear(heldStack, 0, 0);
+        if (LSPECIALConfig.intelligence && inst.getIntelligenceScore().getScorePoints() >= 5) {
+            ItemGunBaseNT.setWear(heldStack, 0, 0);
+        }
 
         modifiedReceiver = receivers[0];
 
-        BulletConfig bCOne = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
+        BulletConfig bConfig = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
 
-        setOriginalValues(bCOne, modifiedReceiver, heldStack);
+        setOriginalValues(bConfig, modifiedReceiver, heldStack);
 
         if (!installedMagazine) {
             if (LSPECIALConfig.refundMagazines && LSPECIALConfig.luck && inst.getLuckScore().getScorePoints() > 0) { // if i have luck, install a magazine that can refund bullets
@@ -329,14 +334,14 @@ public class StatsLogic {
     }
 
     public void cleanGun(ItemStack heldStack, EntityPlayer player) {
-        BulletConfig bCOne = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
-
-        if (gunIndex != -1) {
-            for (int i = 0; i < gunIndex; i++) { // run through all gun configs
-                ItemGunBaseNT.setWear(heldStack, i, originalDurability);
-            }
+        if (modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory) instanceof FluidType) {
+            return;
         }
-        bCOne.armorPiercingPercent = originalAmmoPiercing;
+
+        BulletConfig bConfig = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
+
+        ItemGunBaseNT.setWear(heldStack, gunIndex, originalWear);
+        bConfig.armorPiercingPercent = originalAmmoPiercing;
         modifiedReceiver.dmg(originalDamage);
         modifiedReceiver.delay(originalDelay);
         modifiedReceiver.rounds(originalProjectileAmount);
@@ -350,10 +355,7 @@ public class StatsLogic {
     }
 
     public void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack) {
-        ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
-        GunConfig cfg = gun.getConfig(heldStack, gunIndex);
-
-        originalDurability = cfg.getDurability(heldStack);
+        originalWear = ItemGunBaseNT.getWear(heldStack, gunIndex);
         originalMagazine = rIn.getMagazine(heldStack);
         originalAmmoPiercing = bCIn.armorPiercingPercent;
         originalDamage = rIn.getBaseDamage(heldStack);
@@ -390,52 +392,11 @@ public class StatsLogic {
         }
     }
 
-    private void applyGunWearPolicy(ItemStack stack) {
-        String mode = LSPECIALConfig.gunWearMode;
-
-        if ("INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(mode) || !LSPECIALConfig.intelligence) {
-            return;
-        }
-
-        int intelligence = inst.getIntelligenceScore().getScorePoints();
-        if (intelligence <= 0) {
-            return;
-        }
-
-        float current = ItemGunBaseNT.getWear(stack, 0);
-
-        if (wearTrackedStack != stack || Float.isNaN(previousObservedWear)) {
-            wearTrackedStack = stack;
-            previousObservedWear = current;
-            return;
-        }
-
-        if (current > previousObservedWear) {
-            double reduction;
-
-            if ("PERCENT_REDUCTION".equalsIgnoreCase(mode)) {
-                reduction = intelligence * LSPECIALConfig.gunWearReductionPerIntelligence;
-            } else {
-                Map<String, Double> vars = new HashMap<>();
-                vars.put("intelligence", (double) intelligence);
-                vars.put("originalWear", (double) previousObservedWear);
-
-                reduction = LSPECIALExpression.eval(LSPECIALConfig.gunWearFormula, vars, 0.0);
-            }
-
-            reduction = Math.max(0.0, Math.min(1.0, reduction));
-
-            float adjusted = (float) (previousObservedWear + (current - previousObservedWear) * (1.0 - reduction));
-
-            ItemGunBaseNT.setWear(stack, 0, adjusted);
-            previousObservedWear = adjusted;
-        } else {
-            previousObservedWear = current;
-        }
-    }
-
     private boolean isBuckshotAmmo(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return false;
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+
         for (String raw : LSPECIALConfig.buckshotGaugeList.split(",")) {
             String token = raw.trim();
             try {
