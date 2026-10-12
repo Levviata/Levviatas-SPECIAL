@@ -101,10 +101,19 @@ public class StatsLogic {
         }
 
         EntityPlayer player = event.player;
+        if (player == null) {
+            return;
+        }
 
         if (player.world == null || player.world.isRemote) { // server sided
             return;
         }
+
+        inst.scoreboard = player.getEntityWorld().getScoreboard();
+
+        // WARNING if the scores or scoreboards don't start, the mod is useless
+        inst.startBoards();
+        inst.startScores(player);
 
         ItemStack heldStack = player.getHeldItemMainhand();
         if (!heldStack.isEmpty() && heldStack.isItemStackDamageable()) {
@@ -124,12 +133,6 @@ public class StatsLogic {
                 tag.removeTag("LSPECIALAppliedUnbreakable"); tag.removeTag("LSPECIALWasUnbreakable"); tag.removeTag("LSPECIALWasUnbreakableRecorded");
             }
         }
-
-        inst.scoreboard = player.getEntityWorld().getScoreboard();
-
-        // WARNING if the scores or scoreboards don't start, the mod is useless
-        inst.startBoards();
-        inst.startScores(player);
 
         if (heldStack.getItem() instanceof ItemGunBaseNT) {
             applyGunWearPolicy(heldStack);
