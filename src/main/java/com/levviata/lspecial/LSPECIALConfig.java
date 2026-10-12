@@ -75,6 +75,7 @@ public final class LSPECIALConfig {
     public static boolean setFlySpeedCommand = true;
 
     //public static String bobbleheadConsumption = "ON_USE";
+    // bug: cant put '' in cfg strings or it will make everything a string
     public static String limitMessage = "I have reached my limit, I cant consume more.";
     public static String augLimitMessage = "Augmented SPECIAL limit by one";
     public static String augUnder5 = "Augmented my SPECIAL limit by one, cool";
