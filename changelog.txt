@@ -1,3 +1,17 @@
+# v1.2.0
+
+### Features
+Add support for no metadata ore dictionary entries -> ModID:ItemID[:Metadata or a metadata range of :start-end] from ModID:ItemID:Metadata or meta range (obligatory)
+
+### Bugs
+Fix
+- typo in getOreDictionaryName()'s switch, making it unable to register bobblehead ore dictionary
+- '' in config file making everything in between a string. '' now remain unsupported
+
+### General
+Fix quality of configuration's comments -> better cohesion, objectivity, extended information, and generally better
+
+
 # v1.1.1
 
 Fix infinite item durability logic crashing the game by trying to get a scoreboard before board creation
