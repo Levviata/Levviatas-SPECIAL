@@ -90,7 +90,9 @@ public class StatsLogic {
             }
         }
         for (String raw : LSPECIALConfig.revolverList.split(",")) {
-            if (!raw.trim().isEmpty()) r.add(raw.trim());
+            if (!raw.trim().isEmpty()) {
+                r.add(raw.trim());
+            }
         }
     }
 
