@@ -1,3 +1,17 @@
-v1.0.0
+# v1.1.0
+
+### Bugs
+Fixed
+- crash when trying to modifyGun() the ChemThrower, now its properly unsupported
+- Gun's having max wear (no durability), now they are properly modified
+
+### Configuration
+Customizable random footer, "STATUS SYSTEM", and "LEVVIATA NEURALINK // ACTIVE" messages -> can be toggled as well and the footer has a customizable list of random messages
+
+### General
+Tweaked GUI messages -> random footer, header and information
+
+
+# v1.0.0
 
 Initial release
