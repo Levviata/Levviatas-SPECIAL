@@ -144,6 +144,7 @@ public class StatsLogic {
         }
 
         // strength
+        // todo make the new damage be properly shown on held items with the literal format (Original + Bonus Attack Damage), make config option to mix the numbers
         IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
 
         if (!heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()).isEmpty()) {
@@ -159,6 +160,7 @@ public class StatsLogic {
         }
 
         // endurance
+        // todo at level 5 make health scale player model size, x0.25 increase per one extra full heart after that level
         IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
         if (inst.getEnduranceScore().getScorePoints() != previousHealth || player.getMaxHealth() != previousHealth) {
             previousHealth = inst.getEnduranceScore().getScorePoints();
@@ -171,6 +173,7 @@ public class StatsLogic {
         }
 
         // charisma
+        // todo make mobs turn neutral at level 5 and make villagers drop their prices in half
         IAttributeInstance armor = player.getEntityAttribute(SharedMonsterAttributes.ARMOR);
         IAttributeInstance armorToughness = player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS);
         if (inst.getCharismaScore().getScorePoints() != previousCharisma) {
@@ -204,6 +207,7 @@ public class StatsLogic {
                 double agilityValue = getPlayerSpeed(player) > -1 ? getPlayerSpeed(player) : inst.getAgilityScore().getScorePoints();
                 movementSpeed.applyModifier(new AttributeModifier(MOVEMENT_SPEED_UUID, nameIn, expression(LSPECIALConfig.agilityFormula, "agility", agilityValue), 1));
             }
+            // todo fix fly speed
 /*          this sucks, its either too fast or too slow
             float def = 0.05f;
             player.capabilities.setFlySpeed(def);
@@ -217,7 +221,7 @@ public class StatsLogic {
         //originalFlySpeed = player.capabilities.getFlySpeed();
 
         // perception, intelligence, and luck
-        // todo make perception increase found loot, make luck reduce armor durability lose on chance
+        // todo make perception increase found loot by copying once non stackable items (in the found loot inventory) x2 at level 5 and x3 at level 10, make luck reduce armor durability lose on chance
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
             ItemGunBaseNT.setWear(heldStack , 0, 0);
@@ -286,10 +290,10 @@ public class StatsLogic {
         processReceiver(modifiedReceiver, originalDamage, originalDelay, heldStack, player);
     }
 
-    private void processReceiver(Receiver recIn, float ogDmg, int ogDelay, ItemStack heldStackIn, EntityPlayer player) {
+    private void processReceiver(Receiver recIn, float ogDmg, int ogDelay, ItemStack heldStack, EntityPlayer player) {
         recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPerceptionScore().getScorePoints(), "originalDamage", (double)ogDmg) : 0)));
 
-        BulletConfig bC = (BulletConfig) recIn.getMagazine(heldStackIn).getType(heldStackIn, player.inventory);
+        BulletConfig bC = (BulletConfig) recIn.getMagazine(heldStack).getType(heldStack, player.inventory);
         ItemStack ammoStack;
         if (bC.ammo != null) {
             ItemStack c = bC.ammo.getStack();
@@ -307,7 +311,7 @@ public class StatsLogic {
 
         if (modifiedDelay > 0) {
             int formula = (int)Math.round(expression(LSPECIALConfig.buckshotDelayFormula, "intelligence", intelligence, "originalDelay", (double)ogDelay));
-            if (LSPECIALConfig.buckshotDelayNerf && (/*recIn.getRefireOnHold(heldStackIn) ||*/ isBuckshotAmmo(ammoStack))) { // automatic or loaded with buckshots (usually shotguns)
+            if (LSPECIALConfig.buckshotDelayNerf && (/*recIn.getRefireOnHold(heldStackIn) ||*/ isBuckshotAmmo(ammoStack))) { // loaded with buckshots (usually shotguns)
                 modifiedDelay = formula;
             }
         } else {
@@ -317,23 +321,21 @@ public class StatsLogic {
 
         if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getIntelligenceScore().getScorePoints() >= 5) { // lesser perk
             recIn.auto(true);
-            if (!heldStackIn.isEmpty()) {
-                String rName = String.valueOf(heldStackIn.getItem().getRegistryName());
+            if (!heldStack.isEmpty()) {
+                String rName = String.valueOf(heldStack.getItem().getRegistryName());
                 if (LSPECIALConfig.pepperboxPerk && rName.equals("hbm:gun_pepperbox")) {
                     recIn.rounds(6);
                 }
                 if (rName.equals("hbm:gun_lag")) {
-                    // todo make right click shift click run empty mag animation to then kill yourself
+                    // todo make right click shift click run empty mag animation to shoot yourself, should trigger death as if it was a /kill command
                 }
             }
         }
         if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && inst.getIntelligenceScore().getScorePoints() >= 10) { // higher perk
-            if (!heldStackIn.isEmpty()) {
-                String rName = String.valueOf(heldStackIn.getItem().getRegistryName());
+            if (!heldStack.isEmpty()) {
+                String rName = String.valueOf(heldStack.getItem().getRegistryName());
                 if (LSPECIALConfig.revolverPerk && r.contains(rName) ) { // match to all revolvers, thought of madness combat revolvers doing hell damage, so it's in
-                    /*int piercing = 25;
-                    bC.armorThresholdNegation = piercing;
-                    bC.armorPiercingPercent = ogPiercing + piercing; // since guns dont have piercing in their receivers, this adds onto the ammo's piercing*/
+                    // todo config for these bonuses
                     bC.doesPenetrate = true;
                     bC.setHeadshot(3);
                 }
@@ -346,14 +348,17 @@ public class StatsLogic {
             return;
         }
 
-        BulletConfig bConfig = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
+        if (modifiedReceiver == null) {
+            return;
+        }
 
-        ItemGunBaseNT.setWear(heldStack, gunIndex, originalWear);
+        BulletConfig bConfig = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
         bConfig.armorPiercingPercent = originalAmmoPiercing;
         modifiedReceiver.dmg(originalDamage);
         modifiedReceiver.delay(originalDelay);
         modifiedReceiver.rounds(originalProjectileAmount);
         modifiedReceiver.mag(originalMagazine);
+        ItemGunBaseNT.setWear(heldStack, gunIndex, originalWear);
 
         gunIndex = 0;
         installedMagazine = false;
