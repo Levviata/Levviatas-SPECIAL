@@ -57,12 +57,16 @@ public class BobbleheadRecipeManager {
             }
 
             String[] parts = token.split(":");
-            if (parts.length != 3) {
-                throw new IllegalArgumentException("Ore entry must be namespace:item:meta or namespace:item:start-end: " + token);
+            if (parts.length < 2 || parts.length > 3) {
+                throw new IllegalArgumentException(
+                        "Ore entry must be ModID:ItemID[:Metadata or a metadata range of :start-end]: " + token
+                );
             }
 
             Item item = getItem(parts[0], parts[1]);
-            String metadata = parts[2];
+
+            // if metadata is omitted, default to 0.
+            String metadata = parts.length == 3 ? parts[2] : "0";
 
             if (metadata.contains("-")) {
                 String[] range = metadata.split("-");
@@ -82,21 +86,6 @@ public class BobbleheadRecipeManager {
         }
     }
 
-    private static void registerRange(String oreName, String itemName, int min, int max) {
-        Item item = getItem(HBM, itemName);
-
-        for (int meta = min; meta <= max; meta++) {
-            OreDictionary.registerOre(oreName, new ItemStack(item, 1, meta));
-        }
-    }
-
-    private static void registerSingle(String oreName, String itemName, int meta) {
-        OreDictionary.registerOre(
-                oreName,
-                new ItemStack(getItem(HBM, itemName), 1, meta)
-        );
-    }
-
     private static Item getItem(String namespace, String name) {
         ResourceLocation id = new ResourceLocation(namespace, name);
         Item item = ForgeRegistries.ITEMS.getValue(id);
@@ -111,14 +100,6 @@ public class BobbleheadRecipeManager {
     private Ingredient item(String namespace, String name, int metadata) {
         ItemStack stack = new ItemStack(getItem(namespace, name), 1, metadata);
         return Ingredient.fromStacks(stack);
-    }
-
-    private Ingredient hbm(String name) {
-        return item(HBM, name, 0);
-    }
-
-    private Ingredient hbmMeta(String name, int metadata) {
-        return item(HBM, name, metadata);
     }
 
     private Ingredient ore(String name) {
@@ -226,7 +207,7 @@ public class BobbleheadRecipeManager {
 
     private String getOreDictionaryName(String token) {
         switch (token) {
-            case "anyBobblehead":
+            case "bobblehead":
                 return LSPECIALConfig.oreBobblehead;
             case "appleLead":
                 return LSPECIALConfig.oreAppleLead;
