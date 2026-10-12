@@ -192,7 +192,7 @@ public final class LSPECIALConfig {
         showSystemStatusInfo = b(CLIENT, "showSystemStatusInfo", true, "Show the SYSTEM STATUS and 'Neura-Link' information in the stats screen");
         showRandomFooter = b(CLIENT, "showRandomFooter", true, "Show the randomized footer in the stats screen");
         systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in the stats screen");
-        neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  ACTIVE", "Text used for the 'Neura-Link' status line in the stats screen");
+        neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  ACTIVE", "Text used for the 'Neura-Link' line in the stats screen");
         randomFooterMessages = s(CLIENT, "randomFooterMessages", randomFooterMessages, "Random footer options separated by |. Leave empty to show no random message.");
         setSpeedCommand = b(COMMANDS, "setSpeedCommand", true, "Register /setspeed");
         setFlySpeedCommand = b(COMMANDS, "setFlySpeedCommand", true, "Register /setflyspeed. Currently doesn't work");
@@ -238,15 +238,15 @@ public final class LSPECIALConfig {
 
         // Recipe ingredients
         for (int n = 0; n < recipeIngredients.length; n++) {
-            recipeIngredients[n] = s(RECIPES, "recipe" + (n + 1) + "Ingredients", recipeIngredients[n], "Comma-separated tokens: oreName, ModID:ItemID[:Metadata], potion:type|type");
+            recipeIngredients[n] = s(RECIPES, "recipe" + (n + 1) + "Ingredients", recipeIngredients[n], "Comma separated entries of: oreDictionary, ModID:ItemID[:Metadata], potion:type|type");
         }
 
         // Advanced formulas
-        agilityFormula = s(ADV, "agilityFormula", agilityFormula, "Expression variable: agility");
-        enduranceFormula = s(ADV, "enduranceFormula", enduranceFormula, "Expression variable: endurance");
-        attackDamageFormula = s(ADV, "attackDamageFormula", attackDamageFormula, "Expression variable: strength");
-        armorFormula = s(ADV, "armorFormula", armorFormula, "Expression variable: charisma");
-        armorToughnessFormula = s(ADV, "armorToughnessFormula", armorToughnessFormula, "Expression variable: charisma");
+        agilityFormula = s(ADV, "agilityFormula", agilityFormula, "Variables: agility");
+        enduranceFormula = s(ADV, "enduranceFormula", enduranceFormula, "Variables: endurance");
+        attackDamageFormula = s(ADV, "attackDamageFormula", attackDamageFormula, "Variables: strength");
+        armorFormula = s(ADV, "armorFormula", armorFormula, "Variables: charisma");
+        armorToughnessFormula = s(ADV, "armorToughnessFormula", armorToughnessFormula, "Variables: charisma");
         perceptionGunDamageFormula = s(ADV, "perceptionGunDamageFormula", perceptionGunDamageFormula, "Variables: perception, originalDamage");
         bonusDelayFormula = s(ADV, "bonusDelayFormula", bonusDelayFormula, "Variables: intelligence, originalDelay; floor preserves the original integer step");
         buckshotDelayFormula = s(ADV, "buckshotDelayFormula", buckshotDelayFormula, "Variables: intelligence, originalDelay");
