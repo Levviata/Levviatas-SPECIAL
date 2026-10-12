@@ -64,13 +64,10 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
     @Override
     public void reloadAction(ItemStack stack, IInventory inventory) { // bug: when reloading with less than a full mags worth of bullet, the gun tries to reload twice doubling ammo and stopping the reloading for a sec
 
-        // Capture this BEFORE NTM performs its reload.
         int before = original.getAmount(stack, inventory);
 
-        // Let NTM do the actual reload.
         original.reloadAction(stack, inventory);
 
-        // Capture the result AFTER the reload.
         int after = original.getAmount(stack, inventory);
 
         int ammoDebt = Math.abs(after - before);

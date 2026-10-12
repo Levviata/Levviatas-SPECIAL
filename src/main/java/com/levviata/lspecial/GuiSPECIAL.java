@@ -149,9 +149,6 @@ public class GuiSPECIAL extends GuiScreen {
 
     private void drawHeader() {
         drawString(fontRenderer, "S.P.E.C.I.A.L // CHARACTER STATS", panelLeft + 22, panelTop + 12, AMBER_BRIGHT);
-/*
-        String brand = "LSPECIAL";
-        drawString(fontRenderer, brand, panelLeft + panelWidth - fontRenderer.getStringWidth(brand) - 18, panelTop + 13, AMBER_MUTED);*/
 
         drawRect(panelLeft + 18, panelTop + 30, panelLeft + panelWidth - 18, panelTop + 31, AMBER_MUTED);
     }
@@ -191,11 +188,6 @@ public class GuiSPECIAL extends GuiScreen {
 
             String value = Integer.toString(row.value);
             drawString(fontRenderer, value, listLeft + listWidth - 42, y + 4, color);
-/*
-            int arrowX = listLeft + listWidth - 18;
-            drawRect(arrowX, y + 4, arrowX + 11, y + 15, AMBER_MUTED);
-            drawRect(arrowX + 1, y + 5, arrowX + 10, y + 14, PANEL);
-            drawString(fontRenderer, ">", arrowX + 2, y + 3, color);*/
         }
 
         int dividerX = panelLeft + panelWidth / 2 - 2;
