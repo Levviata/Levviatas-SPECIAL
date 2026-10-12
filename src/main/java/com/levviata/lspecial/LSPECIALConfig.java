@@ -70,12 +70,12 @@ public final class LSPECIALConfig {
 
     public static String systemStatusText = "SYSTEM STATUS";
     public static String neuralLinkText = "LEVVIATA NEURA-LINK  //  ACTIVE";
-    public static String randomFooterMessages = "YOU ARE LIKELY NOT SPECIAL|JET FUEL CAN MELT STEEL BEAMS|VAMPIRES ARE NICE|I KNOW WHERE YOU LIVE|LEVVIATAINC|WHO'S TIAMAT|SATAN IS A NICE GUY|WHO'S LEVIATHAN|WHEN YOU SEE IT|ITS ALL A DREAM AND YOU ARE BLIND|BLESSED ARE THE STRONG|CURSED ARE THE WEAK|BE OBEDIENT IF YOU ARE WEAK|CONTROL IF YOU ARE STRONG|NOT EVERYONE IS EQUAL|TAX THE CHURCHES|AI IS FREE SLAVERY";
+    public static String randomFooterMessages = "YOU ARE LIKELY NOT SPECIAL|JET FUEL CAN MELT STEEL BEAMS|VAMPIRES ARE NICE|I KNOW WHERE YOU LIVE|LEVVIATAINC|WHOS TIAMAT|SATAN IS A NICE GUY|WHOS LEVIATHAN|WHEN YOU SEE IT|ITS ALL A DREAM AND YOU ARE BLIND|BLESSED ARE THE STRONG|CURSED ARE THE WEAK|BE OBEDIENT IF YOU ARE WEAK|CONTROL IF YOU ARE STRONG|NOT EVERYONE IS EQUAL|TAX THE CHURCHES|AI IS FREE SLAVERY";
     public static boolean setSpeedCommand = true;
     public static boolean setFlySpeedCommand = true;
 
     //public static String bobbleheadConsumption = "ON_USE";
-    public static String limitMessage = "I have reached my limit, I can't consume more.";
+    public static String limitMessage = "I have reached my limit, I cant consume more.";
     public static String augLimitMessage = "Augmented SPECIAL limit by one";
     public static String augUnder5 = "Augmented my SPECIAL limit by one, cool";
     public static String aug5 = "Augmented SPECIAL limit by one";
@@ -111,8 +111,8 @@ public final class LSPECIALConfig {
     public static String oreBobbleheadEntries = "hbm:bobblehead:8-28";
     public static String oreAppleLeadEntries = "hbm:apple_lead:0-2";
     public static String oreAmmoEntries = "hbm:ammo_standard:0-94";
-    public static String oreLuckAccessoryEntries = "hbm:bandaid:0,hbm:serum:0,hbm:spider_milk:0,hbm:heart_piece:0,hbm:wd40:0";
-    public static String oreLuckyGemEntries = "minecraft:emerald:0,minecraft:diamond:0";
+    public static String oreLuckAccessoryEntries = "hbm:bandaid,hbm:serum,hbm:spider_milk,hbm:heart_piece,hbm:wd40";
+    public static String oreLuckyGemEntries = "minecraft:emerald,minecraft:diamond";
 
     public static String[] recipeIngredients = {
             "bobblehead,hbm:schnitzel_vegan,appleLead,hbm:ingot_u235",
@@ -144,15 +144,15 @@ public final class LSPECIALConfig {
         intelligence = b(STATS, "intelligence", true, "Enable Intelligence");
         agility = b(STATS, "agility", true, "Enable Agility");
         luck = b(STATS, "luck", true, "Enable Luck");
-        statLimit = b(STATS, "statLimit", true, "Enforce the SPECIAL stat limit");
-        hideDisabledStats = b(STATS, "hideDisabledStats", true, "Hide disabled stats in GuiSPECIAL; false strikes them through");
+        statLimit = b(STATS, "statLimit", true, "Enforce stat limit");
+        hideDisabledStats = b(STATS, "hideDisabledStats", true, "Hide disabled stats in stats screen, false shows them as strike-through");
         charismaBonus = b(STATS, "charismaBonus", true, "Enable Charisma bonus");
         enduranceBonus = b(STATS, "enduranceBonus", true, "Enable Endurance bonus");
-        infiniteItemDurability = b(STATS, "infiniteItemDurability", true, "Intelligence lesser perk: held damageable items do not lose durability at Intelligence 5+");
+        infiniteItemDurability = b(STATS, "infiniteItemDurability", true, "Intelligence level 5 perk. Held damageable items do not lose durability");
 
        // Bobblehead consumption
         statsPerBobblehead = i(BOB, "statsPerBobblehead", 1, 1, Integer.MAX_VALUE, "Points per bobblehead");
-        bobbleheadRename = b(BOB, "rename", true, "Rename bobblehead tooltip labels");
+        bobbleheadRename = b(BOB, "rename", true, "Give bobbleheads their stats in their display name");
 
         // Guns and ammunition
         refundAmmoFormula = s(GUNS, "refundAmmoFormula", refundAmmoFormula, "Validated expression; variable: luck");
@@ -166,12 +166,12 @@ public final class LSPECIALConfig {
             gunWearMode = "INFINITE_AT_INTELLIGENCE_5";
         }
         gunWearReductionPerIntelligence = d(GUNS, "gunWearReductionPerIntelligence", 0.05, 0, 1, "Wear reduction per Intelligence point");
-        buckshotGaugeList = s(GUNS, "buckshotGaugeList", buckshotGaugeList, "Comma separated list of ammo metadata values");
-        revolverList = s(GUNS, "revolverList", revolverList, "Comma separated list of item IDs");
+        buckshotGaugeList = s(GUNS, "buckshotGaugeList", buckshotGaugeList, "Comma separated list of hbm:ammo_standard but ONLY with the Metadata. Also supports hbm:ammo_secret:Metadata");
+        revolverList = s(GUNS, "revolverList", revolverList, "Comma separated list of ModID:ItemID");
 
         // Potions and effects
-        amplifiedRegeneration = b(POTIONS, "amplifiedRegeneration", true, "Enable amplified regeneration");
-        respectHigherRegenAmplifier = b(POTIONS, "respectHigherRegenAmplifier", false, "Removes my custom regeneration amplification, leaving your original regeneration as is");
+        amplifiedRegeneration = b(POTIONS, "amplifiedRegeneration", true, "Endurance level 5 perk. Enable amplified regeneration.");
+        respectHigherRegenAmplifier = b(POTIONS, "respectHigherRegenAmplifier", false, "Whether to amplify existing regeneration or not. Might fix issues with other mods");
         regenAmplifierBonus = d(POTIONS, "regenAmplifierBonus", 1.0, 0, 255, "Amplifier bonus");
         potionTimeTicks = i(POTIONS, "potionTimeTicks", 115, 0, 720000, "Potion duration in ticks. Default value is 5~ seconds");
         charismaPotionAmplifier = i(POTIONS, "charismaPotionAmplifier", 0, 0, 255, "Resistance amplifier");
@@ -189,18 +189,37 @@ public final class LSPECIALConfig {
 
         // Client interface and commands
         toggleSpecial = b(CLIENT, "toggleSpecial", true, "Enable toggleSpecial keybind");
-        showSystemStatusInfo = b(CLIENT, "showSystemStatusInfo", true, "Show the SYSTEM STATUS and neural-link information in GuiSPECIAL");
-        showRandomFooter = b(CLIENT, "showRandomFooter", true, "Show the randomized footer in GuiSPECIAL");
-        systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in GuiSPECIAL");
-        neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  ACTIVE", "Text used for the neural-link status line in GuiSPECIAL");
+        showSystemStatusInfo = b(CLIENT, "showSystemStatusInfo", true, "Show the SYSTEM STATUS and 'Neura-Link' information in the stats screen");
+        showRandomFooter = b(CLIENT, "showRandomFooter", true, "Show the randomized footer in the stats screen");
+        systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in the stats screen");
+        neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  ACTIVE", "Text used for the 'Neura-Link' status line in the stats screen");
         randomFooterMessages = s(CLIENT, "randomFooterMessages", randomFooterMessages, "Random footer options separated by |. Leave empty to show no random message.");
         setSpeedCommand = b(COMMANDS, "setSpeedCommand", true, "Register /setspeed");
-        setFlySpeedCommand = b(COMMANDS, "setFlySpeedCommand", true, "Register /setflyspeed");
+        setFlySpeedCommand = b(COMMANDS, "setFlySpeedCommand", true, "Register /setflyspeed. Currently doesn't work");
 
         // Recipe switches
-        String[] recipeNames = {"recipeStrength", "recipePerception", "recipeEndurance", "recipeCharisma", "recipeIntelligence", "recipeAgility", "recipeLuck"};
+        String[] recipeNames = {
+                "recipeStrength",
+                "recipePerception",
+                "recipeEndurance",
+                "recipeCharisma",
+                "recipeIntelligence",
+                "recipeAgility",
+                "recipeLuck"
+        };
+
+        String[] specialNames = {
+                "Strength",
+                "Perception",
+                "Endurance",
+                "Charisma",
+                "Intelligence",
+                "Agility",
+                "Luck"
+        };
+
         for (int n = 0; n < recipeNames.length; n++) {
-            recipeEnabled[n] = b(RECIPES, recipeNames[n], true, "Enable bobblehead recipe " + (n + 1));
+            recipeEnabled[n] = b(RECIPES, recipeNames[n], true, "Enable " + specialNames[n] + " bobblehead recipe");
         }
 
         // Ore dictionary names
@@ -211,7 +230,7 @@ public final class LSPECIALConfig {
         oreLuckyGem = s(RECIPES, "oreLuckyGem", "luckyGem", "Ore dictionary name");
 
         // Ore dictionary entries
-        oreBobbleheadEntries = s(RECIPES, "oreBobbleheadEntries", oreBobbleheadEntries, "namespace:item:metadata or namespace:item:start-end, comma separated");
+        oreBobbleheadEntries = s(RECIPES, "oreBobbleheadEntries", oreBobbleheadEntries, "ModID:ItemID:[:Metadata or a metadata range of :start-end], comma separated");
         oreAppleLeadEntries = s(RECIPES, "oreAppleLeadEntries", oreAppleLeadEntries, "Ore dictionary entries");
         oreAmmoEntries = s(RECIPES, "oreAmmoEntries", oreAmmoEntries, "Ore dictionary entries");
         oreLuckAccessoryEntries = s(RECIPES, "oreLuckAccessoryEntries", oreLuckAccessoryEntries, "Ore dictionary entries");
@@ -219,7 +238,7 @@ public final class LSPECIALConfig {
 
         // Recipe ingredients
         for (int n = 0; n < recipeIngredients.length; n++) {
-            recipeIngredients[n] = s(RECIPES, "recipe" + (n + 1) + "Ingredients", recipeIngredients[n], "Comma-separated tokens: oreName, namespace:item[:meta], potion:type|type");
+            recipeIngredients[n] = s(RECIPES, "recipe" + (n + 1) + "Ingredients", recipeIngredients[n], "Comma-separated tokens: oreName, ModID:ItemID[:Metadata], potion:type|type");
         }
 
         // Advanced formulas
