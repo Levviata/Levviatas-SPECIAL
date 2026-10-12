@@ -1,4 +1,5 @@
 # v1.1.1
+
 Fix infinite item durability logic crashing the game by trying to get a scoreboard before board creation
 
 # v1.1.0
