@@ -278,9 +278,9 @@ public final class LSPECIALConfig {
             case GUNS:
                 return "Gun mechanics, perks, ammunition and durability.";
             case RECIPES:
-                return "Recipe toggles and ore dictionary configuration. Needs reload to set.";
+                return "Recipe toggles and ore dictionary configuration. Reload game to set.";
             case COMMANDS:
-                return "Needs reload to set.";
+                return "Reload game to set.";
         }
         return "LSPECIAL mod configuration.";
     }
