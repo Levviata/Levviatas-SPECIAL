@@ -215,14 +215,20 @@ public class GuiSPECIAL extends GuiScreen {
                 ? rows.get(selectedRow).description
                 : "Select a stat to see what it does.";
 
-        drawWrappedText(description, infoLeft + 8, infoTop + 49,
-                Math.max(90, infoWidth - 16), AMBER);
-        if (LSPECIALConfig.showPerkTierHint) {
+        int textX = infoLeft + 8;
+        int textWidth = Math.max(1, infoWidth - 16);
+        int statusY = panelTop + panelHeight - 67;
+        int textBottom = LSPECIALConfig.showSystemStatusInfo ? statusY - 5 : panelTop + panelHeight - 30;
+        int textY = infoTop + 49;
+        int availableLines = Math.max(0, (textBottom - textY) / 12);
+        int usedLines = drawWrappedText(description, textX, textY, textWidth, AMBER, availableLines);
+        textY += usedLines * 12;
+        if (LSPECIALConfig.showPerkTierHint && textY < textBottom) {
+            textY += 3;
             drawWrappedText("Lesser perks are usually obtained at level 5; Higher perks at levels 10–15. Click a stat row to inspect its perk notes.",
-                    infoLeft + 8, infoTop + 112, Math.max(90, infoWidth - 16), AMBER_MUTED);
+                    textX, textY, textWidth, AMBER_MUTED, Math.max(0, (textBottom - textY) / 12));
         }
 
-        int statusY = panelTop + panelHeight - 67;
         if (LSPECIALConfig.showSystemStatusInfo) {
             drawRect(infoLeft, statusY, infoRight, statusY + 1, AMBER_MUTED);
             drawString(fontRenderer, LSPECIALConfig.systemStatusText,
@@ -254,29 +260,44 @@ public class GuiSPECIAL extends GuiScreen {
         }
     }
 
-    private void drawWrappedText(String text, int x, int y, int maxWidth, int color) {
+    private int drawWrappedText(String text, int x, int y, int maxWidth, int color, int maxLines) {
+        if (text == null || text.isEmpty() || maxLines <= 0 || maxWidth <= 0) return 0;
+        List<String> wrapped = new ArrayList<>();
         StringBuilder line = new StringBuilder();
-        int currentY = y;
-
-        for (String word : text.split(" ")) {
+        for (String word : text.split("\\s+")) {
+            // split unusually long words too, so even a cramped GUI cannot overflow horizontally
+            while (fontRenderer.getStringWidth(word) > maxWidth) {
+                if (line.length() > 0) {
+                    wrapped.add(line.toString());
+                    line.setLength(0);
+                }
+                String part = fontRenderer.trimStringToWidth(word, maxWidth);
+                if (part.isEmpty()) break;
+                wrapped.add(part);
+                word = word.substring(part.length());
+            }
             String candidate = line.length() == 0 ? word : line + " " + word;
-
             if (fontRenderer.getStringWidth(candidate) > maxWidth && line.length() > 0) {
-                drawString(fontRenderer, line.toString(), x, currentY, color);
-                currentY += 12;
+                wrapped.add(line.toString());
                 line.setLength(0);
                 line.append(word);
-            } else {
-                if (line.length() > 0) {
-                    line.append(' ');
-                }
+            } else if (!word.isEmpty()) {
+                if (line.length() > 0) line.append(' ');
                 line.append(word);
             }
         }
+        if (line.length() > 0) wrapped.add(line.toString());
 
-        if (line.length() > 0) {
-            drawString(fontRenderer, line.toString(), x, currentY, color);
+        int count = Math.min(maxLines, wrapped.size());
+        for (int i = 0; i < count; i++) {
+            String visible = wrapped.get(i);
+            if (i == maxLines - 1 && wrapped.size() > maxLines) {
+                String ellipsis = "...";
+                visible = fontRenderer.trimStringToWidth(visible, Math.max(1, maxWidth - fontRenderer.getStringWidth(ellipsis))) + ellipsis;
+            }
+            drawString(fontRenderer, visible, x, y + i * 12, color);
         }
+        return count;
     }
 
     private void drawFooter() {

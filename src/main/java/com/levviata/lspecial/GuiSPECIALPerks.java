@@ -79,24 +79,56 @@ public final class GuiSPECIALPerks extends GuiScreen {
 
     @Override public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        int w = Math.min(360, width - 24), h = Math.min(250, height - 24);
-        int x = (width - w) / 2, y = (height - h) / 2;
+        int w = Math.max(1, Math.min(360, width - 16));
+        int h = Math.max(1, Math.min(250, height - 16));
+        int x = Math.max(0, (width - w) / 2), y = Math.max(0, (height - h) / 2);
         drawRect(0, 0, width, height, 0x88000000);
         drawRect(x, y, x + w, y + h, PANEL);
         drawRect(x, y, x + w, y + 1, MUTED); drawRect(x, y + h - 1, x + w, y + h, MUTED);
         drawRect(x, y, x + 1, y + h, MUTED); drawRect(x + w - 1, y, x + w, y + h, MUTED);
-        drawString(fontRenderer, stat.toUpperCase() + " // PERKS", x + 12, y + 12, BRIGHT);
-        drawRect(x + 10, y + 28, x + w - 10, y + 29, MUTED);
-        int yy = y + 40;
-        int visible = Math.max(1, (h - 65) / 20);
-        for (int i = scroll; i < Math.min(lines.size(), scroll + visible); i++) {
-            String line = lines.get(i);
+
+        int innerX = x + Math.min(12, Math.max(2, w / 12));
+        int innerWidth = Math.max(1, w - (innerX - x) * 2);
+        String title = fontRenderer.trimStringToWidth(stat.toUpperCase() + " // PERKS", innerWidth);
+        drawString(fontRenderer, title, innerX, y + Math.min(12, Math.max(1, h / 10)), BRIGHT);
+        if (h > 30) drawRect(x + 8, y + 28, x + w - 8, y + 29, MUTED);
+
+        int contentTop = y + 40;
+        int footerY = y + h - 12;
+        int lineHeight = 12;
+        int visible = Math.max(0, (footerY - contentTop - 2) / lineHeight);
+        List<String> wrapped = getWrappedLines(innerWidth);
+        int maxScroll = Math.max(0, wrapped.size() - visible);
+        scroll = Math.max(0, Math.min(scroll, maxScroll));
+        for (int i = 0; i < visible && scroll + i < wrapped.size(); i++) {
+            String line = wrapped.get(scroll + i);
             int color = line.startsWith("LESSER") || line.startsWith("HIGHER") ? BRIGHT : AMBER;
-            drawString(fontRenderer, line, x + 12, yy, color);
-            yy += 20;
+            drawString(fontRenderer, fontRenderer.trimStringToWidth(line, innerWidth), innerX,
+                    contentTop + i * lineHeight, color);
         }
-        drawString(fontRenderer, "Mouse wheel / arrows to scroll  •  ESC to return", x + 12, y + h - 16, MUTED);
+        String hint = "Wheel / arrows to scroll - ESC to return";
+        drawString(fontRenderer, fontRenderer.trimStringToWidth(hint, innerWidth), innerX,
+                Math.max(y + 1, footerY), MUTED);
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    private List<String> getWrappedLines(int maxWidth) {
+        List<String> result = new ArrayList<>();
+        for (String text : lines) {
+            String remaining = text;
+            if (remaining.isEmpty()) { result.add(""); continue; }
+            while (!remaining.isEmpty()) {
+                String part = fontRenderer.trimStringToWidth(remaining, Math.max(1, maxWidth));
+                if (part.isEmpty()) break;
+                if (part.length() < remaining.length()) {
+                    int split = part.lastIndexOf(' ');
+                    if (split > 0) part = part.substring(0, split);
+                }
+                result.add(part);
+                remaining = remaining.substring(part.length()).trim();
+            }
+        }
+        return result;
     }
 
     @Override public void handleMouseInput() throws IOException {
@@ -112,6 +144,12 @@ public final class GuiSPECIALPerks extends GuiScreen {
         super.keyTyped(typedChar, keyCode);
     }
 
-    private int clamp(int value) { return Math.max(0, Math.min(value, Math.max(0, lines.size() - 1))); }
+    private int clamp(int value) {
+        int w = Math.max(1, Math.min(360, width - 16));
+        int innerWidth = Math.max(1, w - 24);
+        int h = Math.max(1, Math.min(250, height - 16));
+        int visible = Math.max(0, (h - 24 - 40 - 2) / 12);
+        return Math.max(0, Math.min(value, Math.max(0, getWrappedLines(innerWidth).size() - visible)));
+    }
     @Override public boolean doesGuiPauseGame() { return false; }
 }
