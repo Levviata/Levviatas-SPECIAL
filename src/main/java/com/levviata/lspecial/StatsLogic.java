@@ -1,7 +1,6 @@
 package com.levviata.lspecial;
 
 import com.hbm.inventory.RecipesCommon;
-import com.hbm.inventory.fluid.FluidType;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.*;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
@@ -260,7 +259,7 @@ public class StatsLogic {
         if (modified && (heldStack.isEmpty() || !LSPECIALConfig.modifyGuns
                 || !(heldStack.getItem() instanceof ItemGunBaseNT)
                 || modifiedStackRef != heldStack)) {
-            cleanGun(modifiedStackRef, player);
+            cleanGun(modifiedStackRef);
         }
 
         if (!heldStack.isEmpty() && heldStack.getItem() != Items.AIR) {
@@ -269,7 +268,9 @@ public class StatsLogic {
                     ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
                     int configs = gun.getConfigCount();
                     // restore the previous item once before applying changes to a newly held stack.
-                    if (modified) cleanGun(modifiedStackRef, player);
+                    if (modified) {
+                        cleanGun(modifiedStackRef);
+                    }
 
                     for (gunIndex = 0; gunIndex < configs; gunIndex++) {
                         // modify guns using their unique gun config
@@ -283,7 +284,7 @@ public class StatsLogic {
                 }
             } else if (modified) {
                 // the held item changed or gun modification was disabled. Never cast a non-gun item.
-                cleanGun(modifiedStackRef, player);
+                cleanGun(modifiedStackRef);
             }
         }
 
@@ -354,7 +355,7 @@ public class StatsLogic {
         }
     }
 
-    public void cleanGun(ItemStack heldStack, EntityPlayer player) {
+    public void cleanGun(ItemStack heldStack) {
         if (heldStack == null || (!heldStack.isEmpty() && heldStack.getItem().equals(ModItems.gun_chemthrower))) {
             if (gunStates.isEmpty()) resetGunTracking();
             return;

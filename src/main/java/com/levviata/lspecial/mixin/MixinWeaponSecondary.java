@@ -121,6 +121,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** applies the Heretic-style aiming state automatically while a supported weapon is selected. */
+    @SuppressWarnings("all")
     @Inject(method = "onUpdate(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;IZ)V", at = @At("HEAD"), remap = false)
     private void lspecial$applyHereticScope(ItemStack stack, World world, Entity entity, int slot, boolean selected, CallbackInfo callback) {
         if (!(entity instanceof EntityPlayer) || stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) {
