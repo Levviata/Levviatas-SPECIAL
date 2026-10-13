@@ -110,10 +110,11 @@ public class GuiSPECIAL extends GuiScreen {
         drawDefaultBackground();
         rebuildRows();
 
-        panelWidth = Math.min(620, width - 24);
-        panelHeight = Math.min(height - 28, Math.max(250, 104 + rows.size() * ROW_HEIGHT));
-        panelLeft = (width - panelWidth) / 2;
-        panelTop = (height - panelHeight) / 2;
+        // Keep the panel and all of its content within even unusually small GUI resolutions.
+        panelWidth = Math.max(1, Math.min(620, width - 24));
+        panelHeight = Math.max(1, Math.min(Math.max(1, height - 16), Math.max(250, 104 + rows.size() * ROW_HEIGHT)));
+        panelLeft = Math.max(0, (width - panelWidth) / 2);
+        panelTop = Math.max(0, (height - panelHeight) / 2);
 
         drawBackdrop();
         drawFrame();
@@ -149,7 +150,8 @@ public class GuiSPECIAL extends GuiScreen {
     }
 
     private void drawHeader() {
-        drawString(fontRenderer, "S.P.E.C.I.A.L // CHARACTER STATS", panelLeft + 22, panelTop + 12, AMBER_BRIGHT);
+        drawClippedString("S.P.E.C.I.A.L // CHARACTER STATS", panelLeft + 22, panelTop + 12,
+                Math.max(1, panelWidth - 44), AMBER_BRIGHT);
 
         drawRect(panelLeft + 18, panelTop + 30, panelLeft + panelWidth - 18, panelTop + 31, AMBER_MUTED);
     }
@@ -159,8 +161,8 @@ public class GuiSPECIAL extends GuiScreen {
         int listTop = panelTop + 42;
         int listWidth = Math.min(270, panelWidth / 2 - 22);
 
-        drawString(fontRenderer, "STATS", listLeft + 8, listTop, AMBER_MUTED);
-        drawString(fontRenderer, "VALUE", listLeft + listWidth - 48, listTop, AMBER_MUTED);
+        drawClippedString("STATS", listLeft + 8, listTop, Math.max(1, listWidth - 62), AMBER_MUTED);
+        drawClippedString("VALUE", listLeft + listWidth - 48, listTop, 44, AMBER_MUTED);
 
         int rowTop = listTop + 17;
         selectedRow = -1;
@@ -185,10 +187,12 @@ public class GuiSPECIAL extends GuiScreen {
 
             int color = hovered ? AMBER_BRIGHT : (row.enabled ? AMBER : AMBER_MUTED);
             String label = row.enabled ? row.name : "\u00a7m" + row.name + "\u00a7r";
-            drawString(fontRenderer, label, listLeft + 9, y + 4, color);
+            int labelX = listLeft + 9;
+            int valueX = listLeft + listWidth - 42;
+            drawClippedString(label, labelX, y + 4, Math.max(1, valueX - labelX - 5), color);
 
             String value = Integer.toString(row.value);
-            drawString(fontRenderer, value, listLeft + listWidth - 42, y + 4, color);
+            drawClippedString(value, valueX, y + 4, Math.max(1, listLeft + listWidth - 4 - valueX), color);
         }
 
         int dividerX = panelLeft + panelWidth / 2 - 2;
@@ -202,13 +206,13 @@ public class GuiSPECIAL extends GuiScreen {
         int infoRight = panelLeft + panelWidth - 18;
         int infoWidth = infoRight - infoLeft;
 
-        drawString(fontRenderer, "NOTES", infoLeft + 8, infoTop, AMBER_MUTED);
+        drawClippedString("NOTES", infoLeft + 8, infoTop, Math.max(1, infoWidth - 16), AMBER_MUTED);
         drawRect(infoLeft, infoTop + 17, infoRight, infoTop + 18, AMBER_MUTED);
 
         String heading = selectedRow >= 0 && selectedRow < rows.size()
                 ? rows.get(selectedRow).name.toUpperCase()
                 : "S.P.E.C.I.A.L";
-        drawString(fontRenderer, heading, infoLeft + 8, infoTop + 29, AMBER_BRIGHT);
+        drawClippedString(heading, infoLeft + 8, infoTop + 29, Math.max(1, infoWidth - 16), AMBER_BRIGHT);
 
         // todo make another row that says "Lesser perks are usually obtained at level 5 while Higher perks are acquired at level 10-15"
         String description = selectedRow >= 0 && selectedRow < rows.size()
@@ -231,10 +235,11 @@ public class GuiSPECIAL extends GuiScreen {
 
         if (LSPECIALConfig.showSystemStatusInfo) {
             drawRect(infoLeft, statusY, infoRight, statusY + 1, AMBER_MUTED);
-            drawString(fontRenderer, LSPECIALConfig.systemStatusText,
-                    infoLeft + 8, statusY + 9, AMBER_MUTED);
-            drawString(fontRenderer, LSPECIALConfig.neuralLinkText,
-                    infoLeft + 8, statusY + 24, AMBER);
+            int statusTextWidth = Math.max(1, infoRight - (infoLeft + 8) - 6);
+            drawClippedString(LSPECIALConfig.systemStatusText,
+                    infoLeft + 8, statusY + 9, statusTextWidth, AMBER_MUTED);
+            drawClippedString(LSPECIALConfig.neuralLinkText,
+                    infoLeft + 8, statusY + 24, statusTextWidth, AMBER);
         }
     }
 
@@ -265,7 +270,7 @@ public class GuiSPECIAL extends GuiScreen {
         List<String> wrapped = new ArrayList<>();
         StringBuilder line = new StringBuilder();
         for (String word : text.split("\\s+")) {
-            // split unusually long words too, so even a cramped GUI cannot overflow horizontally
+            // Split unusually long words too, so even a narrow GUI cannot overflow horizontally.
             while (fontRenderer.getStringWidth(word) > maxWidth) {
                 if (line.length() > 0) {
                     wrapped.add(line.toString());
@@ -300,17 +305,34 @@ public class GuiSPECIAL extends GuiScreen {
         return count;
     }
 
+    /** Draws a single line within its allotted width, adding an ellipsis when clipped. */
+    private void drawClippedString(String text, int x, int y, int maxWidth, int color) {
+        if (text == null || text.isEmpty() || maxWidth <= 0) return;
+        if (fontRenderer.getStringWidth(text) <= maxWidth) {
+            drawString(fontRenderer, text, x, y, color);
+            return;
+        }
+        String ellipsis = "...";
+        int textWidth = Math.max(1, maxWidth - fontRenderer.getStringWidth(ellipsis));
+        String clipped = fontRenderer.trimStringToWidth(text, textWidth);
+        drawString(fontRenderer, clipped + ellipsis, x, y, color);
+    }
+
     private void drawFooter() {
         int footerY = panelTop + panelHeight - 23;
+        String hint = "PRESS ESC TO CLOSE";
+        int hintWidth = Math.min(fontRenderer.getStringWidth(hint), Math.max(1, panelWidth - 16));
+        int hintX = Math.max(panelLeft + 4, panelLeft + panelWidth - hintWidth - 10);
+
         if (LSPECIALConfig.showRandomFooter && footerMessage != null && !footerMessage.isEmpty()) {
-            drawRect(panelLeft + 18, footerY - 5, panelLeft + panelWidth - 18, footerY - 4, AMBER_MUTED);
-            drawString(fontRenderer, "LSPECIAL  /  " + footerMessage,
-                    panelLeft + 22, footerY + 2, AMBER_MUTED);
+            drawRect(panelLeft + Math.min(18, panelWidth / 2), footerY - 5,
+                    Math.max(panelLeft + 1, panelLeft + panelWidth - Math.min(18, panelWidth / 2)), footerY - 4, AMBER_MUTED);
+            int messageX = panelLeft + Math.min(22, Math.max(2, panelWidth / 4));
+            int messageWidth = Math.max(1, hintX - messageX - 8);
+            drawClippedString("LSPECIAL  /  " + footerMessage, messageX, footerY + 2, messageWidth, AMBER_MUTED);
         }
 
-        String hint = "PRESS ESC TO CLOSE";
-
-        drawString(fontRenderer, hint, panelLeft + panelWidth - fontRenderer.getStringWidth(hint) - 22, footerY + 2, AMBER);
+        drawClippedString(hint, hintX, footerY + 2, Math.max(1, panelLeft + panelWidth - hintX - 4), AMBER);
     }
 
     private static final class StatRow {
