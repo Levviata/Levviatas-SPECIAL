@@ -60,18 +60,19 @@ public class GuiSPECIAL extends GuiScreen {
         return available.get(new java.util.Random().nextInt(available.size()));
     }
 
+    // Clicking a stat opens its lesser/higher perk overlay when enabled.
     private void rebuildRows() {
         rows.clear();
 
-        addStat("Strength", inst.getClientStrength(), LSPECIALConfig.strength, "Gives on-hit attack damage, currently doesn't display on the held item.");
-        addStat("Perception", inst.getClientPerception(), LSPECIALConfig.perception, "Increases gun damage.");
-        addStat("Endurance", inst.getClientEndurance(), LSPECIALConfig.endurance, "Gives max health, one heart per level.");
+        addStat("Strength", inst.getClientStrength(), LSPECIALConfig.strength, "Adds attack damage. The held-item tooltip can show the original value, bonus, and total.");
+        addStat("Perception", inst.getClientPerception(), LSPECIALConfig.perception, "Improves selected loot-related perks at higher levels.");
+        addStat("Endurance", inst.getClientEndurance(), LSPECIALConfig.endurance, "Increases maximum health. Optional rendered-model scaling does not change the hitbox.");
 
         if (LSPECIALConfig.enduranceBonus) {
             rows.add(new StatRow("Endurance Bonus", inst.getClientEnduranceBonus(), true, "Gives you permanent regeneration 2. If you already have regeneration, increase by one it's amplifier (ex: regen 1 to 2)"));
         }
 
-        addStat("Charisma", inst.getClientCharisma(), LSPECIALConfig.charisma, "Increases armor and armor toughness.");
+        addStat("Charisma", inst.getClientCharisma(), LSPECIALConfig.charisma, "Increases armor and armor toughness; higher-level social effects are configurable.");
 
         if (LSPECIALConfig.charismaBonus) {
             rows.add(new StatRow("Charisma Bonus", inst.getClientCharismaBonus(), true, "Gives you permanent resistance effect."));
@@ -209,12 +210,17 @@ public class GuiSPECIAL extends GuiScreen {
                 : "S.P.E.C.I.A.L";
         drawString(fontRenderer, heading, infoLeft + 8, infoTop + 29, AMBER_BRIGHT);
 
+        // todo make another row that says "Lesser perks are usually obtained at level 5 while Higher perks are acquired at level 10-15"
         String description = selectedRow >= 0 && selectedRow < rows.size()
                 ? rows.get(selectedRow).description
                 : "Select a stat to see what it does.";
 
         drawWrappedText(description, infoLeft + 8, infoTop + 49,
                 Math.max(90, infoWidth - 16), AMBER);
+        if (LSPECIALConfig.showPerkTierHint) {
+            drawWrappedText("Lesser perks are usually obtained at level 5; Higher perks at levels 10–15. Click a stat row to inspect its perk notes.",
+                    infoLeft + 8, infoTop + 112, Math.max(90, infoWidth - 16), AMBER_MUTED);
+        }
 
         int statusY = panelTop + panelHeight - 67;
         if (LSPECIALConfig.showSystemStatusInfo) {
@@ -223,6 +229,28 @@ public class GuiSPECIAL extends GuiScreen {
                     infoLeft + 8, statusY + 9, AMBER_MUTED);
             drawString(fontRenderer, LSPECIALConfig.neuralLinkText,
                     infoLeft + 8, statusY + 24, AMBER);
+        }
+    }
+
+    @Override
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws java.io.IOException {
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+        if (mouseButton != 0 || !LSPECIALConfig.showPerkScreens) return;
+        int listLeft = panelLeft + 18;
+        int listTop = panelTop + 42;
+        int listWidth = Math.min(270, panelWidth / 2 - 22);
+        int rowTop = listTop + 17;
+        int maxBottom = panelTop + panelHeight - 35;
+        for (int i = 0; i < rows.size(); i++) {
+            int y = rowTop + i * ROW_HEIGHT;
+            if (y + ROW_HEIGHT > maxBottom) break;
+            if (mouseX >= listLeft && mouseX < listLeft + listWidth && mouseY >= y && mouseY < y + ROW_HEIGHT) {
+                StatRow row = rows.get(i);
+                if (row.enabled && !"Stat Limit".equals(row.name) && !row.name.endsWith("Bonus")) {
+                    mc.displayGuiScreen(new GuiSPECIALPerks(this, row.name));
+                }
+                return;
+            }
         }
     }
 

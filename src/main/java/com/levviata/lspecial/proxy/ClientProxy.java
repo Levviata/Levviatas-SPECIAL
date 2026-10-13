@@ -1,6 +1,8 @@
 package com.levviata.lspecial.proxy;
 
 import com.levviata.lspecial.LSPECIALMod;
+import com.levviata.lspecial.PlayerModelScaleHandler;
+import net.minecraftforge.common.MinecraftForge;
 import com.levviata.lspecial.Tags;
 import com.levviata.lspecial.network.SyncSPECIALStatsPacket;
 import com.levviata.lspecial.network.SyncSPECIALStatsSetter;
@@ -18,6 +20,7 @@ public class ClientProxy extends CommonProxy { // client only
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
+        MinecraftForge.EVENT_BUS.register(new PlayerModelScaleHandler());
         if (com.levviata.lspecial.LSPECIALConfig.toggleSpecial) ClientRegistry.registerKeyBinding(toggleSpecial);
         LSPECIALMod.NETWORK.registerMessage(SyncSPECIALStatsSetter.class, SyncSPECIALStatsPacket.class, 1, Side.CLIENT);
     }

@@ -9,6 +9,7 @@ import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -21,6 +22,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import java.util.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import static com.levviata.lspecial.LSPECIALMod.LOGGER;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
@@ -160,7 +162,7 @@ public class StatsLogic {
         }
 
         // endurance
-        // todo at level 5 make health scale player model size, x0.25 increase per one extra full heart after that level
+        // todo at level 5 make health scale player model size (dont touch the hitbox), x0.25 increase per one extra full heart after that level
         IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
         if (inst.getEnduranceScore().getScorePoints() != previousHealth || player.getMaxHealth() != previousHealth) {
             previousHealth = inst.getEnduranceScore().getScorePoints();
@@ -173,7 +175,7 @@ public class StatsLogic {
         }
 
         // charisma
-        // todo make mobs turn neutral at level 5 and make villagers drop their prices in half
+        // todo make mobs turn neutral at level 5 and make villagers drop their prices in half,
         IAttributeInstance armor = player.getEntityAttribute(SharedMonsterAttributes.ARMOR);
         IAttributeInstance armorToughness = player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS);
         if (inst.getCharismaScore().getScorePoints() != previousCharisma) {
@@ -221,7 +223,8 @@ public class StatsLogic {
         //originalFlySpeed = player.capabilities.getFlySpeed();
 
         // perception, intelligence, and luck
-        // todo make perception increase found loot by copying once non stackable items (in the found loot inventory) x2 at level 5 and x3 at level 10, make luck reduce armor durability lose on chance
+        // todo make perception increase found loot by copying once non stackable items (in the found loot inventory) x2 at level 5 and x3 at level 10 with luck also at level 10. Above 15 now increase +1% armor threshold negation (BulletConfig)
+        // todo Make luck reduce armor durability lose on chance (1 point = 0.025% chance, make it configurable), at level 5 armor with 1 durability should be unequipped once as a fail safe, at level 10, while pairing with perception, make a special loot table spawn inside found loot as well (only once though), make a list of common blocks (like or common loot table where these items shouldnt appear (configurable)
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
             ItemGunBaseNT.setWear(heldStack , 0, 0);
@@ -236,27 +239,42 @@ public class StatsLogic {
             }
         }
 
-        if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT) {
-            if (!modified || !ItemStack.areItemStacksEqual(modifiedGun, heldStack)) {
-                // clean for this cycle
-                if (modified) {
-                    cleanGun(heldStack, player);
-                }
+        // todo i keep getting a bunch of errors about "cannot be cast to com.hbm.items.weapon.sedna.ItemGunBaseNT", since all ItemGunBaseNT are extending Item work from there. OR since this is new, it might definitely be because of the for loops in cleanGun(), that's the most likely abnormality! it keeps happening yeah remove it
+        if (heldStack.getItem() != ItemStack.EMPTY.getItem() || heldStack.getItem() != Items.AIR) {
+            if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT) {
+                if (!modified || !ItemStack.areItemStacksEqual(modifiedGun, heldStack)) {
+                    // todo fix akimbo guns, the first gun increments in damage constantly and the second gun does not get an increase, second gun seems it gets it's damage increased but then its cleaned. Maybe this applies to other modifications, could be a deeper logical fallacy
+                    ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
+                    int configs = gun.getConfigCount();
+                    // clean for this cycle
+                    if (modified) {
+                        // this for loop was recently added to try and fix the akimbo gun problem
+                        for (gunIndex = 0; gunIndex < configs; gunIndex++) {
+                            cleanGun(heldStack, player);
+                            LOGGER.info("modifying {}", gunIndex);
+                        }
+                    }
 
+                    for (gunIndex = 0; gunIndex < configs; gunIndex++) {
+                        // modify guns using their unique gun config
+                        // akimbo guns have two configs so this loop would trigger twice, modifying both
+                        modifyGuns(heldStack, player, gun.getConfig(heldStack, gunIndex));
+                        LOGGER.info("modifying {}", gunIndex);
+                    }
+
+                    modifiedGun = heldStack.copy();
+                    modified = true;
+                }
+            } else if (modified) {
                 ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
                 int configs = gun.getConfigCount();
+                //clean for next cycle
+                // this for loop was recently added to try and fix the akimbo gun problem
                 for (gunIndex = 0; gunIndex < configs; gunIndex++) {
-                    // modify guns using their unique gun config
-                    // akimbo guns have two configs so this loop would trigger twice, modifying both
-                    modifyGuns(heldStack, player, gun.getConfig(heldStack, gunIndex));
+                    cleanGun(heldStack, player);
+                    LOGGER.info("modifying {}", gunIndex);
                 }
-
-                modifiedGun = heldStack.copy();
-                modified = true;
             }
-        } else if (modified) {
-            //clean for next cycle
-            cleanGun(heldStack, player);
         }
 
         givePotions(player);
@@ -268,13 +286,16 @@ public class StatsLogic {
         }
 
         Receiver[] receivers = cfg.getReceivers(heldStack);
+        LOGGER.info("cfg is: {}, gunindex: {}", cfg, gunIndex);
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5) {
             ItemGunBaseNT.setWear(heldStack, 0, 0);
         }
 
         modifiedReceiver = receivers[0];
+        LOGGER.info("receivers: {}", receivers);
 
+        // todo also check if getType() actually returns BulletConfig, otherwise return
         BulletConfig bConfig = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
 
         setOriginalValues(bConfig, modifiedReceiver, heldStack);
@@ -319,25 +340,85 @@ public class StatsLogic {
         }
         recIn.delay(modifiedDelay);
 
+        // NOTE: some of this perk are intended to be applied on top of existing weapon mods so take care into perk <-> weapon mod compatibility
         if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getIntelligenceScore().getScorePoints() >= 5) { // lesser perk
-            recIn.auto(true);
             if (!heldStack.isEmpty()) {
                 String rName = String.valueOf(heldStack.getItem().getRegistryName());
                 if (LSPECIALConfig.pepperboxPerk && rName.equals("hbm:gun_pepperbox")) {
+                    // todo make this be bound to second fire
                     recIn.rounds(6);
+                }
+                if (rName.equals("hbm:gun_light_revolver")) { // todo remove from the higher perk revolver list in the config too
+                    // todo make it rapid fire on second fire, this means that the full mag should empty one shot at the time until its completely empty (like a cowboy rapid firing), cant be stopped by the player (don't let them switch guns too)
+                }
+                if (rName.equals("hbm:gun_tau")) {
+                    // todo fix charged second fire dealing less that rapid fire, it should deal about x3 compared to rapid fire
                 }
                 if (rName.equals("hbm:gun_lag")) {
                     // todo make right click shift click run empty mag animation to shoot yourself, should trigger death as if it was a /kill command
+                    // todo make it shoot three round in a row on second fire, should be %33 base damage per shot. the gun should also have a delay of 16 when shotting like that
+                }
+                if (rName.equals("hbm:gun_maresleg")) { // if case also for gun_liberator, gun_autoshotgun, gun_congolake, gun_am180
+                    // todo make second fire scope like how The Heretic does it, the spread should be tighter too
+                }
+                if (rName.equals("hbm:gun_star_f")) { // also for the akimbo variety
+                    // todo on crouch right click, make it use .50 bmg rounds (can be switched back), should not be affected by auto(true), increase delay to 1 sec
+                }
+                if (rName.equals("hbm:gun_flamer")) {
+                    // todo make second fire shoot like Team Fortress 2 Phlogistinator
                 }
             }
         }
-        if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && inst.getIntelligenceScore().getScorePoints() >= 10) { // higher perk
+        if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && inst.getIntelligenceScore().getScorePoints() >= 15) { // higher perk
+            recIn.auto(true);
             if (!heldStack.isEmpty()) {
                 String rName = String.valueOf(heldStack.getItem().getRegistryName());
                 if (LSPECIALConfig.revolverPerk && r.contains(rName) ) { // match to all revolvers, thought of madness combat revolvers doing hell damage, so it's in
                     // todo config for these bonuses
                     bC.doesPenetrate = true;
                     bC.setHeadshot(3);
+                }
+                if (LSPECIALConfig.pepperboxPerk && rName.equals("hbm:gun_pepperbox")) {
+                    // todo on crouch right click make it use .44 magnum, can be switched back
+                }
+                if (rName.equals("hbm:gun_uzi")) { // also applies to akimbo variety
+                    // todo on crouch right click make it use 5.56mm, can be switched back, delay set as 2
+                }
+                if (rName.equals("hbm:gun_g3")) { // also applies to akimbo variety
+                    // todo on crouch right click make it use 10 gauge, can be switched back, delay set as 10
+                }
+                if (rName.equals("hbm:gun_laser_pistol_pew_pew")) {
+                    // todo increase total capacity to 30
+                }
+                if (rName.equals("hbm:gun_minigun")) { // also for dual miniguns
+                    // todo on second fire make it shoot lasers but with delay set as 4
+                }
+                if (rName.equals("hbm:gun_fatman")) {
+                    // todo increase total capacity to 3 but set delay to 4 seconds (in ticks)
+                }
+                if (rName.equals("hbm:gun_stinger")) { // also for gun_quadro, gun_panzerschreck, and gun_missile_launcher
+                    // todo make it deal no self damage
+                }
+                if (rName.equals("hbm:gun_carbine")) {
+                    // todo reduce recoil by half, increase capacity to 30, second fire should shot one round at a time
+                }
+                if (rName.equals("hbm:gun_drill")) {
+                    // todo increase total capacity by +4000mB, should be added onto possible Canister weapon mod upgrade
+                }
+                if (rName.equals("hbm:gun_flamer_topaz")) {
+                    // todo make second fire shoot like Team Fortress 2 Dragon's Fury
+                }
+                if (rName.equals("hbm:gun_double_barrel")) {
+                    // todo make a system that lets you grapple to entities on second fire, this should be like Doom Eternal's double barrel grapple upgrade.
+                    //  On an entity there should be the gun crosshair plus a V mark, on fire the chain (a set of "o-o-o-o" texts based on the length from the player to the entity grabbed) will propulse the player towards the entity,
+                    //  the player should be able to then fire their shotgun and kill the enemy
+                }
+                if (rName.equals("hbm:gun_henry_lincoln")) {
+                    // todo make it fire three shots in a row on second fire with %33 base damage per shot
+                }
+                // balance
+                if (rName.equals("hbm:gun_laser_pistol")) {
+                    // todo set delay to 10
                 }
             }
         }

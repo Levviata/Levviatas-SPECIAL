@@ -34,6 +34,7 @@ public final class LSPECIALConfig {
     private static final String CLIENT = "7_client";
     private static final String COMMANDS = "8_commands";
     private static final String ADV = "9_advanced";
+    private static final String PERKS = "10_perks_gui";
 
     public static boolean strength = true;
     public static boolean perception = true;
@@ -67,6 +68,11 @@ public final class LSPECIALConfig {
     public static boolean toggleSpecial = true;
     public static boolean showSystemStatusInfo = true;
     public static boolean showRandomFooter = true;
+    public static boolean showPerkScreens = true;
+    public static boolean showPerkTierHint = true;
+    public static boolean enduranceModelScaling = true;
+    public static double enduranceModelScalePerHeart = 0.25;
+    public static double enduranceModelScaleThresholdHearts = 10.0;
 
     public static String systemStatusText = "SYSTEM STATUS";
     public static String neuralLinkText = "LEVVIATA NEURA-LINK  //  ACTIVE";
@@ -192,6 +198,11 @@ public final class LSPECIALConfig {
         toggleSpecial = b(CLIENT, "toggleSpecial", true, "Enable toggleSpecial keybind");
         showSystemStatusInfo = b(CLIENT, "showSystemStatusInfo", true, "Show the SYSTEM STATUS and 'Neura-Link' information in the stats screen");
         showRandomFooter = b(CLIENT, "showRandomFooter", true, "Show the randomized footer in the stats screen");
+        enduranceModelScaling = b(STATS, "enduranceModelScaling", true, "Scale the rendered player model from Endurance health without changing the hitbox");
+        enduranceModelScalePerHeart = d(STATS, "enduranceModelScalePerHeart", 0.25, 0, 5, "Rendered model scale added per full heart above the threshold");
+        enduranceModelScaleThresholdHearts = d(STATS, "enduranceModelScaleThresholdHearts", 10.0, 0, 2048, "Maximum-health hearts at which Endurance model scaling begins");
+        showPerkScreens = b(PERKS, "showPerkScreens", true, "Allow clicking a SPECIAL row to open its perk overlay");
+        showPerkTierHint = b(PERKS, "showPerkTierHint", true, "Show the Lesser/Higher perk level explanation");
         systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in the stats screen");
         neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  ACTIVE", "Text used for the 'Neura-Link' line in the stats screen");
         randomFooterMessages = s(CLIENT, "randomFooterMessages", randomFooterMessages, "Random footer options separated by |. Leave empty to show no random message.");
@@ -254,7 +265,7 @@ public final class LSPECIALConfig {
         gunWearFormula = s(ADV, "gunWearFormula", gunWearFormula, "Variables: intelligence, originalWear; output is reduction fraction");
 
         for (String category : Arrays.asList(
-                STATS, BOB, GUNS, POTIONS, RECIPES, MESSAGES, CLIENT, COMMANDS, ADV)) {
+                STATS, BOB, GUNS, POTIONS, RECIPES, MESSAGES, CLIENT, COMMANDS, ADV, PERKS)) {
             config.setCategoryComment(category, categoryComment(category));
         }
 
@@ -265,6 +276,8 @@ public final class LSPECIALConfig {
 
     private static String categoryComment(String category) {
         switch (category) {
+            case PERKS:
+                return "Client-side perk overlay settings.";
             case ADV:
                 return "Arithmetic expressions support + - * / %, parentheses, variables, min/max/abs/sqrt/floor/ceil/round.";
             case POTIONS:
@@ -315,7 +328,7 @@ public final class LSPECIALConfig {
     public static GuiScreen gui(GuiScreen parent) {
         List<IConfigElement> elements = new ArrayList<>();
 
-        for (String categoryName : Arrays.asList(STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV)) {
+        for (String categoryName : Arrays.asList(STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV, PERKS)) {
             ConfigCategory category = config.getCategory(categoryName);
             elements.add(new ConfigElement(category));
         }
