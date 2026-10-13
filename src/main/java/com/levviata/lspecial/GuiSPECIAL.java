@@ -60,6 +60,8 @@ public class GuiSPECIAL extends GuiScreen {
         return available.get(new java.util.Random().nextInt(available.size()));
     }
 
+    // todo make a clickable row inside stats that have perks, will be separated in Lesser and Higher perk, this will then show another screen with the current GUI style, this screen will be over the SPECIAL screen and it should be smaller, if possible also make it scrollable (mouse, keyboard, and joystick)
+    //  when this is added i want you to add the new perks to each stat's description
     private void rebuildRows() {
         rows.clear();
 
@@ -209,6 +211,7 @@ public class GuiSPECIAL extends GuiScreen {
                 : "S.P.E.C.I.A.L";
         drawString(fontRenderer, heading, infoLeft + 8, infoTop + 29, AMBER_BRIGHT);
 
+        // todo make another row that says "Lesser perks are usually obtained at level 5 while Higher perks are acquired at level 10-15"
         String description = selectedRow >= 0 && selectedRow < rows.size()
                 ? rows.get(selectedRow).description
                 : "Select a stat to see what it does.";
