@@ -1,11 +1,22 @@
 {
-	"package": "",
-	"required": false,
-	"refmap": "mixins.lspecial.refmap.json",
-	"target": "@env(DEFAULT)",
-	"minVersion": "0.8.5",
-	"compatibilityLevel": "JAVA_8",
-	"mixins": [],
-	"server": [],
-	"client": []
+    "package": "com.levviata.lspecial.mixin",
+    "required": false,
+    "refmap": "mixins.lspecial.refmap.json",
+    "target": "@env(DEFAULT)",
+    "minVersion": "0.8.5",
+    "compatibilityLevel": "JAVA_8",
+    "mixins": [
+        "MixinReceiver",
+        "MixinLightRevolverRapidFire",
+        "MixinMagazineSingleTypeBase",
+        "MixinMagazineBelt",
+        "MixinMagazineFluid",
+        "MixinWeaponSecondary",
+        "MixinStingerProjectile",
+        "MixinLootTable",
+        "MixinLootContainer",
+        "MixinDragonFuryProjectile"
+    ],
+    "server": [],
+    "client": []
 }

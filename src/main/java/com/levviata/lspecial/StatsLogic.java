@@ -44,11 +44,16 @@ public class StatsLogic {
     //private static final UUID LUCK_UUID = UUID.fromString("18b4f6d0-8ec1-4cba-a57e-52d6f83a7808");
     private static final String nameIn = "Lev Attribute Modifier";
 
-    private int previousHealth = -1;
+    private int previousEndurance = -1;
+    private float previousMaxHealth = Float.NaN;
     private int previousCharisma = -1;
     private int previousAgility = -1;
+    private boolean previousEnduranceEnabled = true;
+    private boolean previousCharismaEnabled = true;
+    private boolean previousAgilityEnabled = true;
 
     private ItemStack modifiedGun = ItemStack.EMPTY;
+    private ItemStack modifiedStackRef = ItemStack.EMPTY;
     private Receiver modifiedReceiver;
     private boolean modified;
     private boolean installedMagazine;
@@ -56,8 +61,11 @@ public class StatsLogic {
     private int originalDelay;
     private int originalProjectileAmount;
     private float originalAmmoPiercing;
+    private float originalArmorThresholdNegation;
+    private float previousFlySpeed = Float.NaN;
     private float originalWear;
     private IMagazine originalMagazine;
+    private final List<GunState> gunStates = new ArrayList<>();
 
     private ItemStack wearTrackedStack;
     private float previousObservedWear = Float.NaN;
@@ -115,7 +123,7 @@ public class StatsLogic {
 
         inst.scoreboard = player.getEntityWorld().getScoreboard();
 
-        // WARNING if the scores or scoreboards don't start, the mod is useless
+        // wARNING if the scores or scoreboards don't start, the mod is useless
         inst.startBoards();
         inst.startScores(player);
 
@@ -146,40 +154,39 @@ public class StatsLogic {
         }
 
         // strength
-        // todo make the new damage be properly shown on held items with the literal format (Original + Bonus Attack Damage), make config option to mix the numbers
         IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
+        Collection<AttributeModifier> damageCollection = heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
 
-        if (!heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName()).isEmpty()) {
-            Collection<AttributeModifier> damageCollection = heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
-
-            double damage = 1 + damageCollection.iterator().next().getAmount();
-
-            strength.removeModifier(ATTACK_DAMAGE_UUID);
-
-            double newDamage = damage + (LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getStrengthScore().getScorePoints()) : 0);
-
-            strength.applyModifier(new AttributeModifier(ATTACK_DAMAGE_UUID, nameIn, newDamage, 0));
+        // the player's attack attribute already has its vanilla base value of 1.0.
+        // this UUID replaces the held-item modifier, so only the item's modifier amount belongs here.
+        double baseHeldDamage = 0.0;
+        if (damageCollection != null && !damageCollection.isEmpty()) {
+            baseHeldDamage = damageCollection.iterator().next().getAmount();
         }
+        strength.removeModifier(ATTACK_DAMAGE_UUID);
+        double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getStrengthScore().getScorePoints()) : 0.0;
+        strength.applyModifier(new AttributeModifier(ATTACK_DAMAGE_UUID, nameIn, baseHeldDamage + strengthBonus, 0));
 
         // endurance
-        // todo at level 5 make health scale player model size (dont touch the hitbox), x0.25 increase per one extra full heart after that level
         IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
-        if (inst.getEnduranceScore().getScorePoints() != previousHealth || player.getMaxHealth() != previousHealth) {
-            previousHealth = inst.getEnduranceScore().getScorePoints();
-
+        int enduranceScore = inst.getEnduranceScore().getScorePoints();
+        if (enduranceScore != previousEndurance || previousEnduranceEnabled != LSPECIALConfig.endurance || Float.isNaN(previousMaxHealth) || Math.abs(player.getMaxHealth() - previousMaxHealth) > 0.001F) {
+            previousEndurance = enduranceScore;
             maxHealth.removeModifier(MAX_HEALTH_UUID);
-
             if (LSPECIALConfig.endurance) {
-                maxHealth.applyModifier(new AttributeModifier(MAX_HEALTH_UUID, nameIn, expression(LSPECIALConfig.enduranceFormula, "endurance", inst.getEnduranceScore().getScorePoints() * 2), 0));
+                maxHealth.applyModifier(new AttributeModifier(MAX_HEALTH_UUID, nameIn,
+                        expression(LSPECIALConfig.enduranceFormula, "endurance", enduranceScore * 2), 0));
             }
+            previousMaxHealth = player.getMaxHealth();
+            previousEnduranceEnabled = LSPECIALConfig.endurance;
         }
 
         // charisma
-        // todo make mobs turn neutral at level 5 and make villagers drop their prices in half,
         IAttributeInstance armor = player.getEntityAttribute(SharedMonsterAttributes.ARMOR);
         IAttributeInstance armorToughness = player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS);
-        if (inst.getCharismaScore().getScorePoints() != previousCharisma) {
+        if (inst.getCharismaScore().getScorePoints() != previousCharisma || previousCharismaEnabled != LSPECIALConfig.charisma) {
             previousCharisma = inst.getCharismaScore().getScorePoints();
+            previousCharismaEnabled = LSPECIALConfig.charisma;
 
             armor.removeModifier(ARMOR_UUID);
             armorToughness.removeModifier(ARMOR_TOUGHNESS_UUID);
@@ -194,7 +201,8 @@ public class StatsLogic {
 
         // agility
         IAttributeInstance movementSpeed = player.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED);
-        if (inst.getAgilityScore().getScorePoints() != previousAgility || getPlayerSpeed(player) != -1 && inst.getAgilityScore().getScorePoints() != getPlayerSpeed(player)) {
+        if (inst.getAgilityScore().getScorePoints() != previousAgility || previousAgilityEnabled != LSPECIALConfig.agility || getPlayerSpeed(player) != -1 && inst.getAgilityScore().getScorePoints() != getPlayerSpeed(player)) {
+            previousAgilityEnabled = LSPECIALConfig.agility;
             if (getPlayerSpeed(player) > -1) {
                 previousAgility = getPlayerSpeed(player);
             } else {
@@ -203,28 +211,37 @@ public class StatsLogic {
 
             movementSpeed.removeModifier(MOVEMENT_SPEED_UUID);
 
-            // operationIn: multiplicative
+            // operationin: multiplicative
             // 7.5% increase per point up to 75%
             if (LSPECIALConfig.agility) {
                 double agilityValue = getPlayerSpeed(player) > -1 ? getPlayerSpeed(player) : inst.getAgilityScore().getScorePoints();
                 movementSpeed.applyModifier(new AttributeModifier(MOVEMENT_SPEED_UUID, nameIn, expression(LSPECIALConfig.agilityFormula, "agility", agilityValue), 1));
             }
-            // todo fix fly speed
-/*          this sucks, its either too fast or too slow
-            float def = 0.05f;
-            player.capabilities.setFlySpeed(def);
-            // im not sure if this works, if it doesnt, maybe sync problems?
-            if (getPlayerFlySpeed(player) > -1) {
-                player.capabilities.setFlySpeed(player.capabilities.getFlySpeed() * (getPlayerFlySpeed(player) / 0.075f));
-            } else {
-                player.capabilities.setFlySpeed(player.capabilities.getFlySpeed() * (inst.getAgilityScore().getScorePoints() / 0.075f));
-            }*/
+
         }
-        //originalFlySpeed = player.capabilities.getFlySpeed();
+
+        // flying speed is based on vanilla's 0.05 capability speed and is recalculated, never compounded.
+        float baseFlySpeed = 0.05F;
+        float flySpeed = baseFlySpeed;
+        if (LSPECIALConfig.agility && LSPECIALConfig.agilityFlyingSpeed) {
+            double agilityValue = getPlayerSpeed(player) > -1 ? getPlayerSpeed(player) : inst.getAgilityScore().getScorePoints();
+            double multiplierBonus = expression(LSPECIALConfig.agilityFlyingSpeedFormula, "agility", agilityValue);
+            double minimum = Math.min(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
+            double maximum = Math.max(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
+            flySpeed = (float)Math.max(minimum, Math.min(maximum, baseFlySpeed * (1.0 + multiplierBonus)));
+        }
+        if (Float.isNaN(previousFlySpeed) || Math.abs(player.capabilities.getFlySpeed() - flySpeed) > 0.0001F) {
+            player.capabilities.setFlySpeed(flySpeed);
+            previousFlySpeed = flySpeed;
+            if (player instanceof net.minecraft.entity.player.EntityPlayerMP) {
+                player.sendPlayerAbilities();
+            }
+        }
 
         // perception, intelligence, and luck
-        // todo make perception increase found loot by copying once non stackable items (in the found loot inventory) x2 at level 5 and x3 at level 10 with luck also at level 10. Above 15 now increase +1% armor threshold negation (BulletConfig)
-        // todo Make luck reduce armor durability lose on chance (1 point = 0.025% chance, make it configurable), at level 5 armor with 1 durability should be unequipped once as a fail safe, at level 10, while pairing with perception, make a special loot table spawn inside found loot as well (only once though), make a list of common blocks (like or common loot table where these items shouldnt appear (configurable)
+        // NTM's development jar has no exposed "found loot inventory" API or special loot-table
+        // registration point, so found-loot duplication and one-time special-loot injection remain blocked.
+        // armor-threshold negation is applied below through BulletConfig when the gun is modified.
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
             ItemGunBaseNT.setWear(heldStack , 0, 0);
@@ -239,41 +256,34 @@ public class StatsLogic {
             }
         }
 
-        // todo i keep getting a bunch of errors about "cannot be cast to com.hbm.items.weapon.sedna.ItemGunBaseNT", since all ItemGunBaseNT are extending Item work from there. OR since this is new, it might definitely be because of the for loops in cleanGun(), that's the most likely abnormality! it keeps happening yeah remove it
-        if (heldStack.getItem() != ItemStack.EMPTY.getItem() || heldStack.getItem() != Items.AIR) {
+        // restore modifications as soon as the selected stack changes, becomes empty, or the feature is disabled.
+        if (modified && (heldStack.isEmpty() || !LSPECIALConfig.modifyGuns
+                || !(heldStack.getItem() instanceof ItemGunBaseNT)
+                || modifiedStackRef != heldStack)) {
+            cleanGun(modifiedStackRef, player);
+        }
+
+        if (!heldStack.isEmpty() && heldStack.getItem() != Items.AIR) {
             if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT) {
-                if (!modified || !ItemStack.areItemStacksEqual(modifiedGun, heldStack)) {
-                    // todo fix akimbo guns, the first gun increments in damage constantly and the second gun does not get an increase, second gun seems it gets it's damage increased but then its cleaned. Maybe this applies to other modifications, could be a deeper logical fallacy
+                if (!modified || modifiedStackRef != heldStack) {
                     ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
                     int configs = gun.getConfigCount();
-                    // clean for this cycle
-                    if (modified) {
-                        // this for loop was recently added to try and fix the akimbo gun problem
-                        for (gunIndex = 0; gunIndex < configs; gunIndex++) {
-                            cleanGun(heldStack, player);
-                            LOGGER.info("modifying {}", gunIndex);
-                        }
-                    }
+                    // restore the previous item once before applying changes to a newly held stack.
+                    if (modified) cleanGun(modifiedStackRef, player);
 
                     for (gunIndex = 0; gunIndex < configs; gunIndex++) {
                         // modify guns using their unique gun config
                         // akimbo guns have two configs so this loop would trigger twice, modifying both
                         modifyGuns(heldStack, player, gun.getConfig(heldStack, gunIndex));
-                        LOGGER.info("modifying {}", gunIndex);
                     }
 
                     modifiedGun = heldStack.copy();
+                    modifiedStackRef = heldStack;
                     modified = true;
                 }
             } else if (modified) {
-                ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
-                int configs = gun.getConfigCount();
-                //clean for next cycle
-                // this for loop was recently added to try and fix the akimbo gun problem
-                for (gunIndex = 0; gunIndex < configs; gunIndex++) {
-                    cleanGun(heldStack, player);
-                    LOGGER.info("modifying {}", gunIndex);
-                }
+                // the held item changed or gun modification was disabled. Never cast a non-gun item.
+                cleanGun(modifiedStackRef, player);
             }
         }
 
@@ -286,17 +296,19 @@ public class StatsLogic {
         }
 
         Receiver[] receivers = cfg.getReceivers(heldStack);
-        LOGGER.info("cfg is: {}, gunindex: {}", cfg, gunIndex);
+        if (receivers == null || receivers.length == 0 || receivers[0] == null) return;
+        LOGGER.debug("Applying gun config {} at index {}", cfg, gunIndex);
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5) {
             ItemGunBaseNT.setWear(heldStack, 0, 0);
         }
 
         modifiedReceiver = receivers[0];
-        LOGGER.info("receivers: {}", receivers);
 
-        // todo also check if getType() actually returns BulletConfig, otherwise return
-        BulletConfig bConfig = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
+        if (modifiedReceiver.getMagazine(heldStack) == null) return;
+        Object ammoType = modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
+        if (!(ammoType instanceof BulletConfig)) return;
+        BulletConfig bConfig = (BulletConfig) ammoType;
 
         setOriginalValues(bConfig, modifiedReceiver, heldStack);
 
@@ -314,7 +326,14 @@ public class StatsLogic {
     private void processReceiver(Receiver recIn, float ogDmg, int ogDelay, ItemStack heldStack, EntityPlayer player) {
         recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPerceptionScore().getScorePoints(), "originalDamage", (double)ogDmg) : 0)));
 
-        BulletConfig bC = (BulletConfig) recIn.getMagazine(heldStack).getType(heldStack, player.inventory);
+        if (recIn.getMagazine(heldStack) == null) return;
+        Object ammoType = recIn.getMagazine(heldStack).getType(heldStack, player.inventory);
+        if (!(ammoType instanceof BulletConfig)) return;
+        BulletConfig bC = (BulletConfig) ammoType;
+        if (LSPECIALConfig.perception && LSPECIALConfig.perceptionArmorThresholdNegation && inst.getPerceptionScore().getScorePoints() > LSPECIALConfig.perceptionArmorThresholdNegationLevel) {
+            double addedNegation = (inst.getPerceptionScore().getScorePoints() - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
+            bC.armorThresholdNegation = (float)Math.min(1.0, originalArmorThresholdNegation + addedNegation);
+        }
         ItemStack ammoStack;
         if (bC.ammo != null) {
             ItemStack c = bC.ammo.getStack();
@@ -340,32 +359,27 @@ public class StatsLogic {
         }
         recIn.delay(modifiedDelay);
 
-        // NOTE: some of this perk are intended to be applied on top of existing weapon mods so take care into perk <-> weapon mod compatibility
+        // nOTE: some of this perk are intended to be applied on top of existing weapon mods so take care into perk <-> weapon mod compatibility
         if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getIntelligenceScore().getScorePoints() >= 5) { // lesser perk
             if (!heldStack.isEmpty()) {
                 String rName = String.valueOf(heldStack.getItem().getRegistryName());
-                if (LSPECIALConfig.pepperboxPerk && rName.equals("hbm:gun_pepperbox")) {
-                    // todo make this be bound to second fire
+                if (LSPECIALConfig.pepperboxPerk && LSPECIALConfig.pepperboxSixShotPerk && rName.equals("hbm:gun_pepperbox")) {
                     recIn.rounds(6);
                 }
-                if (rName.equals("hbm:gun_light_revolver")) { // todo remove from the higher perk revolver list in the config too
-                    // todo make it rapid fire on second fire, this means that the full mag should empty one shot at the time until its completely empty (like a cowboy rapid firing), cant be stopped by the player (don't let them switch guns too)
+                if (rName.equals("hbm:gun_light_revolver")) { // special firing mode requires an NTM secondary-fire hook
+                    // forced rapid-fire lock needs a server-side firing scheduler and inventory-switch cancellation; see IMPLEMENTATION_STATUS.md.
                 }
                 if (rName.equals("hbm:gun_tau")) {
-                    // todo fix charged second fire dealing less that rapid fire, it should deal about x3 compared to rapid fire
+                    // handled by MixinReceiver with a configurable secondary damage multiplier.
                 }
                 if (rName.equals("hbm:gun_lag")) {
-                    // todo make right click shift click run empty mag animation to shoot yourself, should trigger death as if it was a /kill command
-                    // todo make it shoot three round in a row on second fire, should be %33 base damage per shot. the gun should also have a delay of 16 when shotting like that
+                    // handled by MixinWeaponSecondary when crouch-secondary is pressed.
+                    // handled by MixinReceiver using NTM receiver values while secondary fire is held.
                 }
-                if (rName.equals("hbm:gun_maresleg")) { // if case also for gun_liberator, gun_autoshotgun, gun_congolake, gun_am180
-                    // todo make second fire scope like how The Heretic does it, the spread should be tighter too
-                }
-                if (rName.equals("hbm:gun_star_f")) { // also for the akimbo variety
-                    // todo on crouch right click, make it use .50 bmg rounds (can be switched back), should not be affected by auto(true), increase delay to 1 sec
+                if (rName.equals("hbm:gun_star_f")) { // alternate .50 BMG mode is handled by MixinWeaponSecondary.
                 }
                 if (rName.equals("hbm:gun_flamer")) {
-                    // todo make second fire shoot like Team Fortress 2 Phlogistinator
+                    // the Phlogistinator-style flame mode needs custom projectile behavior; see IMPLEMENTATION_STATUS.md.
                 }
             }
         }
@@ -373,77 +387,79 @@ public class StatsLogic {
             recIn.auto(true);
             if (!heldStack.isEmpty()) {
                 String rName = String.valueOf(heldStack.getItem().getRegistryName());
-                if (LSPECIALConfig.revolverPerk && r.contains(rName) ) { // match to all revolvers, thought of madness combat revolvers doing hell damage, so it's in
-                    // todo config for these bonuses
+                if (LSPECIALConfig.revolverPerk && LSPECIALConfig.revolverPenetrationPerk && r.contains(rName)) {
                     bC.doesPenetrate = true;
-                    bC.setHeadshot(3);
+                    bC.setHeadshot(LSPECIALConfig.revolverHeadshotMultiplier);
                 }
                 if (LSPECIALConfig.pepperboxPerk && rName.equals("hbm:gun_pepperbox")) {
-                    // todo on crouch right click make it use .44 magnum, can be switched back
+                    // alternate .44 FMJ mode is handled by MixinWeaponSecondary.
                 }
-                if (rName.equals("hbm:gun_uzi")) { // also applies to akimbo variety
-                    // todo on crouch right click make it use 5.56mm, can be switched back, delay set as 2
+                if (rName.equals("hbm:gun_uzi")) { // alternate 5.56 mm mode is handled by MixinWeaponSecondary.
                 }
-                if (rName.equals("hbm:gun_g3")) { // also applies to akimbo variety
-                    // todo on crouch right click make it use 10 gauge, can be switched back, delay set as 10
+                if (rName.equals("hbm:gun_g3")) { // alternate 10-gauge mode is handled by MixinWeaponSecondary.
                 }
                 if (rName.equals("hbm:gun_laser_pistol_pew_pew")) {
-                    // todo increase total capacity to 30
-                }
-                if (rName.equals("hbm:gun_minigun")) { // also for dual miniguns
-                    // todo on second fire make it shoot lasers but with delay set as 4
+                    // implemented by MixinMagazineSingleTypeBase.
                 }
                 if (rName.equals("hbm:gun_fatman")) {
-                    // todo increase total capacity to 3 but set delay to 4 seconds (in ticks)
+                    // implemented by MixinMagazineSingleTypeBase and MixinReceiver.
                 }
                 if (rName.equals("hbm:gun_stinger")) { // also for gun_quadro, gun_panzerschreck, and gun_missile_launcher
-                    // todo make it deal no self damage
+                    // self-damage suppression needs reliable weapon-origin metadata on the projectile; see IMPLEMENTATION_STATUS.md.
                 }
                 if (rName.equals("hbm:gun_carbine")) {
-                    // todo reduce recoil by half, increase capacity to 30, second fire should shot one round at a time
-                }
-                if (rName.equals("hbm:gun_drill")) {
-                    // todo increase total capacity by +4000mB, should be added onto possible Canister weapon mod upgrade
+                    // capacity is handled by MixinMagazineSingleTypeBase; recoil and semi-auto require per-weapon receiver recoil hooks.
                 }
                 if (rName.equals("hbm:gun_flamer_topaz")) {
-                    // todo make second fire shoot like Team Fortress 2 Dragon's Fury
+                    // the Dragon's Fury-style mode needs custom projectile and firing-state behavior; see IMPLEMENTATION_STATUS.md.
                 }
                 if (rName.equals("hbm:gun_double_barrel")) {
-                    // todo make a system that lets you grapple to entities on second fire, this should be like Doom Eternal's double barrel grapple upgrade.
-                    //  On an entity there should be the gun crosshair plus a V mark, on fire the chain (a set of "o-o-o-o" texts based on the length from the player to the entity grabbed) will propulse the player towards the entity,
-                    //  the player should be able to then fire their shotgun and kill the enemy
+                    // entity pulling is handled by MixinWeaponSecondary; chain rendering and the crosshair marker remain client-side enhancements.
+                    //  on an entity there should be the gun crosshair plus a V mark, on fire the chain (a set of "o-o-o-o" texts based on the length from the player to the entity grabbed) will propulse the player towards the entity,
+                    // normal primary fire remains available during and after the pull.
                 }
                 if (rName.equals("hbm:gun_henry_lincoln")) {
-                    // todo make it fire three shots in a row on second fire with %33 base damage per shot
+                    // implemented by MixinReceiver using configurable burst count and damage fraction.
                 }
                 // balance
-                if (rName.equals("hbm:gun_laser_pistol")) {
-                    // todo set delay to 10
+                if (LSPECIALConfig.laserPistolDelayBalance && rName.equals("hbm:gun_laser_pistol")) {
+                    recIn.delay(LSPECIALConfig.laserPistolDelayTicks);
                 }
             }
         }
     }
 
     public void cleanGun(ItemStack heldStack, EntityPlayer player) {
-        if (heldStack.getItem().equals(ModItems.gun_chemthrower)) {
+        if (heldStack == null || (!heldStack.isEmpty() && heldStack.getItem().equals(ModItems.gun_chemthrower))) {
+            if (gunStates.isEmpty()) resetGunTracking();
             return;
         }
 
-        if (modifiedReceiver == null) {
-            return;
+        // each akimbo/config receiver gets its own snapshot. Restoring only the final receiver
+        // was the source of the old left/right gun corruption and cumulative damage changes.
+        for (int i = gunStates.size() - 1; i >= 0; i--) {
+            GunState state = gunStates.get(i);
+            if (state.bulletConfig != null) {
+                state.bulletConfig.armorPiercingPercent = state.armorPiercing;
+                state.bulletConfig.armorThresholdNegation = state.armorThresholdNegation;
+            }
+            state.receiver.dmg(state.damage);
+            state.receiver.delay(state.delay);
+            state.receiver.rounds(state.rounds);
+            state.receiver.mag(state.magazine);
+            if (!heldStack.isEmpty() && heldStack.getItem() instanceof ItemGunBaseNT) {
+                ItemGunBaseNT.setWear(heldStack, state.index, state.wear);
+            }
         }
+        resetGunTracking();
+    }
 
-        BulletConfig bConfig = (BulletConfig) modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
-        bConfig.armorPiercingPercent = originalAmmoPiercing;
-        modifiedReceiver.dmg(originalDamage);
-        modifiedReceiver.delay(originalDelay);
-        modifiedReceiver.rounds(originalProjectileAmount);
-        modifiedReceiver.mag(originalMagazine);
-        ItemGunBaseNT.setWear(heldStack, gunIndex, originalWear);
-
+    private void resetGunTracking() {
+        gunStates.clear();
         gunIndex = 0;
         installedMagazine = false;
         modifiedGun = ItemStack.EMPTY;
+        modifiedStackRef = ItemStack.EMPTY;
         modifiedReceiver = null;
         modified = false;
     }
@@ -452,9 +468,39 @@ public class StatsLogic {
         originalWear = ItemGunBaseNT.getWear(heldStack, gunIndex);
         originalMagazine = rIn.getMagazine(heldStack);
         originalAmmoPiercing = bCIn.armorPiercingPercent;
+        originalArmorThresholdNegation = bCIn.armorThresholdNegation;
         originalDamage = rIn.getBaseDamage(heldStack);
         originalDelay = rIn.getDelayAfterFire(heldStack);
         originalProjectileAmount = rIn.getRoundsPerCycle(heldStack);
+        gunStates.add(new GunState(gunIndex, rIn, bCIn, originalDamage, originalDelay,
+                originalProjectileAmount, originalMagazine, originalWear, originalAmmoPiercing,
+                originalArmorThresholdNegation));
+    }
+
+    private static final class GunState {
+        private final int index;
+        private final Receiver receiver;
+        private final BulletConfig bulletConfig;
+        private final float damage;
+        private final int delay;
+        private final int rounds;
+        private final IMagazine magazine;
+        private final float wear;
+        private final float armorPiercing;
+        private final float armorThresholdNegation;
+
+        private GunState(int index, Receiver receiver, BulletConfig bulletConfig, float damage, int delay, int rounds, IMagazine magazine, float wear, float armorPiercing, float armorThresholdNegation) {
+            this.index = index;
+            this.receiver = receiver;
+            this.bulletConfig = bulletConfig;
+            this.damage = damage;
+            this.delay = delay;
+            this.rounds = rounds;
+            this.magazine = magazine;
+            this.wear = wear;
+            this.armorPiercing = armorPiercing;
+            this.armorThresholdNegation = armorThresholdNegation;
+        }
     }
 
     public void givePotions(EntityPlayer player) {

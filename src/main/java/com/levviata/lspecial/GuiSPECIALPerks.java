@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Small, scrollable overlay for the non-weapon SPECIAL perk descriptions. */
+/** small, scrollable overlay for the non-weapon SPECIAL perk descriptions. */
 public final class GuiSPECIALPerks extends GuiScreen {
     private static final int AMBER = 0xFFFFC45A;
     private static final int BRIGHT = 0xFFFFD477;
@@ -89,7 +89,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
 
         int innerX = x + Math.min(12, Math.max(2, w / 12));
         int innerWidth = Math.max(1, w - (innerX - x) * 2);
-        String title = fontRenderer.trimStringToWidth(stat.toUpperCase() + " // PERKS", innerWidth);
+        String title = fontRenderer.trimStringToWidth(stat.toUpperCase() + " // pERKS", innerWidth);
         drawString(fontRenderer, title, innerX, y + Math.min(12, Math.max(1, h / 10)), BRIGHT);
         if (h > 30) drawRect(x + 8, y + 28, x + w - 8, y + 29, MUTED);
 

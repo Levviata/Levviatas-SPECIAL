@@ -60,7 +60,7 @@ public class GuiSPECIAL extends GuiScreen {
         return available.get(new java.util.Random().nextInt(available.size()));
     }
 
-    // Clicking a stat opens its lesser/higher perk overlay when enabled.
+    // clicking a stat opens its lesser/higher perk overlay when enabled.
     private void rebuildRows() {
         rows.clear();
 
@@ -110,7 +110,7 @@ public class GuiSPECIAL extends GuiScreen {
         drawDefaultBackground();
         rebuildRows();
 
-        // Keep the panel and all of its content within even unusually small GUI resolutions.
+        // keep the panel and all of its content within even unusually small GUI resolutions.
         panelWidth = Math.max(1, Math.min(620, width - 24));
         panelHeight = Math.max(1, Math.min(Math.max(1, height - 16), Math.max(250, 104 + rows.size() * ROW_HEIGHT)));
         panelLeft = Math.max(0, (width - panelWidth) / 2);
@@ -150,7 +150,7 @@ public class GuiSPECIAL extends GuiScreen {
     }
 
     private void drawHeader() {
-        drawClippedString("S.P.E.C.I.A.L // CHARACTER STATS", panelLeft + 22, panelTop + 12,
+        drawClippedString("S.P.E.C.I.A.L // cHARACTER STATS", panelLeft + 22, panelTop + 12,
                 Math.max(1, panelWidth - 44), AMBER_BRIGHT);
 
         drawRect(panelLeft + 18, panelTop + 30, panelLeft + panelWidth - 18, panelTop + 31, AMBER_MUTED);
@@ -214,7 +214,6 @@ public class GuiSPECIAL extends GuiScreen {
                 : "S.P.E.C.I.A.L";
         drawClippedString(heading, infoLeft + 8, infoTop + 29, Math.max(1, infoWidth - 16), AMBER_BRIGHT);
 
-        // todo make another row that says "Lesser perks are usually obtained at level 5 while Higher perks are acquired at level 10-15"
         String description = selectedRow >= 0 && selectedRow < rows.size()
                 ? rows.get(selectedRow).description
                 : "Select a stat to see what it does.";
@@ -270,7 +269,7 @@ public class GuiSPECIAL extends GuiScreen {
         List<String> wrapped = new ArrayList<>();
         StringBuilder line = new StringBuilder();
         for (String word : text.split("\\s+")) {
-            // Split unusually long words too, so even a narrow GUI cannot overflow horizontally.
+            // split unusually long words too, so even a narrow GUI cannot overflow horizontally.
             while (fontRenderer.getStringWidth(word) > maxWidth) {
                 if (line.length() > 0) {
                     wrapped.add(line.toString());
@@ -305,7 +304,7 @@ public class GuiSPECIAL extends GuiScreen {
         return count;
     }
 
-    /** Draws a single line within its allotted width, adding an ellipsis when clipped. */
+    /** draws a single line within its allotted width, adding an ellipsis when clipped. */
     private void drawClippedString(String text, int x, int y, int maxWidth, int color) {
         if (text == null || text.isEmpty() || maxWidth <= 0) return;
         if (fontRenderer.getStringWidth(text) <= maxWidth) {

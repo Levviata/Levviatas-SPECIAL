@@ -35,7 +35,7 @@ public class LSPECIALMod {
     @SidedProxy(clientSide = "com.levviata.lspecial.proxy.ClientProxy", serverSide = "com.levviata.lspecial.proxy.ServerProxy")
     private static CommonProxy proxy;
 
-    /*@Mod.Instance
+    /*@mod.Instance
     private static LSPECIALMod inst;*/
 
     public static KeyBinding toggleSpecial = new KeyBinding(
@@ -48,7 +48,7 @@ public class LSPECIALMod {
 
     /**
      * <a href="https://cleanroommc.com/wiki/forge-mod-development/event#overview">
-     *     Take a look at how many FMLStateEvents you can listen to via the @Mod.EventHandler annotation here
+     *     take a look at how many FMLStateEvents you can listen to via the @Mod.EventHandler annotation here
      * </a>
      */
     @Mod.EventHandler
@@ -56,6 +56,7 @@ public class LSPECIALMod {
         LSPECIALConfig.init(event.getSuggestedConfigurationFile());
         MinecraftForge.EVENT_BUS.register(new BobbleheadUse());
         MinecraftForge.EVENT_BUS.register(new StatsLogic());
+        MinecraftForge.EVENT_BUS.register(new SPECIALGameplayHandler());
         MinecraftForge.EVENT_BUS.register(new SPECIALRenamer());
         MinecraftForge.EVENT_BUS.register(new GuiSPECIAL());
         MinecraftForge.EVENT_BUS.register(new LSplashText());

@@ -138,7 +138,7 @@ public class BobbleheadRecipeManager {
 
     @SubscribeEvent
     public void registerRecipes(RegistryEvent.Register<IRecipe> event) {
-        // Item registration has progressed beyond preInit by this point.
+        // item registration has progressed beyond preInit by this point.
         if (!oreDictRegistered) {
             registerOreDict();
             oreDictRegistered = true;

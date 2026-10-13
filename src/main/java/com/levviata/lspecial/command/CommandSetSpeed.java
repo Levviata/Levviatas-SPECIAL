@@ -14,7 +14,7 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
 public class CommandSetSpeed extends CommandBase {
 
-    // Each player has their own speed value
+    // each player has their own speed value
     public static final Map<UUID, Integer> playerSpeeds = new HashMap<>();
 
     @Override
@@ -35,17 +35,17 @@ public class CommandSetSpeed extends CommandBase {
     @Override
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
 
-        // Players only
+        // players only
         if (!(sender instanceof EntityPlayer)) {
             throw new CommandException("This command can only be used by players.");
         }
 
         EntityPlayer player = (EntityPlayer) sender;
 
-        // Get this player's agility score
+        // get this player's agility score
         int maxSpeed = inst.getAgilityScore().getScorePoints();
 
-        // No argument
+        // no argument
         if (args.length != 1) {
             player.sendMessage(new TextComponentString(
                     TextFormatting.YELLOW + "Usage: /setspeed <speed>. -1 to reset"
@@ -81,14 +81,14 @@ public class CommandSetSpeed extends CommandBase {
             return;
         }
 
-        // Clamp the requested value between 0 and the player's agility
+        // clamp the requested value between 0 and the player's agility
         int actualSpeed = Math.max(0, Math.min(requestedSpeed, maxSpeed));
 
         if (requestedSpeed == -1) {
             actualSpeed = -1;
         }
 
-        // Store this player's speed
+        // store this player's speed
         playerSpeeds.put(player.getUniqueID(), actualSpeed);
 
         player.sendMessage(new TextComponentString(
@@ -111,7 +111,7 @@ public class CommandSetSpeed extends CommandBase {
         return sender instanceof EntityPlayer;
     }
 
-    // Helper method for getting a player's speed
+    // helper method for getting a player's speed
     public static int getPlayerSpeed(EntityPlayer player) {
         return playerSpeeds.getOrDefault(player.getUniqueID(), -1);
     }

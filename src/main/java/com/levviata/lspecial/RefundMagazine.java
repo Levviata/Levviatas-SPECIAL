@@ -92,7 +92,7 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
             return;
         }
 
-       // int ogAmount = config.ammo.getStack().getCount();
+       // int ogamount = config.ammo.getStack().getCount();
         ItemStack refund = config.ammo.getStack().copy();
         refund.setCount(ammoDebt);
 

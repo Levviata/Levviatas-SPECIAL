@@ -7,10 +7,10 @@ public class PotionAmplifiedRegeneration extends Potion {
     public static final String AMPLIFIED_REGENERATION_NAME = "amplified_regeneration";
 
     public PotionAmplifiedRegeneration() {
-        super(false, 0xCD5CAB); // Same color as vanilla Regeneration
+        super(false, 0xCD5CAB); // same color as vanilla Regeneration
 
         setPotionName("effect." + AMPLIFIED_REGENERATION_NAME);
-        setIconIndex(7, 0); // Regeneration icon
+        setIconIndex(7, 0); // regeneration icon
     }
 
     @Override
