@@ -34,11 +34,11 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 break;
             case "Perception":
                 lines.add("LESSER PERK — Level 5");
-                lines.add("Found-loot duplication is planned for supported loot inventories.");
+                lines.add("Duplicates non-stackable loot at the configured Perception levels.");
                 lines.add("HIGHER PERK — Level 10");
-                lines.add("Higher-tier loot effects require a compatible loot-generation hook.");
+                lines.add("Higher Perception levels can duplicate loot again when supported by the loot table.");
                 lines.add("HIGHER PERK — Above level 15");
-                lines.add("Additional armor interaction depends on the NTM API.");
+                lines.add("Higher Perception can reduce the target armor threshold for supported NTM ammunition.");
                 break;
             case "Endurance":
                 lines.add("LESSER PERK — Level 5");
@@ -50,7 +50,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
             case "Charisma":
                 lines.add("LESSER PERK — Level 5");
                 lines.add("Configured entities may ignore the player when supported.");
-                lines.add("Villager trade discounts can be enabled separately.");
+                lines.add("Villager trade discounts can be enabled separately; the original emerald cost appears in the cost tooltip.");
                 lines.add("HIGHER PERK — Levels 10–15");
                 lines.add("Additional effects depend on the active configuration.");
                 break;
@@ -64,7 +64,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 lines.add("LESSER PERK — Level 5");
                 lines.add("Durability protection uses a configurable chance and cap.");
                 lines.add("HIGHER PERK — Level 10");
-                lines.add("Additional loot effects depend on a compatible loot-generation hook.");
+                lines.add("Adds extra items from loot tables matching the configured rare-table pattern.");
                 break;
             case "Intelligence":
                 lines.add("LESSER PERK — Level 5");
@@ -89,7 +89,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
 
         int innerX = x + Math.min(12, Math.max(2, w / 12));
         int innerWidth = Math.max(1, w - (innerX - x) * 2);
-        String title = fontRenderer.trimStringToWidth(stat.toUpperCase() + " // pERKS", innerWidth);
+        String title = fontRenderer.trimStringToWidth(stat.toUpperCase() + " // PERKS", innerWidth);
         drawString(fontRenderer, title, innerX, y + Math.min(12, Math.max(1, h / 10)), BRIGHT);
         if (h > 30) drawRect(x + 8, y + 28, x + w - 8, y + 29, MUTED);
 

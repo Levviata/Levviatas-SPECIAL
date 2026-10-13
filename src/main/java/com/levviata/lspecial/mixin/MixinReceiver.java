@@ -1,19 +1,22 @@
 package com.levviata.lspecial.mixin;
 
-import com.hbm.items.weapon.sedna.Receiver;
+import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.BulletConfig;
-import com.hbm.items.weapon.sedna.GunConfig;
-import com.hbm.items.weapon.sedna.mags.IMagazine;
+import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.items.weapon.sedna.Receiver;
 import com.hbm.items.weapon.sedna.factory.XFactory10ga;
-import com.hbm.items.weapon.sedna.factory.XFactory44;
 import com.hbm.items.weapon.sedna.factory.XFactory50;
 import com.hbm.items.weapon.sedna.factory.XFactory556mm;
 import com.hbm.items.weapon.sedna.factory.XFactoryEnergy;
-import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.levviata.lspecial.LSPECIALConfig;
+import com.levviata.lspecial.LSPECIALExpression;
+import com.levviata.lspecial.LSPECIALSounds;
+import com.levviata.lspecial.ReceiverStateAccess;
 import com.levviata.lspecial.SPECIALScoreboard;
-import net.minecraft.item.ItemStack;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -21,90 +24,127 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 /** applies Intelligence perk firing delays without permanently mutating NTM receiver data. */
 @Mixin(value = Receiver.class, remap = false)
-public abstract class MixinReceiver {
+public abstract class MixinReceiver implements ReceiverStateAccess {
 
     @Shadow protected int index;
+    @Shadow protected boolean refireOnHold_DNA;
+    @Shadow protected boolean refireAfterDry_DNA;
 
+    @Override
+    public boolean lspecial$getNativeRefireOnHold() {
+        return refireOnHold_DNA;
+    }
+
+    @Override
+    public boolean lspecial$getNativeRefireAfterDry() {
+        return refireAfterDry_DNA;
+    }
+
+    /** calculates firing delay from the native receiver value so switching weapons cannot retain another gun's delay. */
     @Inject(method = "getDelayAfterFire", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$applyPerkFiringDelay(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
-        if (stack == null || stack.isEmpty() || !LSPECIALConfig.intelligence
-                || stack.getItem().getRegistryName() == null || SPECIALScoreboard.inst == null
-                || SPECIALScoreboard.inst.getIntelligenceScore() == null) {
+    private void lspecial$calculateFiringDelay(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
+        if (stack == null || stack.isEmpty() || !LSPECIALConfig.modifyGuns)  {
             return;
         }
 
-        int intelligence = SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints();
-        String registryName = stack.getItem().getRegistryName().toString();
+        int delay = callback.getReturnValueI();
+        int intelligence = lspecial$getIntelligence();
+        BulletConfig activeAmmo = lspecial$getActiveAmmo(stack);
 
-        if (!LSPECIALConfig.revolverPerk || intelligence < 15
-                || !LSPECIALConfig.fatmanHigherPerk || !LSPECIALConfig.fatmanHigherPerkDelay
-                || !"hbm:gun_fatman".equals(registryName)) {
-            return;
+        if (LSPECIALConfig.intelligence && intelligence >= 0) {
+            Map<String, Double> variables = new HashMap<>();
+            variables.put("intelligence", (double) intelligence);
+            variables.put("originalDelay", (double) delay);
+            int modifiedDelay = (int) Math.round(delay - LSPECIALExpression.eval(LSPECIALConfig.bonusDelayFormula, variables, 0.0D));
+
+            if (modifiedDelay > 0 && LSPECIALConfig.buckshotDelayNerf && lspecial$isBuckshotAmmo(activeAmmo)) {
+                modifiedDelay = (int) Math.round(LSPECIALExpression.eval(
+                        LSPECIALConfig.buckshotDelayFormula, variables, (double) modifiedDelay));
+            }
+            delay = Math.max(0, modifiedDelay);
         }
-
-        callback.setReturnValue(LSPECIALConfig.fatmanHigherPerkDelayTicks);
-    }
-
-    /** disables held-button automatic refire for the Carbine while its higher perk is active. */
-    @Inject(method = "getRefireOnHold", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$makeCarbineSemiAutomatic(ItemStack stack, CallbackInfoReturnable<Boolean> callback) {
-        if (LSPECIALConfig.carbineSemiAutoPerk && lspecial$isCarbineHigherPerk(stack)) {
-            callback.setReturnValue(false);
-        }
-    }
-
-    /** keeps the Phlogistinator-style flamer on NTM's native held-fire path while its perk is active. */
-    @Inject(method = "getRefireOnHold", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$enablePhlogistinatorSustainedFire(ItemStack stack, CallbackInfoReturnable<Boolean> callback) {
-        if (LSPECIALConfig.phlogistinatorSustainedFirePerk
-                && lspecial$hasIntelligence(LSPECIALConfig.phlogistinatorSustainedFireLevel)
-                && "hbm:gun_flamer".equals(lspecial$registryId(stack))) {
-            callback.setReturnValue(true);
-        }
-    }
-
-    /** applies the configured native firing interval to the Phlogistinator-style flamer. */
-    @Inject(method = "getDelayAfterFire", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$setPhlogistinatorFireDelay(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
-        if (LSPECIALConfig.phlogistinatorSustainedFirePerk
-                && lspecial$hasIntelligence(LSPECIALConfig.phlogistinatorSustainedFireLevel)
-                && "hbm:gun_flamer".equals(lspecial$registryId(stack))) {
-            callback.setReturnValue(LSPECIALConfig.phlogistinatorFireDelayTicks);
-        }
-    }
-
-    /** applies native firing intervals only while a requested alternate caliber or energy mode is selected. */
-    @Inject(method = "getDelayAfterFire", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$applyAlternateCaliberDelay(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
-        if (stack == null || stack.isEmpty() || !LSPECIALConfig.weaponSecondaryAmmoCycling
-                || !lspecial$hasIntelligence(15)) return;
 
         String itemId = lspecial$registryId(stack);
-        if (!lspecial$isAlternateCaliberDelayWeapon(itemId)) return;
-        BulletConfig activeAmmo = lspecial$getActiveAmmo(stack);
-        if (activeAmmo == null) return;
-
-        if (lspecial$isStarF(itemId) && activeAmmo == XFactory50.bmg50_fmj) {
-            callback.setReturnValue(LSPECIALConfig.starFFiftyBmgDelayTicks);
-        } else if (lspecial$isUzi(itemId) && activeAmmo == XFactory556mm.r556_fmj) {
-            callback.setReturnValue(LSPECIALConfig.uzi556DelayTicks);
-        } else if (lspecial$isG3(itemId) && activeAmmo == XFactory10ga.g10) {
-            callback.setReturnValue(LSPECIALConfig.g3TenGaugeDelayTicks);
-        } else if (lspecial$isMinigun(itemId) && LSPECIALConfig.minigunLaserModePerk
-                && activeAmmo == XFactoryEnergy.energy_las) {
-            callback.setReturnValue(LSPECIALConfig.minigunLaserModeDelayTicks);
+        boolean secondaryHeld = lspecial$isSecondaryHeld(stack);
+        if ("hbm:gun_fatman".equals(itemId) && LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && intelligence >= 15 && LSPECIALConfig.fatmanHigherPerk && LSPECIALConfig.fatmanHigherPerkDelay) {
+            delay = LSPECIALConfig.fatmanHigherPerkDelayTicks;
+        } else if ("hbm:gun_laser_pistol".equals(itemId) && LSPECIALConfig.laserPistolDelayBalance && LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && intelligence >= 15) {
+            delay = LSPECIALConfig.laserPistolDelayTicks;
+        } else if ("hbm:gun_flamer_topaz".equals(itemId) && secondaryHeld && LSPECIALConfig.dragonsFuryDirectHitPerk && lspecial$hasIntelligence(LSPECIALConfig.dragonsFuryDirectHitLevel)) {
+            delay = LSPECIALConfig.dragonsFuryBurstDelayTicks;
+        } else if ("hbm:gun_flamer".equals(itemId) && secondaryHeld && LSPECIALConfig.phlogistinatorSustainedFirePerk && lspecial$hasIntelligence(LSPECIALConfig.phlogistinatorSustainedFireLevel)) {
+            delay = LSPECIALConfig.phlogistinatorFireDelayTicks;
+        } else if (secondaryHeld && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
+            delay = LSPECIALConfig.lagSecondaryBurstDelay;
+        } else if (LSPECIALConfig.weaponSecondaryAmmoCycling && lspecial$hasIntelligence(15) && activeAmmo != null) {
+            if (lspecial$isStarF(itemId) && activeAmmo == XFactory50.bmg50_fmj) {
+                delay = LSPECIALConfig.starFFiftyBmgDelayTicks;
+            } else if (lspecial$isUzi(itemId) && activeAmmo == XFactory556mm.r556_fmj) {
+                delay = LSPECIALConfig.uzi556DelayTicks;
+            } else if (lspecial$isG3(itemId) && activeAmmo == XFactory10ga.g10) {
+                delay = LSPECIALConfig.g3TenGaugeDelayTicks;
+            } else if (lspecial$isMinigun(itemId) && LSPECIALConfig.minigunLaserModePerk
+                    && activeAmmo == XFactoryEnergy.energy_las) {
+                delay = LSPECIALConfig.minigunLaserModeDelayTicks;
+            }
         }
+
+        callback.setReturnValue(Math.max(0, delay));
     }
 
+    /** returns the player's Intelligence score, or zero when the scoreboard is not ready. */
     @Unique
-    private static boolean lspecial$isAlternateCaliberDelayWeapon(String itemId) {
-        return lspecial$isStarF(itemId) || lspecial$isUzi(itemId) || lspecial$isG3(itemId)
-                || lspecial$isMinigun(itemId);
+    private static int lspecial$getIntelligence() {
+        return SPECIALScoreboard.inst == null || SPECIALScoreboard.inst.getIntelligenceScore() == null
+                ? 0 : SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints();
+    }
+
+    /** checks the selected ammunition configuration rather than any matching item in the inventory. */
+    @Unique
+    private static boolean lspecial$isBuckshotAmmo(BulletConfig config) {
+        if (config == null || config.ammo == null) {
+            return false;
+        }
+
+        ItemStack ammo = config.ammo.getStack();
+
+        if (ammo.isEmpty()) {
+            return false;
+        }
+
+        for (String raw : LSPECIALConfig.buckshotGaugeList.split(",")) {
+            String token = raw.trim();
+            try {
+                if (token.matches("\\d+") && ammo.getItem() == ModItems.ammo_standard
+                        && ammo.getMetadata() == Integer.parseInt(token)) return true;
+                String[] parts = token.split(":");
+                if (parts.length == 3 && "hbm".equals(parts[0]) && "ammo_secret".equals(parts[1])
+                        && ammo.getItem() == ModItems.ammo_secret
+                        && ammo.getMetadata() == Integer.parseInt(parts[2])) return true;
+            } catch (NumberFormatException ignored) {
+                // ignore malformed gauge entries in the configuration.
+            }
+        }
+        return false;
+    }
+
+    /** reads the active magazine bullet configuration without forcing an inventory-based caliber choice. */
+    @Unique
+    private BulletConfig lspecial$getActiveAmmo(ItemStack stack) {
+        IMagazine magazine = ((Receiver) (Object) this).getMagazine(stack);
+
+        if (magazine == null) {
+            return null;
+        }
+
+        Object ammo = magazine.getType(stack, null);
+        return ammo instanceof BulletConfig ? (BulletConfig) ammo : null;
     }
 
     @Unique
@@ -127,13 +167,27 @@ public abstract class MixinReceiver {
         return "hbm:gun_minigun".equals(itemId) || "hbm:gun_minigun_dual".equals(itemId);
     }
 
-    /** reads the active magazine bullet configuration for the current receiver without forcing a reload. */
-    @Unique
-    private BulletConfig lspecial$getActiveAmmo(ItemStack stack) {
-        IMagazine magazine = ((Receiver) (Object) this).getMagazine(stack);
-        if (magazine == null) return null;
-        Object ammo = magazine.getType(stack, null);
-        return ammo instanceof BulletConfig ? (BulletConfig) ammo : null;
+    /** selects the attached custom sound for a supported secondary-fire flame mode. */
+    @Inject(method = "getFireSound", at = @At("RETURN"), cancellable = true, remap = false)
+    private void lspecial$useSecondaryFlamerSound(ItemStack stack, CallbackInfoReturnable<SoundEvent> callback) {
+        if (!lspecial$isSecondaryHeld(stack)) {
+            return;
+        }
+
+        String itemId = lspecial$registryId(stack);
+        if ("hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryDirectHitPerk && lspecial$hasIntelligence(LSPECIALConfig.dragonsFuryDirectHitLevel)) {
+            callback.setReturnValue(LSPECIALSounds.DRAGONS_FURY_SHOOT);
+        } else if ("hbm:gun_flamer".equals(itemId) && lspecial$isSecondaryHeld(stack) && LSPECIALConfig.phlogistinatorSustainedFirePerk && lspecial$hasIntelligence(LSPECIALConfig.phlogistinatorSustainedFireLevel)) {
+            callback.setReturnValue(LSPECIALSounds.PHLOG_IGNITE);
+        }
+    }
+
+    /** limits the Carbine's higher-perk secondary fire to one shot per right-click press. */
+    @Inject(method = "getRefireOnHold", at = @At("RETURN"), cancellable = true, remap = false)
+    private void lspecial$carbineSecondarySemiAuto(ItemStack stack, CallbackInfoReturnable<Boolean> callback) {
+        if (LSPECIALConfig.carbineSemiAutoPerk && lspecial$isCarbineHigherPerk(stack) && lspecial$isSecondaryHeld(stack)) {
+            callback.setReturnValue(false);
+        }
     }
 
     /** scales the native Carbine recoil callback without replacing its ordinary firing implementation. */
@@ -179,11 +233,7 @@ public abstract class MixinReceiver {
         String itemId = lspecial$registryId(stack);
         float damage = callback.getReturnValue();
 
-        if ("hbm:gun_tau".equals(itemId) && LSPECIALConfig.tauSecondaryDamageBonus
-                && lspecial$hasIntelligence(5)) {
-            callback.setReturnValue((float) (damage * LSPECIALConfig.tauSecondaryDamageMultiplier));
-        } else if (("hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5))
-                || ("hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst
+        if (("hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) || ("hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst
                 && lspecial$hasIntelligence(15))) {
             callback.setReturnValue((float) (damage * LSPECIALConfig.burstProjectileDamageFraction));
         }
@@ -199,15 +249,6 @@ public abstract class MixinReceiver {
         } else if ("hbm:gun_henry_lincoln".equals(itemId)
                 && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(15)) {
             callback.setReturnValue(3);
-        }
-    }
-
-    /** applies the configured Lag secondary-fire delay without changing its primary-fire cadence. */
-    @Inject(method = "getDelayAfterFire", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$adjustLagSecondaryDelay(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
-        if (lspecial$isSecondaryHeld(stack) && "hbm:gun_lag".equals(lspecial$registryId(stack))
-                && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
-            callback.setReturnValue(LSPECIALConfig.lagSecondaryBurstDelay);
         }
     }
 
@@ -258,5 +299,4 @@ public abstract class MixinReceiver {
         return stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null
                 ? "" : stack.getItem().getRegistryName().toString();
     }
-
 }

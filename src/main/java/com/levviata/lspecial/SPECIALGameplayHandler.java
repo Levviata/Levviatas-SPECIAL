@@ -1,14 +1,14 @@
 package com.levviata.lspecial;
 
+import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.render.anim.sedna.AnimationEnums.GunAnimation;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.passive.EntityVillager;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import com.hbm.items.weapon.sedna.ItemGunBaseNT;
-import com.hbm.render.anim.sedna.AnimationEnums.GunAnimation;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -262,11 +262,21 @@ public final class SPECIALGameplayHandler {
         for (net.minecraft.village.MerchantRecipe recipe : recipes) {
             if (discountedRecipes.contains(recipe)) continue;
             ItemStack cost = recipe.getItemToBuy();
+            if (!cost.isEmpty() && cost.hasTagCompound() && cost.getTagCompound().hasKey("LSPECIALTradeDiscount")) {
+                discountedRecipes.add(recipe);
+                continue;
+            }
+
             if (cost.isEmpty() || cost.getItem() != Items.EMERALD || cost.getCount() <= 1) {
                 discountedRecipes.add(recipe);
                 continue;
             }
-            int reduced = Math.max(1, (int)Math.ceil(cost.getCount() * (1.0 - LSPECIALConfig.charismaVillagerDiscountFraction)));
+
+            int originalCount = cost.getCount();
+            int reduced = Math.max(1, (int) Math.ceil(originalCount * (1.0 - LSPECIALConfig.charismaVillagerDiscountFraction)));
+            NBTTagCompound discount = new NBTTagCompound();
+            discount.setInteger("originalCount", originalCount);
+            cost.setTagInfo("LSPECIALTradeDiscount", discount);
             cost.setCount(reduced);
             discountedRecipes.add(recipe);
         }

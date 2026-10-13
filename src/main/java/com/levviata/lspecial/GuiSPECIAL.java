@@ -9,7 +9,7 @@ import net.minecraftforge.fml.common.gameevent.InputEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.levviata.lspecial.LSPECIALMod.toggleSpecial;
+import static com.levviata.lspecial.proxy.ClientProxy.toggleSpecial;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
 public class GuiSPECIAL extends GuiScreen {
@@ -30,7 +30,6 @@ public class GuiSPECIAL extends GuiScreen {
     private int selectedRow = -1;
 
     private String footerMessage;
-
 
     @Override
     public void initGui() {
@@ -64,18 +63,18 @@ public class GuiSPECIAL extends GuiScreen {
     private void rebuildRows() {
         rows.clear();
 
-        addStat("Strength", inst.getClientStrength(), LSPECIALConfig.strength, "Adds attack damage. The held-item tooltip can show the original value, bonus, and total.");
+        addStat("Strength", inst.getClientStrength(), LSPECIALConfig.strength, "Adds attack damage. The held-item tooltip displays the total, including the Strength bonus.");
         addStat("Perception", inst.getClientPerception(), LSPECIALConfig.perception, "Improves selected loot-related perks at higher levels.");
         addStat("Endurance", inst.getClientEndurance(), LSPECIALConfig.endurance, "Increases maximum health. Optional rendered-model scaling does not change the hitbox.");
 
         if (LSPECIALConfig.enduranceBonus) {
-            rows.add(new StatRow("Endurance Bonus", inst.getClientEnduranceBonus(), true, "Gives you permanent regeneration 2. If you already have regeneration, increase by one it's amplifier (ex: regen 1 to 2)"));
+            rows.add(new StatRow("Endurance Bonus", inst.getClientEnduranceBonus(), true, "Grants permanent Regeneration II. If you already have Regeneration, its amplifier increases by one (for example, Regeneration I becomes Regeneration II)."));
         }
 
         addStat("Charisma", inst.getClientCharisma(), LSPECIALConfig.charisma, "Increases armor and armor toughness; higher-level social effects are configurable.");
 
         if (LSPECIALConfig.charismaBonus) {
-            rows.add(new StatRow("Charisma Bonus", inst.getClientCharismaBonus(), true, "Gives you permanent resistance effect."));
+            rows.add(new StatRow("Charisma Bonus", inst.getClientCharismaBonus(), true, "Grants permanent Resistance."));
         }
 
         String m1 = "";
@@ -91,8 +90,8 @@ public class GuiSPECIAL extends GuiScreen {
         String m2 = "The flesh obeys the will. Increases gun fire rate, " + m1 + " and gives infinite item durability. At level 5, makes the Pepperbox shot 6 rounds at once. At level 10, makes all revolvers penetrate more than one entity and x3 headshot damage";
         addStat("Intelligence", inst.getClientIntelligence(), LSPECIALConfig.intelligence, m2);
 
-        addStat("Agility", inst.getClientAgility(), LSPECIALConfig.agility, "Gives speed, can be configured with command /setspeed");
-        addStat("Luck", inst.getClientLuck(), LSPECIALConfig.luck, "Gives a chance to refund a magazine on gun reload.");
+        addStat("Agility", inst.getClientAgility(), LSPECIALConfig.agility, "Increases movement speed, the value can be configured with /setspeed.");
+        addStat("Luck", inst.getClientLuck(), LSPECIALConfig.luck, "Gives a chance to refund ammunition when reloading a gun.");
 
         if (LSPECIALConfig.statLimit) {
             rows.add(new StatRow("Stat Limit", inst.getClientLimit(), true, "The current maximum for each SPECIAL stat."));
@@ -150,7 +149,7 @@ public class GuiSPECIAL extends GuiScreen {
     }
 
     private void drawHeader() {
-        drawClippedString("S.P.E.C.I.A.L // cHARACTER STATS", panelLeft + 22, panelTop + 12,
+        drawClippedString("S.P.E.C.I.A.L // CHARACTER STATS", panelLeft + 22, panelTop + 12,
                 Math.max(1, panelWidth - 44), AMBER_BRIGHT);
 
         drawRect(panelLeft + 18, panelTop + 30, panelLeft + panelWidth - 18, panelTop + 31, AMBER_MUTED);

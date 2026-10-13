@@ -2,7 +2,6 @@ package com.levviata.lspecial.mixin;
 
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.LootPerkHandler;
-import com.levviata.lspecial.LootPerkHandler;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.ScoreObjective;
@@ -52,9 +51,7 @@ public abstract class MixinLootTable {
             }
         }
 
-        if (LSPECIALConfig.luck && LSPECIALConfig.luckRareLootBonus
-                && luck >= LSPECIALConfig.luckRareLootLevel
-                && LootPerkHandler.isConfiguredRareTable((LootTable) (Object) this)) {
+        if (LSPECIALConfig.luck && LSPECIALConfig.luckRareLootBonus && luck >= LSPECIALConfig.luckRareLootLevel && LootPerkHandler.isConfiguredRareTable((LootTable) (Object) this)) {
             double chance = Math.min(LSPECIALConfig.luckRareLootChanceCap,
                     luck * LSPECIALConfig.luckRareLootChancePerPoint);
             if (random.nextDouble() < MathHelper.clamp(chance, 0.0, 1.0)) {

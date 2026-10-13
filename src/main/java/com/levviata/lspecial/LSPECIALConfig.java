@@ -4,9 +4,9 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.ConfigElement;
 import net.minecraftforge.common.config.Configuration;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.client.config.GuiConfig;
 import net.minecraftforge.fml.client.config.IConfigElement;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -76,7 +76,6 @@ public final class LSPECIALConfig {
     public static double enduranceModelScalePerHeart = 0.25;
     public static double enduranceModelScaleThresholdHearts = 10.0;
     public static boolean strengthTooltip = true;
-    public static String strengthTooltipFormat = "Attack Damage: {original} + {bonus} = {total}";
     public static boolean agilityFlyingSpeed = true;
     public static String agilityFlyingSpeedFormula = "agility * 0.075";
     public static double agilityFlyingSpeedMinimum = 0.05;
@@ -128,8 +127,12 @@ public final class LSPECIALConfig {
     public static boolean dragonsFuryDirectHitPerk = true;
     public static int dragonsFuryDirectHitLevel = 15;
     public static double dragonsFuryDirectHitMultiplier = 1.5;
+    public static int dragonsFuryBurstDelayTicks = 10;
+    public static double dragonsFuryBurstRange = 3.0;
+    public static double phlogSecondaryRange = 5.0;
+    public static double phlogSecondaryWidth = 2.0;
     public static boolean tauSecondaryDamageBonus = true;
-    public static double tauSecondaryDamageMultiplier = 3.0;
+    public static double tauSecondaryDamageMultiplier = 6.0;
     public static boolean lagSecondaryBurst = true;
     public static int lagSecondaryBurstDelay = 16;
     public static double burstProjectileDamageFraction = 0.3333333333333333;
@@ -151,7 +154,7 @@ public final class LSPECIALConfig {
     public static String luckRareLootTablePattern = "rare";
 
     public static String systemStatusText = "SYSTEM STATUS";
-    public static String neuralLinkText = "LEVVIATA NEURA-LINK  //  aCTIVE";
+    public static String neuralLinkText = "LEVVIATA NEURA-LINK  //  ACTIVE";
     public static String randomFooterMessages = "YOU ARE LIKELY NOT SPECIAL|JET FUEL CAN MELT STEEL BEAMS|VAMPIRES ARE NICE|I KNOW WHERE YOU LIVE|LEVVIATAINC|WHOS TIAMAT|SATAN IS A NICE GUY|WHOS LEVIATHAN|WHEN YOU SEE IT|ITS ALL A DREAM AND YOU ARE BLIND|BLESSED ARE THE STRONG|CURSED ARE THE WEAK|BE OBEDIENT IF YOU ARE WEAK|CONTROL IF YOU ARE STRONG|NOT EVERYONE IS EQUAL|TAX THE CHURCHES|AI IS FREE SLAVERY";
     public static boolean setSpeedCommand = true;
     public static boolean setFlySpeedCommand = true;
@@ -218,8 +221,10 @@ public final class LSPECIALConfig {
         }
 
         config.load();
+        config.getCategory(STATS).remove("strengthTooltipFormat");
+        config.getCategory(GUNS).remove("phlogSecondaryDelayTicks");
 
-        // sPECIAL stats
+        // SPECIAL stats
         strength = b(STATS, "strength", true, "Enable Strength");
         perception = b(STATS, "perception", true, "Enable Perception");
         endurance = b(STATS, "endurance", true, "Enable Endurance");
@@ -280,7 +285,6 @@ public final class LSPECIALConfig {
         enduranceModelScalePerHeart = d(STATS, "enduranceModelScalePerHeart", 0.25, 0, 5, "Rendered model scale added per full heart above the threshold");
         enduranceModelScaleThresholdHearts = d(STATS, "enduranceModelScaleThresholdHearts", 10.0, 0, 2048, "Maximum-health hearts at which Endurance model scaling begins");
         strengthTooltip = b(STATS, "strengthTooltip", true, "Show Strength damage breakdown in held-item tooltips");
-        strengthTooltipFormat = s(STATS, "strengthTooltipFormat", "Attack Damage: {original} + {bonus} = {total}", "Tooltip template tokens: {original}, {bonus}, {total}");
         agilityFlyingSpeed = b(STATS, "agilityFlyingSpeed", true, "Apply Agility to player flying speed");
         agilityFlyingSpeedFormula = s(ADV, "agilityFlyingSpeedFormula", "agility * 0.075", "Variables: agility; output is a multiplier bonus above vanilla flying speed");
         agilityFlyingSpeedMinimum = d(STATS, "agilityFlyingSpeedMinimum", 0.05, 0.01, 1.0, "Minimum flying speed");
@@ -328,12 +332,16 @@ public final class LSPECIALConfig {
         doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Velocity applied toward the grapple target");
         phlogistinatorSustainedFirePerk = b(GUNS, "phlogistinatorSustainedFirePerk", true, "Intelligence perk: use NTM native held-fire cadence for the Phlogistinator-style flamer");
         phlogistinatorSustainedFireLevel = i(GUNS, "phlogistinatorSustainedFireLevel", 5, 1, 100, "Minimum Intelligence required for the Phlogistinator sustained-fire perk");
-        phlogistinatorFireDelayTicks = i(GUNS, "phlogistinatorFireDelayTicks", 1, 0, 1200, "Native firing delay in ticks while the Phlogistinator perk is active");
+        phlogistinatorFireDelayTicks = i(GUNS, "phlogistinatorFireDelayTicks", 1, 0, 1200, "Delay between Phlogistinator secondary-fire shots in ticks");
         dragonsFuryDirectHitPerk = b(GUNS, "dragonsFuryDirectHitPerk", true, "Intelligence perk: increase direct-hit damage from the Topaz flamer's native flame projectiles");
         dragonsFuryDirectHitLevel = i(GUNS, "dragonsFuryDirectHitLevel", 15, 1, 100, "Minimum Intelligence required for the Dragon's Fury direct-hit perk");
-        dragonsFuryDirectHitMultiplier = d(GUNS, "dragonsFuryDirectHitMultiplier", 1.5, 1.0, 20.0, "Direct-hit damage multiplier for Dragon's Fury-style flame projectiles");
-        tauSecondaryDamageBonus = b(GUNS, "tauSecondaryDamageBonus", true, "Intelligence 5: multiply Tau damage while secondary fire is held");
-        tauSecondaryDamageMultiplier = d(GUNS, "tauSecondaryDamageMultiplier", 3.0, 1.0, 20.0, "Tau secondary-fire damage multiplier");
+        dragonsFuryDirectHitMultiplier = d(GUNS, "dragonsFuryDirectHitMultiplier", 1.5, 1.0, 20.0, "Direct-hit damage multiplier for Dragon's Fury secondary-fire projectiles");
+        dragonsFuryBurstDelayTicks = i(GUNS, "dragonsFuryBurstDelayTicks", 10, 1, 1200, "Delay between Dragon's Fury secondary-fire shots in ticks");
+        dragonsFuryBurstRange = d(GUNS, "dragonsFuryBurstRange", 3.0, 0.5, 64.0, "Maximum travel distance of Dragon's Fury secondary-fire projectiles in blocks");
+        phlogSecondaryRange = d(GUNS, "phlogSecondaryRange", 5.0, 0.5, 64.0, "Maximum travel distance of Phlogistinator secondary-fire projectiles in blocks");
+        phlogSecondaryWidth = d(GUNS, "phlogSecondaryWidth", 2.0, 0.25, 8.0, "Width of Phlogistinator secondary-fire projectiles in blocks");
+        tauSecondaryDamageBonus = b(GUNS, "tauSecondaryDamageBonus", true, "Intelligence 5: multiply damage from the Tau's charged secondary projectile");
+        tauSecondaryDamageMultiplier = d(GUNS, "tauSecondaryDamageMultiplier", 6.0, 1.0, 20.0, "Tau secondary-fire damage multiplier");
         lagSecondaryBurst = b(GUNS, "lagSecondaryBurst", true, "Intelligence 5: Lag secondary fire uses a three-projectile burst");
         lagSecondaryBurstDelay = i(GUNS, "lagSecondaryBurstDelay", 16, 0, 1200, "Lag secondary burst delay in ticks");
         burstProjectileDamageFraction = d(GUNS, "burstProjectileDamageFraction", 0.3333333333333333, 0.01, 1.0, "Damage fraction per projectile for three-projectile secondary bursts");
@@ -343,7 +351,7 @@ public final class LSPECIALConfig {
         stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Intelligence 15: suppress self-inflicted damage from configured Stinger-family projectiles");
         carbineHigherPerkCapacity = b(GUNS, "carbineHigherPerkCapacity", true, "Intelligence 15: increase the carbine magazine capacity");
         carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");
-        carbineSemiAutoPerk = b(GUNS, "carbineSemiAutoPerk", true, "Intelligence 15: disable automatic refire for the carbine");
+        carbineSemiAutoPerk = b(GUNS, "carbineSemiAutoPerk", true, "Intelligence 15: right-click fires one Carbine shot per press; left-click retains native fire behavior");
         carbineRecoilMultiplier = d(GUNS, "carbineRecoilMultiplier", 0.5, 0, 1, "Carbine recoil multiplier with the higher perk; 0 disables recoil and 1 keeps native recoil");
         perceptionLootDuplication = b(STATS, "perceptionLootDuplication", true, "Perception duplicates non-stackable loot from supported loot-table results");
         perceptionLootDuplicateLevel = i(STATS, "perceptionLootDuplicateLevel", 5, 1, 100, "Perception level for two total copies of non-stackable loot");
@@ -356,10 +364,10 @@ public final class LSPECIALConfig {
         showPerkScreens = b(PERKS, "showPerkScreens", true, "Allow clicking a SPECIAL row to open its perk overlay");
         showPerkTierHint = b(PERKS, "showPerkTierHint", true, "Show the Lesser/Higher perk level explanation");
         systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in the stats screen");
-        neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  aCTIVE", "Text used for the 'Neura-Link' line in the stats screen");
+        neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  ACTIVE", "Text used for the 'Neura-Link' line in the stats screen");
         randomFooterMessages = s(CLIENT, "randomFooterMessages", randomFooterMessages, "Random footer options separated by |. Leave empty to show no random message.");
         setSpeedCommand = b(COMMANDS, "setSpeedCommand", true, "Register /setspeed");
-        setFlySpeedCommand = b(COMMANDS, "setFlySpeedCommand", true, "Register /setflyspeed. Currently doesn't work");
+        setFlySpeedCommand = b(COMMANDS, "setFlySpeedCommand", true, "Register /setflyspeed and use its per-player speed override");
 
         // recipe switches
         String[] recipeNames = {

@@ -1,0 +1,12 @@
+{
+  "dragons_fury_shoot": {
+    "sounds": [
+      { "name": "lspecial:dragons_fury_shoot", "stream": false }
+    ]
+  },
+  "phlog_ignite": {
+    "sounds": [
+      { "name": "lspecial:phlog_ignite", "stream": false }
+    ]
+  }
+}

@@ -15,8 +15,11 @@
         "MixinStingerProjectile",
         "MixinLootTable",
         "MixinLootContainer",
-        "MixinDragonFuryProjectile"
+        "MixinDragonFuryProjectile",
+        "MixinProjectileShooter",
+        "MixinBeamProjectile",
+        "MixinEntityInvoker"
     ],
     "server": [],
-    "client": []
+    "client": ["MixinEntityRenderer"]
 }

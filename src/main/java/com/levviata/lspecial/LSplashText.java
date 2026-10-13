@@ -1,11 +1,11 @@
 package com.levviata.lspecial;
 
-import java.lang.reflect.Field;
-import java.util.Random;
-
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import java.lang.reflect.Field;
+import java.util.Random;
 
 public class LSplashText {
 
@@ -29,17 +29,13 @@ public class LSplashText {
         }
 
         try {
-            Field field = GuiMainMenu.class.getDeclaredField("splashText");
+            Field field = ReflectionHelper.findField(GuiMainMenu.class, "splashText", "field_73975_c");
             field.setAccessible(true);
 
-            String splash = CUSTOM_SPLASHES[
-                    RANDOM.nextInt(CUSTOM_SPLASHES.length)
-                    ];
-
+            String splash = CUSTOM_SPLASHES[RANDOM.nextInt(CUSTOM_SPLASHES.length)];
             field.set(event.getGui(), splash);
-
-        } catch (ReflectiveOperationException e) {
-            e.printStackTrace();
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            // a missing splash field should not produce a stack trace every time the menu opens.
         }
     }
 }

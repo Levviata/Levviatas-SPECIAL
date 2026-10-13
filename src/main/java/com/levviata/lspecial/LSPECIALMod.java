@@ -6,7 +6,6 @@ import com.levviata.lspecial.network.RequestSPECIALStatsPacket;
 import com.levviata.lspecial.network.SyncSPECIALStatsPacket;
 import com.levviata.lspecial.potion.PotionAmplifiedRegeneration;
 import com.levviata.lspecial.proxy.CommonProxy;
-import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.potion.Potion;
 import net.minecraftforge.common.MinecraftForge;
@@ -21,7 +20,6 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.input.Keyboard;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED_REGENERATION_NAME;
@@ -38,12 +36,6 @@ public class LSPECIALMod {
     /*@mod.Instance
     private static LSPECIALMod inst;*/
 
-    public static KeyBinding toggleSpecial = new KeyBinding(
-            "toggleSpecial",
-            Keyboard.KEY_P,
-            "key.categories.misc"
-    );
-
     public static final Potion AMPLIFIED_REGENERATION = new PotionAmplifiedRegeneration();
 
     /**
@@ -58,8 +50,6 @@ public class LSPECIALMod {
         MinecraftForge.EVENT_BUS.register(new StatsLogic());
         MinecraftForge.EVENT_BUS.register(new SPECIALGameplayHandler());
         MinecraftForge.EVENT_BUS.register(new SPECIALRenamer());
-        MinecraftForge.EVENT_BUS.register(new GuiSPECIAL());
-        MinecraftForge.EVENT_BUS.register(new LSplashText());
         MinecraftForge.EVENT_BUS.register(new BobbleheadRecipeManager());
 
         AMPLIFIED_REGENERATION.setRegistryName(Tags.MOD_ID, AMPLIFIED_REGENERATION_NAME);

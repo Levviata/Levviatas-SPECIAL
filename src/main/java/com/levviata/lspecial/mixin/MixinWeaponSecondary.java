@@ -1,26 +1,27 @@
 package com.levviata.lspecial.mixin;
 
 import com.hbm.handler.HbmKeybinds;
-import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.GunConfig;
+import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
-import com.hbm.items.weapon.sedna.mags.MagazineBelt;
-import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
-import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.items.weapon.sedna.factory.XFactory10ga;
 import com.hbm.items.weapon.sedna.factory.XFactory44;
 import com.hbm.items.weapon.sedna.factory.XFactory50;
 import com.hbm.items.weapon.sedna.factory.XFactory556mm;
 import com.hbm.items.weapon.sedna.factory.XFactoryEnergy;
+import com.hbm.items.weapon.sedna.mags.IMagazine;
+import com.hbm.items.weapon.sedna.mags.MagazineBelt;
+import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
 import com.levviata.lspecial.LSPECIALConfig;
-import com.levviata.lspecial.SPECIALScoreboard;
+import com.levviata.lspecial.RefundMagazine;
 import com.levviata.lspecial.SPECIALGameplayHandler;
+import com.levviata.lspecial.SPECIALScoreboard;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -29,6 +30,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -40,9 +42,7 @@ public abstract class MixinWeaponSecondary {
 
     /** handles crouch-secondary ammo cycling, the Lag's self-kill action, and double-barrel grappling. */
     @Inject(method = "handleKeybind(Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/inventory/IInventory;Lnet/minecraft/item/ItemStack;Lcom/hbm/handler/HbmKeybinds$EnumKeybind;Z)V", at = @At("HEAD"), cancellable = true, remap = false)
-    private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory,
-                                               ItemStack stack, HbmKeybinds.EnumKeybind keybind,
-                                               boolean pressed, CallbackInfo callback) {
+    private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory, ItemStack stack, HbmKeybinds.EnumKeybind keybind, boolean pressed, CallbackInfo callback) {
         if (!(entity instanceof EntityPlayer) || stack == null || stack.isEmpty()
                 || keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) {
             return;
@@ -52,14 +52,13 @@ public abstract class MixinWeaponSecondary {
         String itemId = registryId(stack);
         if (itemId == null) return;
 
-        // mirror the Heretic's held-secondary aiming state on the weapons that lack its native scope behavior.
-        if (LSPECIALConfig.hereticStyleScoping && isHereticScopeCopyWeapon(itemId)
-                && ((pressed && !player.isSneaking()) || (!pressed && ItemGunBaseNT.getIsAiming(stack)))
-                && hasIntelligence(player, 5)) {
-            ItemGunBaseNT.setIsAiming(stack, pressed);
-            callback.cancel();
-            return;
+        boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && hasIntelligence(player, 15);
+        boolean dragonSecondary = "hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryDirectHitPerk && hasIntelligence(player, LSPECIALConfig.dragonsFuryDirectHitLevel);
+        boolean phlogSecondary = "hbm:gun_flamer".equals(itemId) && LSPECIALConfig.phlogistinatorSustainedFirePerk && hasIntelligence(player, LSPECIALConfig.phlogistinatorSustainedFireLevel);
+        if (carbineSecondary || dragonSecondary || phlogSecondary) {
+            lspecial$setPrimaryForAllConfigs(stack, pressed);
         }
+
         if (!pressed) return;
 
         int requiredLevel = isHigherPerkAmmoWeapon(itemId) ? 15 : 5;
@@ -121,6 +120,20 @@ public abstract class MixinWeaponSecondary {
         }
     }
 
+    /** applies the Heretic-style aiming state automatically while a supported weapon is selected. */
+    @Inject(method = "onUpdate(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;IZ)V", at = @At("HEAD"), remap = false)
+    private void lspecial$applyHereticScope(ItemStack stack, World world, Entity entity, int slot, boolean selected, CallbackInfo callback) {
+        if (!(entity instanceof EntityPlayer) || stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) {
+            return;
+        }
+        String itemId = stack.getItem().getRegistryName().toString();
+        if (!isHereticScopeCopyWeapon(itemId)) {
+            return;
+        }
+        boolean scoped = selected && LSPECIALConfig.modifyGuns && LSPECIALConfig.hereticStyleScoping && hasIntelligence((EntityPlayer) entity, 5);
+        ItemGunBaseNT.setIsAiming(stack, scoped);
+    }
+
     /** returns whether the player's current Intelligence score meets the requested perk level. */
     private static boolean hasIntelligence(EntityPlayer player, int level) {
         return LSPECIALConfig.intelligence
@@ -143,7 +156,7 @@ public abstract class MixinWeaponSecondary {
 
     /** identifies alternate-caliber weapons that require the higher Intelligence perk. */
     private static boolean isHigherPerkAmmoWeapon(String itemId) {
-        return "hbm:gun_pepperbox".equals(itemId) || isUzi(itemId) || isG3(itemId) || isMinigun(itemId);
+        return isUzi(itemId) || isG3(itemId) || isMinigun(itemId);
     }
 
     private static boolean isStarF(String itemId) {
@@ -165,7 +178,8 @@ public abstract class MixinWeaponSecondary {
     /** identifies weapons that should copy the Heretic's secondary-fire aiming behavior. */
     private static boolean isHereticScopeCopyWeapon(String itemId) {
         return "hbm:gun_maresleg".equals(itemId) || "hbm:gun_liberator".equals(itemId)
-                || "hbm:gun_autoshotgun".equals(itemId) || "hbm:gun_congolake".equals(itemId)
+                || "hbm:gun_autoshotgun".equals(itemId) || "hbm:gun_autoshotgun_heretic".equals(itemId)
+                || "hbm:gun_autoshotgun_sexy".equals(itemId) || "hbm:gun_congolake".equals(itemId)
                 || "hbm:gun_am180".equals(itemId);
     }
 
@@ -204,59 +218,128 @@ public abstract class MixinWeaponSecondary {
             }
         }
 
-        if (changed) player.inventory.markDirty();
+        if (changed) {
+            player.inventory.markDirty();
+        }
         return changed;
+    }
+
+    /** unwraps the Luck wrapper so magazine-specific mode and capacity logic sees the native magazine type. */
+    private static IMagazine unwrapMagazine(IMagazine magazine) {
+        while (magazine instanceof RefundMagazine) {
+            magazine = ((RefundMagazine) magazine).getOriginalMagazine();
+        }
+        return magazine;
     }
 
     /** creates a stable key so shared magazines are switched once even on multi-receiver guns. */
     private static String getMagazineKey(IMagazine magazine) {
-        if (magazine instanceof MagazineSingleTypeBase) {
-            return "single:" + ((MagazineSingleTypeBase) magazine).index;
+        IMagazine original = unwrapMagazine(magazine);
+        if (original instanceof MagazineSingleTypeBase) {
+            return "single:" + ((MagazineSingleTypeBase) original).index;
         }
-        if (magazine instanceof MagazineBelt) return "belt";
+        if (original instanceof MagazineBelt) return "belt";
         return null;
     }
 
-    /** changes one magazine's stored caliber after safely refunding its loaded ammunition. */
+    /** changes one magazine's selected caliber and refunds only ammunition physically loaded into that magazine. */
     private static boolean cycleOneMagazine(EntityPlayer player, ItemStack stack, IInventory inventory,
                                             IMagazine magazine, BulletConfig requested) {
-        List<BulletConfig> accepted;
-        if (magazine instanceof MagazineSingleTypeBase) {
-            accepted = ((MagazineSingleTypeBase) magazine).acceptedBullets;
-        } else if (magazine instanceof MagazineBelt) {
-            accepted = ((MagazineBelt) magazine).acceptedBullets;
-        } else {
-            return false;
+        IMagazine original = unwrapMagazine(magazine);
+        if (original instanceof MagazineBelt) {
+            return lspecial$cycleBeltAmmo(stack, (MagazineBelt) original);
         }
+        if (!(original instanceof MagazineSingleTypeBase)) return false;
+
+        MagazineSingleTypeBase single = (MagazineSingleTypeBase) original;
+        List<BulletConfig> accepted = single.acceptedBullets;
         if (accepted == null || accepted.isEmpty()) return false;
         if (!accepted.contains(requested)) accepted.add(requested);
 
-        Object currentObject = magazine.getType(stack, inventory);
+        Object currentObject = single.getType(stack, null);
         if (!(currentObject instanceof BulletConfig)) return false;
         BulletConfig current = (BulletConfig) currentObject;
-        BulletConfig target = current == requested
-                ? accepted.stream().filter(bullet -> bullet != requested).findFirst().orElse(null)
-                : requested;
+        BulletConfig defaultAmmo = accepted.get(0);
+        BulletConfig target = current == requested ? defaultAmmo : requested;
         if (target == null || target == current) return false;
 
-        int loadedAmount = magazine.getAmount(stack, inventory);
+        int loadedAmount = single.getAmount(stack, null);
         if (loadedAmount > 0) {
             if (current.ammo == null) return false;
             int roundsPerAmmoItem = Math.max(1, current.ammoReloadCount);
-            // refuse a switch if NTM's ammo item represents a bundle that cannot be returned exactly.
             if (loadedAmount % roundsPerAmmoItem != 0) return false;
             int refundCount = loadedAmount / roundsPerAmmoItem;
             if (!refundAmmoToPlayer(player, current, refundCount)) return false;
-            magazine.setAmount(stack, 0);
+            single.setAmount(stack, 0);
         }
 
-        magazine.setType(stack, target);
-        magazine.setAmountBeforeReload(stack, 0);
-        magazine.setAmountAfterReload(stack, 0);
+        single.setType(stack, target);
+        single.setAmountBeforeReload(stack, 0);
+        single.setAmountAfterReload(stack, 0);
+        if (!stack.hasTagCompound()) stack.setTagCompound(new net.minecraft.nbt.NBTTagCompound());
+        stack.getTagCompound().setInteger("LSPECIALSelectedCaliber_" + single.index, target.id);
         return true;
     }
 
-    /** returns old-caliber ammunition to inventory, dropping any overflow beside the player. */
+    /** cycles the Minigun's inventory-fed belt through native capacitor configurations without refunding inventory ammo. */
+    private static boolean lspecial$cycleBeltAmmo(ItemStack stack, MagazineBelt magazine) {
+        List<BulletConfig> accepted = magazine.acceptedBullets;
+        if (accepted == null || accepted.isEmpty()) return false;
+        lspecial$registerEnergyCapacitors(accepted);
+
+        net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+        int currentId = tag != null && tag.hasKey("LSPECIALSelectedBeltCaliber")
+                ? tag.getInteger("LSPECIALSelectedBeltCaliber") : accepted.get(0).id;
+        BulletConfig current = lspecial$findBulletConfig(currentId);
+        List<BulletConfig> modes = lspecial$getEnergyCapacitors();
+        int currentIndex = modes.indexOf(current);
+        BulletConfig target;
+        if (currentIndex < 0) {
+            target = modes.get(0);
+        } else if (currentIndex + 1 < modes.size()) {
+            target = modes.get(currentIndex + 1);
+        } else {
+            target = accepted.get(0);
+        }
+
+        if (target == null || target == current) {
+            return false;
+        }
+
+        if (!stack.hasTagCompound()) {
+            stack.setTagCompound(new net.minecraft.nbt.NBTTagCompound());
+        }
+        if (target == accepted.get(0)) {
+            stack.getTagCompound().removeTag("LSPECIALSelectedBeltCaliber");
+        } else {
+            stack.getTagCompound().setInteger("LSPECIALSelectedBeltCaliber", target.id);
+        }
+        return true;
+    }
+
+    /** adds the native capacitor configurations used by NTM's laser, Tesla, and emerald energy weapons. */
+    private static void lspecial$registerEnergyCapacitors(List<BulletConfig> accepted) {
+        for (BulletConfig config : lspecial$getEnergyCapacitors()) {
+            if (!accepted.contains(config)) accepted.add(config);
+        }
+    }
+
+    private static List<BulletConfig> lspecial$getEnergyCapacitors() {
+        return Arrays.asList(XFactoryEnergy.energy_las, XFactoryEnergy.energy_las_overcharge,
+                XFactoryEnergy.energy_las_ir, XFactoryEnergy.energy_tesla,
+                XFactoryEnergy.energy_tesla_overcharge, XFactoryEnergy.energy_tesla_ir,
+                XFactoryEnergy.energy_emerald,
+                XFactoryEnergy.energy_emerald_overcharge, XFactoryEnergy.energy_emerald_ir);
+    }
+
+    private static BulletConfig lspecial$findBulletConfig(int id) {
+        for (BulletConfig config : BulletConfig.configs) {
+            if (config != null && config.id == id) return config;
+        }
+        return null;
+    }
+
+    /** returns old-caliber ammunition to inventory, dropping every leftover stack beside the player. */
     private static boolean refundAmmoToPlayer(EntityPlayer player, BulletConfig oldConfig, int count) {
         if (count <= 0) return true;
         if (oldConfig.ammo == null) return false;
@@ -268,12 +351,25 @@ public abstract class MixinWeaponSecondary {
             ItemStack refund = template.copy();
             int stackCount = Math.min(remaining, refund.getMaxStackSize());
             refund.setCount(stackCount);
-            if (!player.inventory.addItemStackToInventory(refund)) {
+            player.inventory.addItemStackToInventory(refund);
+            if (!refund.isEmpty()) {
                 player.dropItem(refund, false);
             }
             remaining -= stackCount;
         }
         return true;
+    }
+
+    /** sets native primary input while the secondary button is held for alternate-fire modes. */
+    private static void lspecial$setPrimaryForAllConfigs(ItemStack stack, boolean pressed) {
+        if (!(stack.getItem() instanceof ItemGunBaseNT)) {
+            return;
+        }
+
+        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+            ItemGunBaseNT.setPrimary(stack, configIndex, pressed);
+        }
     }
 
     /** finds the nearest entity in the player's look direction and applies a bounded pull velocity. */

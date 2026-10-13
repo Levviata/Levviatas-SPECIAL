@@ -22,10 +22,10 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import java.util.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import static com.levviata.lspecial.LSPECIALMod.LOGGER;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
+import static com.levviata.lspecial.command.CommandSetFlySpeed.getPlayerFlySpeed;
 import static com.levviata.lspecial.command.CommandSetSpeed.getPlayerSpeed;
 import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED_REGENERATION_NAME;
 
@@ -58,7 +58,6 @@ public class StatsLogic {
     private boolean modified;
     private boolean installedMagazine;
     private float originalDamage;
-    private int originalDelay;
     private int originalProjectileAmount;
     private float originalAmmoPiercing;
     private float originalArmorThresholdNegation;
@@ -123,7 +122,7 @@ public class StatsLogic {
 
         inst.scoreboard = player.getEntityWorld().getScoreboard();
 
-        // wARNING if the scores or scoreboards don't start, the mod is useless
+        // WARNING if the scores or scoreboards don't start, the mod is useless
         inst.startBoards();
         inst.startScores(player);
 
@@ -211,7 +210,7 @@ public class StatsLogic {
 
             movementSpeed.removeModifier(MOVEMENT_SPEED_UUID);
 
-            // operationin: multiplicative
+            // operationIn: multiplicative
             // 7.5% increase per point up to 75%
             if (LSPECIALConfig.agility) {
                 double agilityValue = getPlayerSpeed(player) > -1 ? getPlayerSpeed(player) : inst.getAgilityScore().getScorePoints();
@@ -224,7 +223,8 @@ public class StatsLogic {
         float baseFlySpeed = 0.05F;
         float flySpeed = baseFlySpeed;
         if (LSPECIALConfig.agility && LSPECIALConfig.agilityFlyingSpeed) {
-            double agilityValue = getPlayerSpeed(player) > -1 ? getPlayerSpeed(player) : inst.getAgilityScore().getScorePoints();
+            int configuredFlySpeed = getPlayerFlySpeed(player);
+            double agilityValue = configuredFlySpeed >= 0 ? configuredFlySpeed : inst.getAgilityScore().getScorePoints();
             double multiplierBonus = expression(LSPECIALConfig.agilityFlyingSpeedFormula, "agility", agilityValue);
             double minimum = Math.min(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
             double maximum = Math.max(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
@@ -320,10 +320,10 @@ public class StatsLogic {
             }
         }
 
-        processReceiver(modifiedReceiver, originalDamage, originalDelay, heldStack, player);
+        processReceiver(modifiedReceiver, originalDamage, heldStack, player);
     }
 
-    private void processReceiver(Receiver recIn, float ogDmg, int ogDelay, ItemStack heldStack, EntityPlayer player) {
+    private void processReceiver(Receiver recIn, float ogDmg, ItemStack heldStack, EntityPlayer player) {
         recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPerceptionScore().getScorePoints(), "originalDamage", (double)ogDmg) : 0)));
 
         if (recIn.getMagazine(heldStack) == null) return;
@@ -334,97 +334,22 @@ public class StatsLogic {
             double addedNegation = (inst.getPerceptionScore().getScorePoints() - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
             bC.armorThresholdNegation = (float)Math.min(1.0, originalArmorThresholdNegation + addedNegation);
         }
-        ItemStack ammoStack;
-        if (bC.ammo != null) {
-            ItemStack c = bC.ammo.getStack();
-
-            ammoStack = player.inventory.mainInventory.stream()
-                    .filter(stack -> stack.getItem() == c.getItem())
-                    .findFirst()
-                    .orElse(ItemStack.EMPTY);
-        } else {
-            ammoStack = ItemStack.EMPTY;
-        }
-
-        int intelligence = LSPECIALConfig.intelligence ? inst.getIntelligenceScore().getScorePoints() : 0;
-        int modifiedDelay = (int)Math.round(ogDelay - expression(LSPECIALConfig.bonusDelayFormula, "intelligence", intelligence, "originalDelay", (double)ogDelay));
-
-        if (modifiedDelay > 0) {
-            int formula = (int)Math.round(expression(LSPECIALConfig.buckshotDelayFormula, "intelligence", intelligence, "originalDelay", (double)ogDelay));
-            if (LSPECIALConfig.buckshotDelayNerf && (/*recIn.getRefireOnHold(heldStackIn) ||*/ isBuckshotAmmo(ammoStack))) { // loaded with buckshots (usually shotguns)
-                modifiedDelay = formula;
-            }
-        } else {
-            modifiedDelay = 0;
-        }
-        recIn.delay(modifiedDelay);
-
-        // nOTE: some of this perk are intended to be applied on top of existing weapon mods so take care into perk <-> weapon mod compatibility
-        if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getIntelligenceScore().getScorePoints() >= 5) { // lesser perk
-            if (!heldStack.isEmpty()) {
-                String rName = String.valueOf(heldStack.getItem().getRegistryName());
-                if (LSPECIALConfig.pepperboxPerk && LSPECIALConfig.pepperboxSixShotPerk && rName.equals("hbm:gun_pepperbox")) {
-                    recIn.rounds(6);
-                }
-                if (rName.equals("hbm:gun_light_revolver")) { // special firing mode requires an NTM secondary-fire hook
-                    // forced rapid-fire lock needs a server-side firing scheduler and inventory-switch cancellation; see IMPLEMENTATION_STATUS.md.
-                }
-                if (rName.equals("hbm:gun_tau")) {
-                    // handled by MixinReceiver with a configurable secondary damage multiplier.
-                }
-                if (rName.equals("hbm:gun_lag")) {
-                    // handled by MixinWeaponSecondary when crouch-secondary is pressed.
-                    // handled by MixinReceiver using NTM receiver values while secondary fire is held.
-                }
-                if (rName.equals("hbm:gun_star_f")) { // alternate .50 BMG mode is handled by MixinWeaponSecondary.
-                }
-                if (rName.equals("hbm:gun_flamer")) {
-                    // the Phlogistinator-style flame mode needs custom projectile behavior; see IMPLEMENTATION_STATUS.md.
-                }
+        if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getIntelligenceScore().getScorePoints() >= 5 && !heldStack.isEmpty()) {
+            String itemID = String.valueOf(heldStack.getItem().getRegistryName());
+            if (LSPECIALConfig.pepperboxSixShotPerk && "hbm:gun_pepperbox".equals(itemID)) {
+                recIn.rounds(6);
             }
         }
-        if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && inst.getIntelligenceScore().getScorePoints() >= 15) { // higher perk
+
+        if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && inst.getIntelligenceScore().getScorePoints() >= 15 && !heldStack.isEmpty()) {
+            String itemID = String.valueOf(heldStack.getItem().getRegistryName());
             recIn.auto(true);
-            if (!heldStack.isEmpty()) {
-                String rName = String.valueOf(heldStack.getItem().getRegistryName());
-                if (LSPECIALConfig.revolverPerk && LSPECIALConfig.revolverPenetrationPerk && r.contains(rName)) {
-                    bC.doesPenetrate = true;
-                    bC.setHeadshot(LSPECIALConfig.revolverHeadshotMultiplier);
-                }
-                if (LSPECIALConfig.pepperboxPerk && rName.equals("hbm:gun_pepperbox")) {
-                    // alternate .44 FMJ mode is handled by MixinWeaponSecondary.
-                }
-                if (rName.equals("hbm:gun_uzi")) { // alternate 5.56 mm mode is handled by MixinWeaponSecondary.
-                }
-                if (rName.equals("hbm:gun_g3")) { // alternate 10-gauge mode is handled by MixinWeaponSecondary.
-                }
-                if (rName.equals("hbm:gun_laser_pistol_pew_pew")) {
-                    // implemented by MixinMagazineSingleTypeBase.
-                }
-                if (rName.equals("hbm:gun_fatman")) {
-                    // implemented by MixinMagazineSingleTypeBase and MixinReceiver.
-                }
-                if (rName.equals("hbm:gun_stinger")) { // also for gun_quadro, gun_panzerschreck, and gun_missile_launcher
-                    // self-damage suppression needs reliable weapon-origin metadata on the projectile; see IMPLEMENTATION_STATUS.md.
-                }
-                if (rName.equals("hbm:gun_carbine")) {
-                    // capacity is handled by MixinMagazineSingleTypeBase; recoil and semi-auto require per-weapon receiver recoil hooks.
-                }
-                if (rName.equals("hbm:gun_flamer_topaz")) {
-                    // the Dragon's Fury-style mode needs custom projectile and firing-state behavior; see IMPLEMENTATION_STATUS.md.
-                }
-                if (rName.equals("hbm:gun_double_barrel")) {
-                    // entity pulling is handled by MixinWeaponSecondary; chain rendering and the crosshair marker remain client-side enhancements.
-                    //  on an entity there should be the gun crosshair plus a V mark, on fire the chain (a set of "o-o-o-o" texts based on the length from the player to the entity grabbed) will propulse the player towards the entity,
-                    // normal primary fire remains available during and after the pull.
-                }
-                if (rName.equals("hbm:gun_henry_lincoln")) {
-                    // implemented by MixinReceiver using configurable burst count and damage fraction.
-                }
-                // balance
-                if (LSPECIALConfig.laserPistolDelayBalance && rName.equals("hbm:gun_laser_pistol")) {
-                    recIn.delay(LSPECIALConfig.laserPistolDelayTicks);
-                }
+            if ("hbm:gun_tau".equals(itemID)) {
+                recIn.auto(false);
+            }
+            if (LSPECIALConfig.revolverPenetrationPerk && r.contains(itemID)) {
+                bC.doesPenetrate = true;
+                bC.setHeadshot(LSPECIALConfig.revolverHeadshotMultiplier);
             }
         }
     }
@@ -442,9 +367,12 @@ public class StatsLogic {
             if (state.bulletConfig != null) {
                 state.bulletConfig.armorPiercingPercent = state.armorPiercing;
                 state.bulletConfig.armorThresholdNegation = state.armorThresholdNegation;
+                state.bulletConfig.doesPenetrate = state.doesPenetrate;
+                state.bulletConfig.headshotMult = state.headshotMultiplier;
             }
             state.receiver.dmg(state.damage);
-            state.receiver.delay(state.delay);
+            state.receiver.auto(state.refireOnHold);
+            state.receiver.autoAfterDry(state.refireAfterDry);
             state.receiver.rounds(state.rounds);
             state.receiver.mag(state.magazine);
             if (!heldStack.isEmpty() && heldStack.getItem() instanceof ItemGunBaseNT) {
@@ -470,11 +398,12 @@ public class StatsLogic {
         originalAmmoPiercing = bCIn.armorPiercingPercent;
         originalArmorThresholdNegation = bCIn.armorThresholdNegation;
         originalDamage = rIn.getBaseDamage(heldStack);
-        originalDelay = rIn.getDelayAfterFire(heldStack);
         originalProjectileAmount = rIn.getRoundsPerCycle(heldStack);
-        gunStates.add(new GunState(gunIndex, rIn, bCIn, originalDamage, originalDelay,
-                originalProjectileAmount, originalMagazine, originalWear, originalAmmoPiercing,
-                originalArmorThresholdNegation));
+        gunStates.add(new GunState(gunIndex, rIn, bCIn, originalDamage,
+                ((ReceiverStateAccess) rIn).lspecial$getNativeRefireOnHold(),
+                ((ReceiverStateAccess) rIn).lspecial$getNativeRefireAfterDry(),
+                bCIn.doesPenetrate, bCIn.headshotMult, originalProjectileAmount, originalMagazine,
+                originalWear, originalAmmoPiercing, originalArmorThresholdNegation));
     }
 
     private static final class GunState {
@@ -482,19 +411,28 @@ public class StatsLogic {
         private final Receiver receiver;
         private final BulletConfig bulletConfig;
         private final float damage;
-        private final int delay;
+        private final boolean refireOnHold;
+        private final boolean refireAfterDry;
+        private final boolean doesPenetrate;
+        private final float headshotMultiplier;
         private final int rounds;
         private final IMagazine magazine;
         private final float wear;
         private final float armorPiercing;
         private final float armorThresholdNegation;
 
-        private GunState(int index, Receiver receiver, BulletConfig bulletConfig, float damage, int delay, int rounds, IMagazine magazine, float wear, float armorPiercing, float armorThresholdNegation) {
+        private GunState(int index, Receiver receiver, BulletConfig bulletConfig, float damage,
+                boolean refireOnHold, boolean refireAfterDry, boolean doesPenetrate,
+                float headshotMultiplier, int rounds, IMagazine magazine, float wear,
+                float armorPiercing, float armorThresholdNegation) {
             this.index = index;
             this.receiver = receiver;
             this.bulletConfig = bulletConfig;
             this.damage = damage;
-            this.delay = delay;
+            this.refireOnHold = refireOnHold;
+            this.refireAfterDry = refireAfterDry;
+            this.doesPenetrate = doesPenetrate;
+            this.headshotMultiplier = headshotMultiplier;
             this.rounds = rounds;
             this.magazine = magazine;
             this.wear = wear;
