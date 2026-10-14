@@ -64,17 +64,17 @@ public class GuiSPECIAL extends GuiScreen {
         rows.clear();
 
         addStat("Strength", inst.getClientStrength(), LSPECIALConfig.strength, "Adds attack damage. The held-item tooltip displays the total, including the Strength bonus.");
-        addStat("Perception", inst.getClientPerception(), LSPECIALConfig.perception, "Improves selected loot-related perks at higher levels.");
-        addStat("Endurance", inst.getClientEndurance(), LSPECIALConfig.endurance, "Increases maximum health. Optional rendered-model scaling does not change the hitbox.");
+        addStat("Perception", inst.getClientPerception(), LSPECIALConfig.perception, "Increase gun damage.");
+        addStat("Endurance", inst.getClientEndurance(), LSPECIALConfig.endurance, "Increases maximum health");
 
         if (LSPECIALConfig.enduranceBonus) {
-            rows.add(new StatRow("Endurance Bonus", inst.getClientEnduranceBonus(), true, "Grants permanent Regeneration II. If you already have Regeneration, its amplifier increases by one (for example, Regeneration I becomes Regeneration II)."));
+            rows.add(new StatRow("Endurance Bonus", inst.getClientEnduranceBonus(), true, "Endurance Level 5. Adds amplified regeneration, which amplifies current regeneration by +1 or gives Regeneration I."));
         }
 
         addStat("Charisma", inst.getClientCharisma(), LSPECIALConfig.charisma, "Increases armor and armor toughness; higher-level social effects are configurable.");
 
         if (LSPECIALConfig.charismaBonus) {
-            rows.add(new StatRow("Charisma Bonus", inst.getClientCharismaBonus(), true, "Grants permanent Resistance."));
+            rows.add(new StatRow("Charisma Bonus", inst.getClientCharismaBonus(), true, "Charisma Level 5. Grants permanent Resistance."));
         }
 
         String m1 = "";
@@ -87,14 +87,14 @@ public class GuiSPECIAL extends GuiScreen {
         if (LSPECIALConfig.gunWearMode.equals("FORMULA")) {
             m1 = "reduces gun wear";
         }
-        String m2 = "The flesh obeys the will. Increases gun fire rate, " + m1 + " and gives infinite item durability. At level 5, makes the Pepperbox shot 6 rounds at once. At level 10, makes all revolvers penetrate more than one entity and x3 headshot damage";
+        String m2 = "The flesh obeys the will. Increases gun fire rate, " + m1 + ", and infinite item durability.";
         addStat("Intelligence", inst.getClientIntelligence(), LSPECIALConfig.intelligence, m2);
 
-        addStat("Agility", inst.getClientAgility(), LSPECIALConfig.agility, "Increases movement speed, the value can be configured with /setspeed.");
-        addStat("Luck", inst.getClientLuck(), LSPECIALConfig.luck, "Gives a chance to refund ammunition when reloading a gun.");
+        addStat("Agility", inst.getClientAgility(), LSPECIALConfig.agility, "Increases movement speed including flight speed. Can be configured with /setspeed or /setflyspeed.");
+        addStat("Luck", inst.getClientLuck(), LSPECIALConfig.luck, "Chance to refund ammunition when reloading a gun.");
 
         if (LSPECIALConfig.statLimit) {
-            rows.add(new StatRow("Stat Limit", inst.getClientLimit(), true, "The current maximum for each SPECIAL stat."));
+            rows.add(new StatRow("Stat Limit", inst.getClientLimit(), true, "Maximum level for each SPECIAL stat."));
         }
     }
 

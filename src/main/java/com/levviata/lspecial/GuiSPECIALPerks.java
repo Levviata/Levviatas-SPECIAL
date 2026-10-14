@@ -42,7 +42,6 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 break;
             case "Endurance":
                 lines.add("LESSER PERK — Level 5");
-                lines.add("Adds amplified regeneration, which amplifies current regeneration by +1 or gives Regeneration I.");
                 lines.add("Enlarges your player model (not including hitbox and reach) proportional to your current level");
                /* lines.add("HIGHER PERK — Levels 10–15");
                 lines.add("Further effects depend on enabled Endurance settings.");*/
