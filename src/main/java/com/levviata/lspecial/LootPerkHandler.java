@@ -14,8 +14,7 @@ import java.util.WeakHashMap;
 /** records loaded loot-table identities so generation hooks can recognize configured rare tables. */
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public final class LootPerkHandler {
-    private static final Map<LootTable, ResourceLocation> TABLE_NAMES =
-            Collections.synchronizedMap(new WeakHashMap<LootTable, ResourceLocation>());
+    private static final Map<LootTable, ResourceLocation> TABLE_NAMES = Collections.synchronizedMap(new WeakHashMap<LootTable, ResourceLocation>());
     private static final ThreadLocal<EntityPlayer> ACTIVE_LOOTER = new ThreadLocal<EntityPlayer>();
 
     private LootPerkHandler() {
@@ -36,14 +35,19 @@ public final class LootPerkHandler {
 
     /** scopes the current player to the synchronous loot-container generation call. */
     public static void setActiveLootingPlayer(EntityPlayer player) {
-        if (player == null) ACTIVE_LOOTER.remove();
-        else ACTIVE_LOOTER.set(player);
+        if (player == null) {
+            ACTIVE_LOOTER.remove();
+        } else {
+            ACTIVE_LOOTER.set(player);
+        }
     }
 
     /** checks the configured path fragment instead of assuming a single mod's rare-table naming scheme. */
     public static boolean isConfiguredRareTable(LootTable table) {
         if (table == null || LSPECIALConfig.luckRareLootTablePattern == null
-                || LSPECIALConfig.luckRareLootTablePattern.trim().isEmpty()) return false;
+                || LSPECIALConfig.luckRareLootTablePattern.trim().isEmpty()) {
+            return false;
+        }
 
         ResourceLocation name = TABLE_NAMES.get(table);
         return name != null && name.getPath().toLowerCase(java.util.Locale.ROOT)

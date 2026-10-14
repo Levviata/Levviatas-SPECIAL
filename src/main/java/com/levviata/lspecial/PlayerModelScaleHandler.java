@@ -32,6 +32,8 @@ public final class PlayerModelScaleHandler {
         double hearts = event.getEntityPlayer().getMaxHealth() / 2.0D;
         double excessHearts = Math.max(0.0D, hearts - LSPECIALConfig.enduranceModelScaleThresholdHearts);
         double scale = Math.min(5.0D, 1.0D + excessHearts * LSPECIALConfig.enduranceModelScalePerHeart);
-        if (scale > 1.0D) GlStateManager.popMatrix();
+        if (scale > 1.0D) {
+            GlStateManager.popMatrix();
+        }
     }
 }

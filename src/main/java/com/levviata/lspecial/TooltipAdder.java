@@ -31,48 +31,100 @@ public final class TooltipAdder {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onTooltip(ItemTooltipEvent event) {
         ItemStack tooltipStack = event.getItemStack();
+
+        // trade discount tooltip
         if (!tooltipStack.isEmpty() && tooltipStack.hasTagCompound()
                 && tooltipStack.getTagCompound().hasKey("LSPECIALTradeDiscount")) {
-            net.minecraft.nbt.NBTTagCompound discount = tooltipStack.getTagCompound().getCompoundTag("LSPECIALTradeDiscount");
-            if (discount != null) {
-                String itemName = tooltipStack.getDisplayName();
-                event.getToolTip().add("Original amount: " + discount.getInteger("originalCount") + " x " + itemName);
-                event.getToolTip().add("Discounted amount: " + tooltipStack.getCount() + "* x " + itemName);
-            }
+            net.minecraft.nbt.NBTTagCompound discount = tooltipStack.getTagCompound()
+                    .getCompoundTag("LSPECIALTradeDiscount");
+
+            String itemName = tooltipStack.getDisplayName();
+            event.getToolTip().add("Original amount: "
+                    + discount.getInteger("originalCount") + " x " + itemName);
+            event.getToolTip().add("Discounted amount: "
+                    + tooltipStack.getCount() + "* x " + itemName);
         }
+
+        minigunTooltips(tooltipStack, event);
+
+        strengthTooltip(tooltipStack, event);
+    }
+
+    private void strengthTooltip(ItemStack stack, ItemTooltipEvent event) {
         if (!LSPECIALConfig.strength || !LSPECIALConfig.strengthTooltip || inst == null) {
             return;
         }
 
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.player == null || !ItemStack.areItemsEqual(event.getItemStack(), mc.player.getHeldItemMainhand())) {
+        if (mc.player == null
+                || !ItemStack.areItemsEqual(stack, mc.player.getHeldItemMainhand())) {
             return;
         }
 
-        Collection<AttributeModifier> modifiers = event.getItemStack()
+        Collection<AttributeModifier> modifiers = stack
                 .getAttributeModifiers(EntityEquipmentSlot.MAINHAND)
                 .get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
-        if (modifiers == null || modifiers.isEmpty()) return;
+
+        if (modifiers == null || modifiers.isEmpty()) {
+            return;
+        }
 
         double original = 1.0;
         for (AttributeModifier modifier : modifiers) {
-            if (!STRENGTH_MODIFIER.equals(modifier.getID())) original += modifier.getAmount();
+            if (!STRENGTH_MODIFIER.equals(modifier.getID())) {
+                original += modifier.getAmount();
+            }
         }
-        double bonus = LSPECIALExpression.eval(LSPECIALConfig.attackDamageFormula,
-                java.util.Collections.singletonMap("strength", (double) inst.getClientStrength()), 0.0);
+
+        double bonus = LSPECIALExpression.eval(
+                LSPECIALConfig.attackDamageFormula,
+                java.util.Collections.singletonMap(
+                        "strength", (double) inst.getClientStrength()),
+                0.0);
+
         String attackDamageName = I18n.format("attribute.name.generic.attackDamage");
         List<String> tooltip = event.getToolTip();
+
         for (int i = 0; i < tooltip.size(); i++) {
             String line = tooltip.get(i);
+
             if (!line.contains(attackDamageName)) {
                 continue;
             }
 
             Matcher matcher = DAMAGE_VALUE.matcher(line);
             if (matcher.find()) {
-                tooltip.set(i, matcher.replaceFirst(Matcher.quoteReplacement(FORMAT.format(original + bonus))));
+                tooltip.set(i, matcher.replaceFirst(
+                        Matcher.quoteReplacement(FORMAT.format(original + bonus))));
             }
+
             return;
         }
+    }
+
+    private void minigunTooltips(ItemStack stack, ItemTooltipEvent event) {
+        if (stack.isEmpty() || stack.getItem().getRegistryName() == null) {
+            return;
+        }
+
+        String registryName = stack.getItem().getRegistryName().toString();
+
+        boolean dual = "hbm:gun_minigun_dual".equals(registryName);
+
+        if (!dual && !"hbm:gun_minigun".equals(registryName)) {
+            return;
+        }
+
+        List<String> tooltip = event.getToolTip();
+        String anchor = dual ? "DEBUG" : "Standard Arsenal";
+
+        for (int i = 0; i < tooltip.size(); i++) {
+            if (tooltip.get(i).contains(anchor)) {
+                tooltip.add(i + 1, "§eHigher Perk: Accepts Capacitor ammo");
+                return;
+            }
+        }
+
+        tooltip.add("§eHigher Perk: Accepts Capacitor ammo");
     }
 }

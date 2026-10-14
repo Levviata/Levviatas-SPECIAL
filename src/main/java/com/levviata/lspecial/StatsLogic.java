@@ -238,9 +238,6 @@ public class StatsLogic {
         }
 
         // perception, intelligence, and luck
-        // NTM's development jar has no exposed "found loot inventory" API or special loot-table
-        // registration point, so found-loot duplication and one-time special-loot injection remain blocked.
-        // armor-threshold negation is applied below through BulletConfig when the gun is modified.
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
             ItemGunBaseNT.setWear(heldStack , 0, 0);
