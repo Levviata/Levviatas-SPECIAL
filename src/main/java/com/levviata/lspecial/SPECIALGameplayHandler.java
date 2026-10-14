@@ -81,14 +81,23 @@ public final class SPECIALGameplayHandler {
 
     /** starts a native rapid-fire burst and locks selection to the exact stack that triggered it. */
     public static boolean startLightRevolverRapidFire(EntityPlayer player, ItemStack stack) {
-        if (!lspecial$canUseLightRevolverRapidFire(player) || !lspecial$isLightRevolver(stack)
-                || player.getHeldItemMainhand() != stack) return false;
+        if (!lspecial$canUseLightRevolverRapidFire(player) || !lspecial$isLightRevolver(stack)) return false;
         int slot = lspecial$findHotbarStack(player, stack);
+        if (slot < 0) {
+            ItemStack held = player.getHeldItemMainhand();
+            if (!held.isEmpty() && ItemStack.areItemsEqual(held, stack)) {
+                slot = player.inventory.currentItem;
+            }
+        }
         if (slot < 0) return false;
+
+        // use the actual inventory object: keybind callbacks can supply an equivalent stack copy.
+        ItemStack actualStack = player.inventory.getStackInSlot(slot);
+        if (actualStack.isEmpty() || !lspecial$isLightRevolver(actualStack)) return false;
         LockedGun previous = rapidFireLocks.put(player,
-                new LockedGun(stack, slot, LSPECIALConfig.lightRevolverRapidFireTicks));
-        if (previous != null && previous.stack != stack) lspecial$setRapidFire(previous.stack, false);
-        lspecial$setRapidFire(stack, true);
+                new LockedGun(actualStack, slot, LSPECIALConfig.lightRevolverRapidFireTicks));
+        if (previous != null && previous.stack != actualStack) lspecial$setRapidFire(previous.stack, false);
+        lspecial$setRapidFire(actualStack, true);
         return true;
     }
 
@@ -261,25 +270,26 @@ public final class SPECIALGameplayHandler {
         if (recipes == null) return;
         for (net.minecraft.village.MerchantRecipe recipe : recipes) {
             if (discountedRecipes.contains(recipe)) continue;
-            ItemStack cost = recipe.getItemToBuy();
-            if (!cost.isEmpty() && cost.hasTagCompound() && cost.getTagCompound().hasKey("LSPECIALTradeDiscount")) {
-                discountedRecipes.add(recipe);
-                continue;
-            }
-
-            if (cost.isEmpty() || cost.getItem() != Items.EMERALD || cost.getCount() <= 1) {
-                discountedRecipes.add(recipe);
-                continue;
-            }
-
-            int originalCount = cost.getCount();
-            int reduced = Math.max(1, (int) Math.ceil(originalCount * (1.0 - LSPECIALConfig.charismaVillagerDiscountFraction)));
-            NBTTagCompound discount = new NBTTagCompound();
-            discount.setInteger("originalCount", originalCount);
-            cost.setTagInfo("LSPECIALTradeDiscount", discount);
-            cost.setCount(reduced);
+            lspecial$discountTradeCost(recipe.getItemToBuy());
+            lspecial$discountTradeCost(recipe.getSecondItemToBuy());
             discountedRecipes.add(recipe);
         }
+    }
+
+    /** discounts any stack used as a villager trade cost and records its original count for the tooltip. */
+    private static void lspecial$discountTradeCost(ItemStack cost) {
+        if (cost == null || cost.isEmpty() || cost.getCount() <= 1) return;
+        if (cost.hasTagCompound() && cost.getTagCompound().hasKey("LSPECIALTradeDiscount")) return;
+
+        int originalCount = cost.getCount();
+        int reduced = Math.max(1, (int) Math.ceil(originalCount * (1.0 - LSPECIALConfig.charismaVillagerDiscountFraction)));
+        if (reduced >= originalCount) return;
+
+        NBTTagCompound discount = new NBTTagCompound();
+        discount.setInteger("originalCount", originalCount);
+        discount.setInteger("discountedCount", reduced);
+        cost.setTagInfo("LSPECIALTradeDiscount", discount);
+        cost.setCount(reduced);
     }
 
     private boolean isConfiguredNeutralMob(EntityLivingBase entity) {

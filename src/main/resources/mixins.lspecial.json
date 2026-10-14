@@ -21,5 +21,8 @@
         "MixinEntityInvoker"
     ],
     "server": [],
-    "client": ["MixinEntityRenderer"]
+    "client": [
+        "MixinEntityRenderer",
+        "MixinRenderItemOverlay"
+    ]
 }

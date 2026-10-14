@@ -18,17 +18,36 @@ public final class StingerDamageHandler {
     private StingerDamageHandler() {
     }
 
-    /** checks the projectile owner and currently held launcher before cancelling self-inflicted damage. */
+    /** checks projectile ownership and launcher context before cancelling self-inflicted damage. */
     @SubscribeEvent
     public static void onLivingAttack(LivingAttackEvent event) {
         if (!LSPECIALConfig.stingerSelfDamageProtection || event == null
                 || !(event.getEntityLiving() instanceof EntityPlayer)) return;
 
         EntityPlayer player = (EntityPlayer) event.getEntityLiving();
-        Entity immediate = event.getSource().getImmediateSource();
-        if (!lspecial$isSupportedProjectile(immediate) || !lspecial$isStingerFamilyHeld(player)) return;
-        if (lspecial$getProjectileOwner(immediate) != player) return;
-        event.setCanceled(true);
+        net.minecraft.util.DamageSource source = event.getSource();
+        Entity immediate = source.getImmediateSource();
+        Entity trueSource = source.getTrueSource();
+
+        // direct impacts may identify the projectile as the immediate source.
+        if (lspecial$isSupportedProjectile(immediate) && lspecial$getProjectileOwner(immediate) == player
+                && (lspecial$isStingerFamilyHeld(player) || lspecial$isLauncherRecorded(immediate))) {
+            event.setCanceled(true);
+            return;
+        }
+
+        // some NTM rocket explosions attribute damage to the firing player instead of the rocket entity.
+        if (source.isExplosion() && trueSource == player && lspecial$isStingerFamilyHeld(player)) {
+            event.setCanceled(true);
+        }
+    }
+
+    /** checks whether a throwable's launch metadata identifies a configured launcher. */
+    private static boolean lspecial$isLauncherRecorded(Entity projectile) {
+        if (projectile == null || !projectile.getEntityData().hasKey("LSPECIALShooterWeapon")) return false;
+        String weapon = projectile.getEntityData().getString("LSPECIALShooterWeapon");
+        return "hbm:gun_stinger".equals(weapon) || "hbm:gun_quadro".equals(weapon)
+                || "hbm:gun_panzerschreck".equals(weapon) || "hbm:gun_missile_launcher".equals(weapon);
     }
 
     /** limits protection to NTM projectile classes that expose a shooter or thrower reference. */

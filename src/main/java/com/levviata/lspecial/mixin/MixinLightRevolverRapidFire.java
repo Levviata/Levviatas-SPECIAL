@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinLightRevolverRapidFire {
 
     /** holds native primary input for the selected light revolver while its perk is enabled. */
-    @Inject(method = "onUpdate", at = @At("HEAD"), remap = false)
+    @Inject(method = "onUpdate", at = @At("RETURN"), remap = false)
     private void lspecial$forceLightRevolverPrimary(ItemStack stack, World world, Entity entity,
                                                     int slot, boolean selected, CallbackInfo callback) {
         if (!selected || !(entity instanceof EntityPlayer) || stack == null || stack.isEmpty()

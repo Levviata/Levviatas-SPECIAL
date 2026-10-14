@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** adjusts third-person camera distance to match the player's rendered Endurance scale. */
+/** adjusts only the third-person camera distance to match the player's rendered Endurance scale. */
 @Mixin(EntityRenderer.class)
 public abstract class MixinEntityRenderer {
     @Shadow private float thirdPersonDistance;

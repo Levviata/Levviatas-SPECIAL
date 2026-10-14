@@ -35,8 +35,9 @@ public final class TooltipAdder {
                 && tooltipStack.getTagCompound().hasKey("LSPECIALTradeDiscount")) {
             net.minecraft.nbt.NBTTagCompound discount = tooltipStack.getTagCompound().getCompoundTag("LSPECIALTradeDiscount");
             if (discount != null) {
-                event.getToolTip().add("Original price: " + discount.getInteger("originalCount") + " emeralds");
-                event.getToolTip().add("Discounted price: " + tooltipStack.getCount() + " emeralds");
+                String itemName = tooltipStack.getDisplayName();
+                event.getToolTip().add("Original amount: " + discount.getInteger("originalCount") + " x " + itemName);
+                event.getToolTip().add("Discounted amount: " + tooltipStack.getCount() + "* x " + itemName);
             }
         }
         if (!LSPECIALConfig.strength || !LSPECIALConfig.strengthTooltip || inst == null) {

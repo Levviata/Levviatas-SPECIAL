@@ -43,8 +43,7 @@ public abstract class MixinWeaponSecondary {
     /** handles crouch-secondary ammo cycling, the Lag's self-kill action, and double-barrel grappling. */
     @Inject(method = "handleKeybind(Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/inventory/IInventory;Lnet/minecraft/item/ItemStack;Lcom/hbm/handler/HbmKeybinds$EnumKeybind;Z)V", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory, ItemStack stack, HbmKeybinds.EnumKeybind keybind, boolean pressed, CallbackInfo callback) {
-        if (!(entity instanceof EntityPlayer) || stack == null || stack.isEmpty()
-                || keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) {
+        if (!(entity instanceof EntityPlayer) || stack == null || stack.isEmpty() || keybind == null) {
             return;
         }
 
@@ -52,10 +51,27 @@ public abstract class MixinWeaponSecondary {
         String itemId = registryId(stack);
         if (itemId == null) return;
 
+        // replace NTM's normal scope toggle for supported Heretic-style copies.
+        if (isHereticScopeCopyWeapon(itemId) && LSPECIALConfig.modifyGuns
+                && LSPECIALConfig.hereticStyleScoping && hasIntelligence(player, 5)
+                && lspecial$isScopeKeybind(keybind)) {
+            ItemGunBaseNT.setIsAiming(stack, pressed);
+            callback.cancel();
+            return;
+        }
+
+        if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
+
         boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && hasIntelligence(player, 15);
         boolean dragonSecondary = "hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryDirectHitPerk && hasIntelligence(player, LSPECIALConfig.dragonsFuryDirectHitLevel);
         boolean phlogSecondary = "hbm:gun_flamer".equals(itemId) && LSPECIALConfig.phlogistinatorSustainedFirePerk && hasIntelligence(player, LSPECIALConfig.phlogistinatorSustainedFireLevel);
-        if (carbineSecondary || dragonSecondary || phlogSecondary) {
+        boolean lagSecondary = "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && hasIntelligence(player, 5);
+        boolean lincolnSecondary = "hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && hasIntelligence(player, 15);
+        boolean tauSecondary = "hbm:gun_tau".equals(itemId) && LSPECIALConfig.tauSecondaryDamageBonus && hasIntelligence(player, 5);
+        boolean lightRevolverSecondary = "hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk && hasIntelligence(player, 5);
+        if (carbineSecondary || dragonSecondary || phlogSecondary || lagSecondary || lincolnSecondary
+                || tauSecondary || lightRevolverSecondary) {
+            // NTM reads the secondary state for the modified mode, but still needs primary input to run its firing pipeline.
             lspecial$setPrimaryForAllConfigs(stack, pressed);
         }
 
@@ -63,19 +79,21 @@ public abstract class MixinWeaponSecondary {
 
         int requiredLevel = isHigherPerkAmmoWeapon(itemId) ? 15 : 5;
         if (player.world.isRemote) {
+            boolean lightRevolverTrigger = "hbm:gun_light_revolver".equals(itemId)
+                    && LSPECIALConfig.lightRevolverRapidFirePerk && hasIntelligence(player, 5);
+            if (lightRevolverTrigger && SPECIALGameplayHandler.startLightRevolverRapidFire(player, stack)) {
+                callback.cancel();
+                return;
+            }
+
             boolean isSpecialAction = (player.isSneaking() && "hbm:gun_lag".equals(itemId)
                     && LSPECIALConfig.lagSecondarySelfKill && hasIntelligence(player, 5))
                     || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
                     && hasIntelligence(player, requiredLevel) && supportsAmmoCycling(itemId)
                     && (!isMinigun(itemId) || LSPECIALConfig.minigunLaserModePerk))
                     || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
-                    && LSPECIALConfig.doubleBarrelGrapple && hasIntelligence(player, 15))
-                    || ("hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk
-                    && hasIntelligence(player, 5));
+                    && LSPECIALConfig.doubleBarrelGrapple && hasIntelligence(player, 15));
             if (isSpecialAction) {
-                if ("hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk) {
-                    SPECIALGameplayHandler.startLightRevolverRapidFire(player, stack);
-                }
                 if (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
                         && LSPECIALConfig.doubleBarrelGrappleVisuals) {
                     net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
@@ -120,19 +138,10 @@ public abstract class MixinWeaponSecondary {
         }
     }
 
-    /** applies the Heretic-style aiming state automatically while a supported weapon is selected. */
-    @SuppressWarnings("all")
-    @Inject(method = "onUpdate(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;IZ)V", at = @At("HEAD"), remap = false)
-    private void lspecial$applyHereticScope(ItemStack stack, World world, Entity entity, int slot, boolean selected, CallbackInfo callback) {
-        if (!(entity instanceof EntityPlayer) || stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) {
-            return;
-        }
-        String itemId = stack.getItem().getRegistryName().toString();
-        if (!isHereticScopeCopyWeapon(itemId)) {
-            return;
-        }
-        boolean scoped = selected && LSPECIALConfig.modifyGuns && LSPECIALConfig.hereticStyleScoping && hasIntelligence((EntityPlayer) entity, 5);
-        ItemGunBaseNT.setIsAiming(stack, scoped);
+    /** identifies NTM's scope/aim keybinds without hard-linking one enum spelling. */
+    private static boolean lspecial$isScopeKeybind(HbmKeybinds.EnumKeybind keybind) {
+        String name = keybind.name();
+        return name.contains("AIM") || name.contains("SCOPE");
     }
 
     /** returns whether the player's current Intelligence score meets the requested perk level. */
