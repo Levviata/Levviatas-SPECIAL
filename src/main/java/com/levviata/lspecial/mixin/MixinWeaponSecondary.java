@@ -103,7 +103,6 @@ public abstract class MixinWeaponSecondary {
 
         if (!pressed) return;
 
-        int requiredLevel = isHigherPerkAmmoWeapon(itemId) ? 15 : 5;
         if (player.world.isRemote) {
             boolean lightRevolverTrigger = "hbm:gun_light_revolver".equals(itemId)
                     && LSPECIALConfig.lightRevolverRapidFirePerk && hasIntelligence(player, 5);
@@ -115,7 +114,7 @@ public abstract class MixinWeaponSecondary {
             boolean isSpecialAction = (player.isSneaking() && "hbm:gun_lag".equals(itemId)
                     && LSPECIALConfig.lagSecondarySelfKill && hasIntelligence(player, 5))
                     || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
-                    && hasIntelligence(player, requiredLevel) && supportsAmmoCycling(itemId)
+                    && hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
                     && (!isMinigun(itemId) || LSPECIALConfig.minigunLaserModePerk))
                     || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
                     && LSPECIALConfig.doubleBarrelGrapple && hasIntelligence(player, 15));
@@ -149,9 +148,19 @@ public abstract class MixinWeaponSecondary {
         }
 
         if (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
-                && hasIntelligence(player, requiredLevel) && supportsAmmoCycling(itemId)
+                && hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
                 && (!isMinigun(itemId) || LSPECIALConfig.minigunLaserModePerk)
                 && cycleSupportedAmmo(player, stack, inventory, itemId)) {
+            net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+            if (tag == null) {
+                tag = new net.minecraft.nbt.NBTTagCompound();
+                stack.setTagCompound(tag);
+            }
+            boolean mode = !tag.getBoolean("LSPECIALTertiaryMode");
+            tag.setBoolean("LSPECIALTertiaryMode", mode);
+            player.world.playSound(null, player.getPosition(),
+                    mode ? HBMSoundHandler.switchmode2 : HBMSoundHandler.switchmode1,
+                    SoundCategory.PLAYERS, 1.0F, 1.0F);
             callback.cancel();
             return;
         }
@@ -190,10 +199,6 @@ public abstract class MixinWeaponSecondary {
                 || isG3(itemId) || isMinigun(itemId);
     }
 
-    /** identifies alternate-caliber weapons that require the higher Intelligence perk. */
-    private static boolean isHigherPerkAmmoWeapon(String itemId) {
-        return isUzi(itemId) || isG3(itemId) || isMinigun(itemId);
-    }
 
     private static boolean isStarF(String itemId) {
         return "hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId);

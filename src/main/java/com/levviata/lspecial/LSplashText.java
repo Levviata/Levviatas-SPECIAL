@@ -19,7 +19,7 @@ public class LSplashText {
 
     @SubscribeEvent
     public void onGuiOpen(GuiOpenEvent event) {
-        if (!(event.getGui() instanceof GuiMainMenu)) {
+        if (!LSPECIALConfig.showLSplashText || !(event.getGui() instanceof GuiMainMenu)) {
             return;
         }
 

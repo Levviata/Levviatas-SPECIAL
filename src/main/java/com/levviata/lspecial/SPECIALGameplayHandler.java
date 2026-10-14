@@ -1,6 +1,9 @@
 package com.levviata.lspecial;
 
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.items.weapon.sedna.GunConfig;
+import com.hbm.items.weapon.sedna.Receiver;
+import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.render.anim.sedna.AnimationEnums.GunAnimation;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
@@ -11,6 +14,8 @@ import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundCategory;
+import net.minecraft.util.SoundEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -35,6 +40,7 @@ public final class SPECIALGameplayHandler {
     private static final class PendingSelfKill {
         private final ItemStack stack;
         private int ticksRemaining;
+        private boolean firedCue;
 
         private PendingSelfKill(ItemStack stack, int ticksRemaining) {
             this.stack = stack;
@@ -46,6 +52,7 @@ public final class SPECIALGameplayHandler {
         private final ItemStack stack;
         private final int slot;
         private int ticksRemaining;
+        private boolean firedCue;
 
         private LockedGun(ItemStack stack, int slot, int ticksRemaining) {
             this.stack = stack;
@@ -145,21 +152,16 @@ public final class SPECIALGameplayHandler {
         }
     }
 
-    /** plays NTM's empty-magazine reload animation and schedules the Lag self-kill after the animation starts. */
+    /** starts the Lag self-kill countdown and plays its inspect animation. */
     public static boolean startLagSelfKill(EntityPlayer player, ItemStack stack) {
         if (player == null || player.world.isRemote || player.isDead || stack == null || stack.isEmpty()
+                || player.getHeldItemMainhand() != stack
                 || !LSPECIALConfig.modifyGuns || !LSPECIALConfig.lagSecondarySelfKill
                 || !lspecial$isLag(stack) || !lspecial$hasLagSelfKillPerk()) return false;
 
-        pendingSelfKills.put(player, new PendingSelfKill(stack, LSPECIALConfig.lagSelfKillDelayTicks));
-        if (LSPECIALConfig.lagSelfKillEmptyReloadAnimation && stack.getItem() instanceof ItemGunBaseNT) {
-            GunAnimation animation;
-            try {
-                animation = GunAnimation.valueOf(LSPECIALConfig.lagSelfKillAnimation);
-            } catch (IllegalArgumentException | NullPointerException exception) {
-                animation = GunAnimation.RELOAD_EMPTY;
-            }
-            ItemGunBaseNT.playAnimation(player, stack, animation, 0);
+        pendingSelfKills.put(player, new PendingSelfKill(stack, 20));
+        if (stack.getItem() instanceof ItemGunBaseNT) {
+            ItemGunBaseNT.playAnimation(player, stack, GunAnimation.INSPECT, 0);
         }
         return true;
     }
@@ -176,17 +178,48 @@ public final class SPECIALGameplayHandler {
                 && "hbm:gun_lag".equals(stack.getItem().getRegistryName().toString());
     }
 
-    /** counts down the animation window before applying the configured self-kill. */
+    /** plays the Lag firing cue on tick 19 and applies the self-kill on tick 20. */
     private void lspecial$tickPendingSelfKill(EntityPlayer player) {
         PendingSelfKill pending = pendingSelfKills.get(player);
         if (pending == null) return;
-        if (player.isDead || player.world == null || player.world.isRemote) {
+        if (player.isDead || player.world == null || player.world.isRemote
+                || player.getHeldItemMainhand() != pending.stack) {
             pendingSelfKills.remove(player);
             return;
         }
-        if (--pending.ticksRemaining <= 0) {
+        if (--pending.ticksRemaining == 1 && !pending.firedCue) {
+            pending.firedCue = true;
+            lspecial$playLagFireCue(player, pending.stack);
+        }
+        if (pending.ticksRemaining <= 0) {
             pendingSelfKills.remove(player);
             player.onKillCommand();
+        }
+    }
+
+    /** plays the gun's native fire sound and consumes one loaded round for the final cue. */
+    private static void lspecial$playLagFireCue(EntityPlayer player, ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT)) return;
+        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        GunConfig config = gun.getConfig(stack, 0);
+        if (config == null) return;
+        Receiver[] receivers = config.getReceivers(stack);
+        if (receivers == null) return;
+
+        SoundEvent sound = null;
+        for (Receiver receiver : receivers) {
+            if (receiver == null) continue;
+            if (sound == null) sound = receiver.getFireSound(stack);
+            IMagazine magazine = receiver.getMagazine(stack);
+            if (magazine == null) continue;
+            int amount = magazine.getAmount(stack, null);
+            if (amount > 0) {
+                magazine.setAmount(stack, amount - 1);
+                break;
+            }
+        }
+        if (sound != null) {
+            player.world.playSound(null, player.getPosition(), sound, SoundCategory.PLAYERS, 1.0F, 1.0F);
         }
     }
 
@@ -293,7 +326,7 @@ public final class SPECIALGameplayHandler {
 
         Map<String, Double> variables = new java.util.HashMap<>();
         variables.put("charisma", (double) charisma);
-        double fraction = LSPECIALExpression.eval(LSPECIALConfig.charismaVillagerDiscountFormula, variables, LSPECIALConfig.charismaVillagerDiscountFraction);
+        double fraction = LSPECIALExpression.eval(LSPECIALConfig.charismaVillagerDiscountFormula, variables, 0.0D);
         fraction = Math.max(0.0D, Math.min(0.75D, fraction));
         int reduced = Math.max(1, (int) Math.ceil(originalCount * (1.0 - fraction)));
         if (reduced >= originalCount) {

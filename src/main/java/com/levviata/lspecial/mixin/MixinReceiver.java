@@ -4,9 +4,6 @@ import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
-import com.hbm.items.weapon.sedna.factory.XFactory10ga;
-import com.hbm.items.weapon.sedna.factory.XFactory50;
-import com.hbm.items.weapon.sedna.factory.XFactory556mm;
 import com.hbm.items.weapon.sedna.factory.XFactoryEnergy;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.levviata.lspecial.LSPECIALConfig;
@@ -82,12 +79,12 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
             delay = LSPECIALConfig.phlogistinatorFireDelayTicks;
         } else if (secondaryHeld && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
             delay = LSPECIALConfig.lagSecondaryBurstDelay;
-        } else if (LSPECIALConfig.weaponSecondaryAmmoCycling && lspecial$hasIntelligence(15) && activeAmmo != null) {
-            if (lspecial$isStarF(itemId) && activeAmmo == XFactory50.bmg50_sp) {
+        } else if (LSPECIALConfig.weaponSecondaryAmmoCycling && lspecial$isTertiaryMode(stack)) {
+            if (lspecial$isStarF(itemId)) {
                 delay = LSPECIALConfig.starFFiftyBmgDelayTicks;
-            } else if (lspecial$isUzi(itemId) && activeAmmo == XFactory556mm.r556_sp) {
+            } else if (lspecial$isUzi(itemId)) {
                 delay = LSPECIALConfig.uzi556DelayTicks;
-            } else if (lspecial$isG3(itemId) && activeAmmo == XFactory10ga.g10) {
+            } else if (lspecial$isG3(itemId)) {
                 delay = LSPECIALConfig.g3TenGaugeDelayTicks;
             } else if (lspecial$isMinigun(itemId) && LSPECIALConfig.minigunLaserModePerk
                     && activeAmmo == XFactoryEnergy.energy_las) {
@@ -145,6 +142,12 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
 
         Object ammo = magazine.getType(stack, null);
         return ammo instanceof BulletConfig ? (BulletConfig) ammo : null;
+    }
+
+    @Unique
+    private static boolean lspecial$isTertiaryMode(ItemStack stack) {
+        return stack != null && stack.hasTagCompound()
+                && stack.getTagCompound().getBoolean("LSPECIALTertiaryMode");
     }
 
     @Unique

@@ -190,7 +190,8 @@ public class GuiSPECIAL extends GuiScreen {
             int valueX = listLeft + listWidth - 42;
             drawClippedString(label, labelX, y + 4, Math.max(1, valueX - labelX - 5), color);
 
-            String value = Integer.toString(row.value);
+            String value = row.name.endsWith("Bonus")
+                    ? Boolean.toString(row.value == 1) : Integer.toString(row.value);
             drawClippedString(value, valueX, y + 4, Math.max(1, listLeft + listWidth - 4 - valueX), color);
         }
 
