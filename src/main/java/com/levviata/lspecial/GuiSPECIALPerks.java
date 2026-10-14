@@ -26,51 +26,62 @@ public final class GuiSPECIALPerks extends GuiScreen {
     private void populate() {
         lines.clear();
         switch (stat) {
-            case "Strength":
+            /*case "Strength":
                 lines.add("LESSER PERK — Level 5");
                 lines.add("Attack damage bonus follows the configured Strength formula.");
                 lines.add("HIGHER PERK — Levels 10–15");
                 lines.add("Further bonuses depend on the active configuration.");
-                break;
+                break;*/
             case "Perception":
                 lines.add("LESSER PERK — Level 5");
-                lines.add("Duplicates non-stackable loot at the configured Perception levels.");
+                lines.add("Duplicates found loot");
                 lines.add("HIGHER PERK — Level 10");
-                lines.add("Higher Perception levels can duplicate loot again when supported by the loot table.");
+                lines.add("If Luck is at level 10, add new special items to found loot");
                 lines.add("HIGHER PERK — Above level 15");
-                lines.add("Higher Perception can reduce the target armor threshold for supported NTM ammunition.");
+                lines.add("+1% armor threshold reduction per level, applies to guns");
                 break;
             case "Endurance":
                 lines.add("LESSER PERK — Level 5");
-                lines.add("Enables configured health-related effects.");
-                lines.add("The optional model scale affects rendering only, not collision or reach.");
-                lines.add("HIGHER PERK — Levels 10–15");
-                lines.add("Further effects depend on enabled Endurance settings.");
+                lines.add("Adds amplified regeneration, which amplifies current regeneration by +1 or gives Regeneration I.");
+                lines.add("Enlarges your player model (not including hitbox and reach) proportional to your current level");
+               /* lines.add("HIGHER PERK — Levels 10–15");
+                lines.add("Further effects depend on enabled Endurance settings.");*/
                 break;
             case "Charisma":
                 lines.add("LESSER PERK — Level 5");
                 lines.add("Configured entities may ignore the player when supported.");
-                lines.add("Villager trade discounts can be enabled separately; the original emerald cost appears in the cost tooltip.");
-                lines.add("HIGHER PERK — Levels 10–15");
-                lines.add("Additional effects depend on the active configuration.");
+                lines.add("Villagers have a discount in proportion to your current level. To see how much is discounted, over the item to trade.");
+                /*lines.add("HIGHER PERK — Levels 10–15");
+                lines.add("Additional effects depend on the active configuration.");*/
                 break;
-            case "Agility":
+            /*case "Agility":
                 lines.add("LESSER PERK — Level 5");
                 lines.add("Movement speed follows the configured Agility formula.");
                 lines.add("HIGHER PERK — Levels 10–15");
                 lines.add("Flying speed remains separate from ground movement speed.");
-                break;
+                break;*/
             case "Luck":
                 lines.add("LESSER PERK — Level 5");
-                lines.add("Durability protection uses a configurable chance and cap.");
+                lines.add("Chance proportional to your current level to avoid losing durability for current armor equipped");
                 lines.add("HIGHER PERK — Level 10");
-                lines.add("Adds extra items from loot tables matching the configured rare-table pattern.");
+                lines.add("If perception level 10, add new special items to found loot.");
                 break;
             case "Intelligence":
                 lines.add("LESSER PERK — Level 5");
-                lines.add("See the Guns and Ammunition configuration for currently enabled effects.");
-                lines.add("HIGHER PERK — Levels 10–15");
-                lines.add("See the Guns and Ammunition configuration for currently enabled effects.");
+                lines.add("Alternative firing modes for many guns. Toggles with Secondary Fire (keybind):");
+                lines.add("Comically Long gun, 3 bullet burst. Shift-Secondary Fire to kill yourself, can be disabled");
+                lines.add("Star-F, UZI, G3: unlock alternate ammunition modes where configured.");
+                lines.add("HIGHER PERK — Levels 15");
+                lines.add("All Revolvers: +1 penetration and x3 headshot multiplier");
+                lines.add("Henry Lincoln Repeater: 3 bullet burst");
+                lines.add("Carbine: increases magazine capacity, enables semi-automatic secondary fire, and reduces recoil.");
+                lines.add("Minigun: accepts Capacitor ammo.");
+                lines.add("Double Barrel: entity grappling on crouch + Second Fire.");
+                lines.add("Topaz (Dragon's Fury): secondary fire gains increased direct-hit damage and short-range projectiles.");
+                lines.add("Flamer (Phlogistinator): secondary projectiles gain a wider hitbox and short range.");
+                lines.add("Tau Cannon: charged secondary fire deals increased damage.");
+                lines.add("Fat Man: enables its configured higher-perk firing-delay adjustment.");
+                lines.add("Laser Pistol: applies its configured higher-perk firing-delay adjustment.");
                 break;
             default:
                 lines.add("No perk notes are available for this stat.");
