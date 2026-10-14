@@ -20,13 +20,20 @@ public final class GrappleOverlayHandler {
     /** expires the temporary chain indicator stored on the held weapon. */
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+
         Minecraft minecraft = Minecraft.getMinecraft();
         EntityPlayer player = minecraft.player;
-        if (player == null) return;
+        if (player == null) {
+            return;
+        }
 
         for (ItemStack stack : player.inventory.mainInventory) {
-            if (stack.isEmpty() || !isDoubleBarrel(stack) || !stack.hasTagCompound()) continue;
+            if (stack.isEmpty() || !isDoubleBarrel(stack) || !stack.hasTagCompound()) {
+                continue;
+            }
             int ticks = stack.getTagCompound().getInteger(VISUAL_TICKS_TAG);
             if (ticks > 0) {
                 stack.getTagCompound().setInteger(VISUAL_TICKS_TAG, ticks - 1);
