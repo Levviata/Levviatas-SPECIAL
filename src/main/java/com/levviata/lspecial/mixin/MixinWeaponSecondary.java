@@ -195,9 +195,9 @@ public abstract class MixinWeaponSecondary {
 
     /** returns the requested native NTM bullet configuration for a weapon's alternate mode. */
     private static BulletConfig getRequestedAmmo(String itemId) {
-        if ("hbm:gun_pepperbox".equals(itemId)) return XFactory44.m44_fmj;
-        if (isStarF(itemId)) return XFactory50.bmg50_fmj;
-        if (isUzi(itemId)) return XFactory556mm.r556_fmj;
+        if ("hbm:gun_pepperbox".equals(itemId)) return XFactory44.m44_sp;
+        if (isStarF(itemId)) return XFactory50.bmg50_sp;
+        if (isUzi(itemId)) return XFactory556mm.r556_sp;
         if (isG3(itemId)) return XFactory10ga.g10;
         if (isMinigun(itemId)) return XFactoryEnergy.energy_las;
         return null;
@@ -316,6 +316,9 @@ public abstract class MixinWeaponSecondary {
             return false;
         }
 
+        // update NTM's native magazine type as well as the saved LSPECIAL selection,
+        // so every receiver resolves the new projectile immediately.
+        magazine.setType(stack, target);
         if (!stack.hasTagCompound()) {
             stack.setTagCompound(new net.minecraft.nbt.NBTTagCompound());
         }

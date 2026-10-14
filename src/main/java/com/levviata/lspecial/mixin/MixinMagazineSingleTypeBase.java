@@ -36,11 +36,11 @@ public abstract class MixinMagazineSingleTypeBase {
         String itemId = stack.getItem().getRegistryName().toString();
         BulletConfig requested = null;
         if ("hbm:gun_pepperbox".equals(itemId)) {
-            requested = XFactory44.m44_fmj;
+            requested = XFactory44.m44_sp;
         } else if ("hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId)) {
-            requested = XFactory50.bmg50_fmj;
+            requested = XFactory50.bmg50_sp;
         } else if ("hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId)) {
-            requested = XFactory556mm.r556_fmj;
+            requested = XFactory556mm.r556_sp;
         } else if ("hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId)) {
             requested = XFactory10ga.g10;
         }

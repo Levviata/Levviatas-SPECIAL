@@ -83,9 +83,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         } else if (secondaryHeld && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
             delay = LSPECIALConfig.lagSecondaryBurstDelay;
         } else if (LSPECIALConfig.weaponSecondaryAmmoCycling && lspecial$hasIntelligence(15) && activeAmmo != null) {
-            if (lspecial$isStarF(itemId) && activeAmmo == XFactory50.bmg50_fmj) {
+            if (lspecial$isStarF(itemId) && activeAmmo == XFactory50.bmg50_sp) {
                 delay = LSPECIALConfig.starFFiftyBmgDelayTicks;
-            } else if (lspecial$isUzi(itemId) && activeAmmo == XFactory556mm.r556_fmj) {
+            } else if (lspecial$isUzi(itemId) && activeAmmo == XFactory556mm.r556_sp) {
                 delay = LSPECIALConfig.uzi556DelayTicks;
             } else if (lspecial$isG3(itemId) && activeAmmo == XFactory10ga.g10) {
                 delay = LSPECIALConfig.g3TenGaugeDelayTicks;
