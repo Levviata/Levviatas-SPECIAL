@@ -239,8 +239,12 @@ public class StatsLogic {
 
         // perception, intelligence, and luck
 
-        if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
-            ItemGunBaseNT.setWear(heldStack , 0, 0);
+        if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode)
+                && inst.getIntelligenceScore().getScorePoints() >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
+            ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
+            for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+                ItemGunBaseNT.setWear(heldStack, configIndex, 0);
+            }
         }
 
         if (heldStack.getItem() instanceof ItemGunBaseSedna) {
@@ -298,7 +302,7 @@ public class StatsLogic {
         LOGGER.debug("Applying gun config {} at index {}", cfg, gunIndex);
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5) {
-            ItemGunBaseNT.setWear(heldStack, 0, 0);
+            ItemGunBaseNT.setWear(heldStack, gunIndex, 0);
         }
 
         modifiedReceiver = receivers[0];

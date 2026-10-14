@@ -1,6 +1,7 @@
 package com.levviata.lspecial.mixin;
 
 import com.hbm.handler.HbmKeybinds;
+import com.hbm.lib.HBMSoundHandler;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
@@ -22,6 +23,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -50,6 +52,30 @@ public abstract class MixinWeaponSecondary {
         EntityPlayer player = (EntityPlayer) entity;
         String itemId = registryId(stack);
         if (itemId == null) return;
+
+        if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
+                && !player.isSneaking() && keybind.name().contains("SECONDARY") && pressed
+                && hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
+            net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+            if (tag == null) {
+                tag = new net.minecraft.nbt.NBTTagCompound();
+                stack.setTagCompound(tag);
+            }
+            boolean mode = !tag.getBoolean("LSPECIALSecondaryMode");
+            tag.setBoolean("LSPECIALSecondaryMode", mode);
+            player.world.playSound(null, player.getPosition(),
+                    mode ? HBMSoundHandler.switchmode2 : HBMSoundHandler.switchmode1,
+                    SoundCategory.PLAYERS, 1.0F, 1.0F);
+            lspecial$setSecondaryForAllConfigs(stack, mode);
+            callback.cancel();
+            return;
+        }
+
+        if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
+                && keybind.name().contains("PRIMARY")) {
+            boolean mode = stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALSecondaryMode");
+            lspecial$setSecondaryForAllConfigs(stack, mode);
+        }
 
         // replace NTM's normal scope toggle for supported Heretic-style copies.
         if (isHereticScopeCopyWeapon(itemId) && LSPECIALConfig.modifyGuns
@@ -371,6 +397,27 @@ public abstract class MixinWeaponSecondary {
             remaining -= stackCount;
         }
         return true;
+    }
+
+
+    /** identifies weapons with implemented alternate fire that can be selected as a persistent mode. */
+    private static boolean lspecial$supportsToggleMode(String itemId) {
+        return "hbm:gun_carbine".equals(itemId) || "hbm:gun_flamer_topaz".equals(itemId)
+                || "hbm:gun_flamer".equals(itemId) || "hbm:gun_lag".equals(itemId)
+                || "hbm:gun_henry_lincoln".equals(itemId) || "hbm:gun_tau".equals(itemId)
+                || "hbm:gun_light_revolver".equals(itemId);
+    }
+
+    private static int lspecial$toggleRequiredLevel(String itemId) {
+        return "hbm:gun_carbine".equals(itemId) || "hbm:gun_henry_lincoln".equals(itemId) ? 15 : 5;
+    }
+
+    private static void lspecial$setSecondaryForAllConfigs(ItemStack stack, boolean pressed) {
+        if (!(stack.getItem() instanceof ItemGunBaseNT)) return;
+        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+            ItemGunBaseNT.setSecondary(stack, configIndex, pressed);
+        }
     }
 
     /** sets native primary input while the secondary button is held for alternate-fire modes. */

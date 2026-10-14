@@ -291,7 +291,8 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
 
     /** checks the NTM per-config secondary input state stored on the weapon stack. */
     private boolean lspecial$isSecondaryHeld(ItemStack stack) {
-        return stack != null && !stack.isEmpty() && ItemGunBaseNT.getSecondary(stack, index);
+        return stack != null && !stack.isEmpty() && (ItemGunBaseNT.getSecondary(stack, index)
+                || (stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALSecondaryMode")));
     }
 
     /** returns the namespaced item ID without depending on translated display text. */

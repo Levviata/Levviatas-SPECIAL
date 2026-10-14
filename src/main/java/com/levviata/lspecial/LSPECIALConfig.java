@@ -86,6 +86,7 @@ public final class LSPECIALConfig {
     public static boolean charismaVillagerDiscount = true;
     public static int charismaVillagerDiscountLevel = 5;
     public static double charismaVillagerDiscountFraction = 0.5;
+    public static String charismaVillagerDiscountFormula = "min(charisma * 0.05, 0.75)";
     public static boolean luckArmorDurabilityProtection = true;
     public static double luckArmorDurabilityChancePerPoint = 0.00025;
     public static double luckArmorDurabilityChanceCap = 0.05;
@@ -115,6 +116,9 @@ public final class LSPECIALConfig {
     public static int g3TenGaugeDelayTicks = 10;
     public static boolean lagSecondarySelfKill = true;
     public static boolean lagSelfKillEmptyReloadAnimation = true;
+    public static String lagSelfKillAnimation = "RELOAD_EMPTY";
+    public static boolean secondaryFireToggle = true;
+    public static int starFCapacity = 30;
     public static int lagSelfKillDelayTicks = 40;
     public static boolean doubleBarrelGrapple = true;
     public static boolean doubleBarrelGrappleVisuals = true;
@@ -294,7 +298,8 @@ public final class LSPECIALConfig {
         charismaNeutralEntityList = s(STATS, "charismaNeutralEntityList", charismaNeutralEntityList, "Comma-separated entity registry IDs affected by Charisma");
         charismaVillagerDiscount = b(STATS, "charismaVillagerDiscount", true, "Charisma reduces villager trade prices");
         charismaVillagerDiscountLevel = i(STATS, "charismaVillagerDiscountLevel", 5, 1, 100, "Minimum Charisma level for villager trade discounts");
-        charismaVillagerDiscountFraction = d(STATS, "charismaVillagerDiscountFraction", 0.5, 0, 1, "Fraction of original emerald cost removed; 0.5 means half price");
+        charismaVillagerDiscountFraction = d(STATS, "charismaVillagerDiscountFraction", 0.5, 0, 1, "Legacy fallback discount fraction; used only if the formula is invalid");
+        charismaVillagerDiscountFormula = s(ADV, "charismaVillagerDiscountFormula", "min(charisma * 0.05, 0.75)", "Variables: charisma; output is a discount fraction from 0 to 0.75. Default: 5% per Charisma level, capped at 75%");
         luckArmorDurabilityProtection = b(STATS, "luckArmorDurabilityProtection", true, "Luck can prevent armor durability loss when hurt");
         luckArmorDurabilityChancePerPoint = d(STATS, "luckArmorDurabilityChancePerPoint", 0.00025, 0, 1, "Chance per Luck point to prevent armor durability loss (0.00025 = 0.025%)");
         luckArmorDurabilityChanceCap = d(STATS, "luckArmorDurabilityChanceCap", 0.05, 0, 1, "Maximum armor durability protection chance");
@@ -323,7 +328,11 @@ public final class LSPECIALConfig {
         uzi556DelayTicks = i(GUNS, "uzi556DelayTicks", 2, 0, 1200, "UZI 5.56 mm mode firing delay in ticks");
         g3TenGaugeDelayTicks = i(GUNS, "g3TenGaugeDelayTicks", 10, 0, 1200, "G3 10 gauge mode firing delay in ticks");
         lagSecondarySelfKill = b(GUNS, "lagSecondarySelfKill", true, "Intelligence 5: crouch + secondary with the Lag starts the delayed self-kill sequence");
-        lagSelfKillEmptyReloadAnimation = b(GUNS, "lagSelfKillEmptyReloadAnimation", true, "Play NTM's empty-magazine reload animation before the Lag self-kill");
+        lagSelfKillEmptyReloadAnimation = b(GUNS, "lagSelfKillEmptyReloadAnimation", true, "Play a selected NTM animation before the Lag self-kill");
+        String[] lagAnimations = java.util.Arrays.stream(com.hbm.render.anim.sedna.AnimationEnums.GunAnimation.values()).map(Enum::name).toArray(String[]::new);
+        lagSelfKillAnimation = config.get(GUNS, "lagSelfKillAnimation", "RELOAD_EMPTY", sideComment(GUNS, "NTM GunAnimation enum value to play before the Lag self-kill"), lagAnimations).getString();
+        secondaryFireToggle = b(GUNS, "secondaryFireToggle", true, "Toggle supported secondary-fire modes with Secondary Fire; primary fire then fires the selected mode");
+        starFCapacity = i(GUNS, "starFCapacity", 30, 1, 1000, "Star-F magazine capacity at Intelligence 15");
         lagSelfKillDelayTicks = i(GUNS, "lagSelfKillDelayTicks", 40, 1, 1200, "Delay before the Lag self-kill, in ticks (40 = 2 seconds)");
         doubleBarrelGrapple = b(GUNS, "doubleBarrelGrapple", true, "Intelligence 15: secondary fire grapples toward the targeted entity with the double barrel");
         doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render a text chain and v marker for the double-barrel grapple");

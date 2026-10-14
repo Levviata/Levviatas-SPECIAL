@@ -153,7 +153,13 @@ public final class SPECIALGameplayHandler {
 
         pendingSelfKills.put(player, new PendingSelfKill(stack, LSPECIALConfig.lagSelfKillDelayTicks));
         if (LSPECIALConfig.lagSelfKillEmptyReloadAnimation && stack.getItem() instanceof ItemGunBaseNT) {
-            ItemGunBaseNT.playAnimation(player, stack, GunAnimation.RELOAD_EMPTY, 0);
+            GunAnimation animation;
+            try {
+                animation = GunAnimation.valueOf(LSPECIALConfig.lagSelfKillAnimation);
+            } catch (IllegalArgumentException | NullPointerException exception) {
+                animation = GunAnimation.RELOAD_EMPTY;
+            }
+            ItemGunBaseNT.playAnimation(player, stack, animation, 0);
         }
         return true;
     }
@@ -263,31 +269,44 @@ public final class SPECIALGameplayHandler {
     public void onInteractEntity(PlayerInteractEvent.EntityInteract event) {
         if (!(event.getTarget() instanceof EntityVillager) || event.getEntityPlayer().world.isRemote) return;
         EntityPlayer player = event.getEntityPlayer();
-        if (!LSPECIALConfig.charisma || !LSPECIALConfig.charismaVillagerDiscount
+        if (!LSPECIALConfig.charisma || !LSPECIALConfig.charismaVillagerDiscount || inst == null
+                || inst.getCharismaScore() == null
                 || inst.getCharismaScore().getScorePoints() < LSPECIALConfig.charismaVillagerDiscountLevel) return;
         EntityVillager villager = (EntityVillager) event.getTarget();
         net.minecraft.village.MerchantRecipeList recipes = villager.getRecipes(player);
         if (recipes == null) return;
         for (net.minecraft.village.MerchantRecipe recipe : recipes) {
-            if (discountedRecipes.contains(recipe)) continue;
-            lspecial$discountTradeCost(recipe.getItemToBuy());
-            lspecial$discountTradeCost(recipe.getSecondItemToBuy());
-            discountedRecipes.add(recipe);
+            int charisma = inst.getCharismaScore().getScorePoints();
+            lspecial$discountTradeCost(recipe.getItemToBuy(), charisma);
+            lspecial$discountTradeCost(recipe.getSecondItemToBuy(), charisma);
         }
     }
 
     /** discounts any stack used as a villager trade cost and records its original count for the tooltip. */
-    private static void lspecial$discountTradeCost(ItemStack cost) {
-        if (cost == null || cost.isEmpty() || cost.getCount() <= 1) return;
-        if (cost.hasTagCompound() && cost.getTagCompound().hasKey("LSPECIALTradeDiscount")) return;
+    private static void lspecial$discountTradeCost(ItemStack cost, int charisma) {
+        if (cost == null || cost.isEmpty()) return;
+        NBTTagCompound existingDiscount = cost.hasTagCompound()
+                ? cost.getTagCompound().getCompoundTag("LSPECIALTradeDiscount") : new NBTTagCompound();
+        int originalCount = existingDiscount.hasKey("originalCount")
+                ? existingDiscount.getInteger("originalCount") : cost.getCount();
+        if (originalCount <= 1) return;
 
-        int originalCount = cost.getCount();
-        int reduced = Math.max(1, (int) Math.ceil(originalCount * (1.0 - LSPECIALConfig.charismaVillagerDiscountFraction)));
-        if (reduced >= originalCount) return;
+        Map<String, Double> variables = new java.util.HashMap<>();
+        variables.put("charisma", (double) charisma);
+        double fraction = LSPECIALExpression.eval(LSPECIALConfig.charismaVillagerDiscountFormula, variables, LSPECIALConfig.charismaVillagerDiscountFraction);
+        fraction = Math.max(0.0D, Math.min(0.75D, fraction));
+        int reduced = Math.max(1, (int) Math.ceil(originalCount * (1.0 - fraction)));
+        if (reduced >= originalCount) {
+            if (cost.hasTagCompound()) cost.getTagCompound().removeTag("LSPECIALTradeDiscount");
+            cost.setCount(originalCount);
+            return;
+        }
 
         NBTTagCompound discount = new NBTTagCompound();
         discount.setInteger("originalCount", originalCount);
         discount.setInteger("discountedCount", reduced);
+        discount.setInteger("charismaLevel", charisma);
+        discount.setDouble("discountFraction", fraction);
         cost.setTagInfo("LSPECIALTradeDiscount", discount);
         cost.setCount(reduced);
     }

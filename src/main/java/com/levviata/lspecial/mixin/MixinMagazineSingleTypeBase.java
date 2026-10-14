@@ -172,6 +172,9 @@ public abstract class MixinMagazineSingleTypeBase {
             callback.setReturnValue(LSPECIALConfig.laserPewPewMagazineCapacity);
         } else if (LSPECIALConfig.carbineHigherPerkCapacity && "hbm:gun_carbine".equals(registryName)) {
             callback.setReturnValue(LSPECIALConfig.carbineMagazineCapacity);
+        } else if (("hbm:gun_star_f".equals(registryName) || "hbm:gun_star_f_akimbo".equals(registryName))
+                && LSPECIALConfig.modifyGuns && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= 15) {
+            callback.setReturnValue(LSPECIALConfig.starFCapacity);
         }
     }
 
