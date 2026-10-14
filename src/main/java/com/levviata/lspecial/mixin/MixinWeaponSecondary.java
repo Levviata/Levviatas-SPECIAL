@@ -14,10 +14,7 @@ import com.hbm.items.weapon.sedna.factory.XFactoryEnergy;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.items.weapon.sedna.mags.MagazineBelt;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
-import com.levviata.lspecial.LSPECIALConfig;
-import com.levviata.lspecial.RefundMagazine;
-import com.levviata.lspecial.SPECIALGameplayHandler;
-import com.levviata.lspecial.SPECIALScoreboard;
+import com.levviata.lspecial.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -75,12 +72,25 @@ public abstract class MixinWeaponSecondary {
                 && keybind.name().contains("PRIMARY")) {
             boolean mode = stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALSecondaryMode");
             lspecial$setSecondaryForAllConfigs(stack, mode);
+            if (pressed && mode && ("hbm:gun_lag".equals(itemId) || "hbm:gun_henry_lincoln".equals(itemId))) {
+                int requiredLevel = "hbm:gun_lag".equals(itemId) ? 5 : 15;
+                boolean enabled = "hbm:gun_lag".equals(itemId)
+                        ? LSPECIALConfig.lagSecondaryBurst : LSPECIALConfig.henryLincolnSecondaryBurst;
+                if (enabled && hasIntelligence(player, requiredLevel)) {
+                    if (!player.world.isRemote) {
+                        SPECIALGameplayHandler.startSequentialBurst(player, stack,
+                                LSPECIALConfig.lagSecondaryBurstDelay, requiredLevel);
+                    }
+                    callback.cancel();
+                    return;
+                }
+            }
         }
 
-        // replace NTM's normal scope toggle for supported Heretic-style copies.
+        // mirror the Heretic's hold-to-aim behavior through NTM's native aiming state.
         if (isHereticScopeCopyWeapon(itemId) && LSPECIALConfig.modifyGuns
                 && LSPECIALConfig.hereticStyleScoping && hasIntelligence(player, 5)
-                && lspecial$isScopeKeybind(keybind)) {
+                && keybind == HbmKeybinds.EnumKeybind.GUN_SECONDARY) {
             ItemGunBaseNT.setIsAiming(stack, pressed);
             callback.cancel();
             return;
@@ -115,6 +125,7 @@ public abstract class MixinWeaponSecondary {
                     && LSPECIALConfig.lagSecondarySelfKill && hasIntelligence(player, 5))
                     || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
                     && hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
+                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && hasIntelligence(player, 15)))
                     && (!isMinigun(itemId) || LSPECIALConfig.minigunLaserModePerk))
                     || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
                     && LSPECIALConfig.doubleBarrelGrapple && hasIntelligence(player, 15));
@@ -149,6 +160,7 @@ public abstract class MixinWeaponSecondary {
 
         if (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
                 && hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
+                && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && hasIntelligence(player, 15)))
                 && (!isMinigun(itemId) || LSPECIALConfig.minigunLaserModePerk)
                 && cycleSupportedAmmo(player, stack, inventory, itemId)) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
@@ -173,12 +185,6 @@ public abstract class MixinWeaponSecondary {
         }
     }
 
-    /** identifies NTM's scope/aim keybinds without hard-linking one enum spelling. */
-    private static boolean lspecial$isScopeKeybind(HbmKeybinds.EnumKeybind keybind) {
-        String name = keybind.name();
-        return name.contains("AIM") || name.contains("SCOPE");
-    }
-
     /** returns whether the player's current Intelligence score meets the requested perk level. */
     private static boolean hasIntelligence(EntityPlayer player, int level) {
         return LSPECIALConfig.intelligence
@@ -196,7 +202,7 @@ public abstract class MixinWeaponSecondary {
     /** identifies the guns with a defined alternate caliber or energy-projectile mode. */
     private static boolean supportsAmmoCycling(String itemId) {
         return "hbm:gun_pepperbox".equals(itemId) || isStarF(itemId) || isUzi(itemId)
-                || isG3(itemId) || isMinigun(itemId);
+                || isG3(itemId) || isMinigun(itemId) || "hbm:gun_amat".equals(itemId);
     }
 
 
@@ -227,6 +233,7 @@ public abstract class MixinWeaponSecondary {
     /** returns the requested native NTM bullet configuration for a weapon's alternate mode. */
     private static BulletConfig getRequestedAmmo(String itemId) {
         if ("hbm:gun_pepperbox".equals(itemId)) return XFactory44.m44_sp;
+        if ("hbm:gun_amat".equals(itemId)) return AMATQuackosRailgun.getBulletConfig();
         if (isStarF(itemId)) return XFactory50.bmg50_sp;
         if (isUzi(itemId)) return XFactory556mm.r556_sp;
         if (isG3(itemId)) return XFactory10ga.g10;

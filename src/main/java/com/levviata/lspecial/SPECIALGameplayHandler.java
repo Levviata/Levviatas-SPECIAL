@@ -33,9 +33,19 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 public final class SPECIALGameplayHandler {
     private static final String TEMP_UNBREAKABLE = "LSPECIALLuckTemporaryUnbreakable";
     private static final Map<EntityPlayer, Map<ItemStack, Boolean>> protectedArmor = new WeakHashMap<>();
-    private static final Set<Object> discountedRecipes = Collections.newSetFromMap(new WeakHashMap<Object, Boolean>());
     private static final Map<EntityPlayer, LockedGun> rapidFireLocks = new WeakHashMap<>();
     private static final Map<EntityPlayer, PendingSelfKill> pendingSelfKills = new WeakHashMap<>();
+    private static final Map<EntityPlayer, PendingBurst> pendingBursts = new WeakHashMap<>();
+
+    private static final class PendingBurst {
+        private final ItemStack stack;
+        private int ticksRemaining;
+
+        private PendingBurst(ItemStack stack, int ticksRemaining) {
+            this.stack = stack;
+            this.ticksRemaining = ticksRemaining;
+        }
+    }
 
     private static final class PendingSelfKill {
         private final ItemStack stack;
@@ -152,6 +162,39 @@ public final class SPECIALGameplayHandler {
         }
     }
 
+    /** holds native primary input long enough for the receiver to emit three separate shots. */
+    public static void startSequentialBurst(EntityPlayer player, ItemStack stack, int delay, int requiredLevel) {
+        if (player == null || player.world.isRemote || player.isDead || stack == null || stack.isEmpty()
+                || player.getHeldItemMainhand() != stack || !LSPECIALConfig.modifyGuns
+                || !LSPECIALConfig.intelligence || inst == null || inst.getIntelligenceScore() == null
+                || inst.getIntelligenceScore().getScorePoints() < requiredLevel
+                || !(stack.getItem() instanceof ItemGunBaseNT)) {
+            return;
+        }
+
+        PendingBurst previous = pendingBursts.remove(player);
+        if (previous != null) lspecial$setRapidFire(previous.stack, false);
+        pendingBursts.put(player, new PendingBurst(stack, Math.max(2, delay * 2 + 3)));
+        lspecial$setRapidFire(stack, true);
+    }
+
+    private static void lspecial$tickPendingBurst(EntityPlayer player) {
+        PendingBurst burst = pendingBursts.get(player);
+        if (burst == null) return;
+        if (player.isDead || player.world == null || player.world.isRemote
+                || player.getHeldItemMainhand() != burst.stack || burst.stack.isEmpty()) {
+            pendingBursts.remove(player);
+            lspecial$setRapidFire(burst.stack, false);
+            return;
+        }
+        if (--burst.ticksRemaining <= 0) {
+            pendingBursts.remove(player);
+            lspecial$setRapidFire(burst.stack, false);
+        } else {
+            lspecial$setRapidFire(burst.stack, true);
+        }
+    }
+
     /** starts the Lag self-kill countdown and plays its inspect animation. */
     public static boolean startLagSelfKill(EntityPlayer player, ItemStack stack) {
         if (player == null || player.world.isRemote || player.isDead || stack == null || stack.isEmpty()
@@ -253,6 +296,7 @@ public final class SPECIALGameplayHandler {
         if (event.phase != TickEvent.Phase.END || event.player.world.isRemote) return;
         EntityPlayer player = event.player;
         lspecial$tickPendingSelfKill(player);
+        lspecial$tickPendingBurst(player);
 
         Map<ItemStack, Boolean> restore = protectedArmor.remove(player);
         if (restore != null) {

@@ -64,6 +64,7 @@ public class LSPECIALMod {
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
         StatsLogic.init();
+        AMATQuackosRailgun.init();
         proxy.postInit(event);
     }
 

@@ -79,6 +79,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
             delay = LSPECIALConfig.phlogistinatorFireDelayTicks;
         } else if (secondaryHeld && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
             delay = LSPECIALConfig.lagSecondaryBurstDelay;
+        } else if (secondaryHeld && "hbm:gun_henry_lincoln".equals(itemId)
+                && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(15)) {
+            delay = LSPECIALConfig.lagSecondaryBurstDelay;
         } else if (LSPECIALConfig.weaponSecondaryAmmoCycling && lspecial$isTertiaryMode(stack)) {
             if (lspecial$isStarF(itemId)) {
                 delay = LSPECIALConfig.starFFiftyBmgDelayTicks;
@@ -247,11 +250,10 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     private void lspecial$adjustSecondaryBurst(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
         if (!lspecial$isSecondaryHeld(stack)) return;
         String itemId = lspecial$registryId(stack);
-        if ("hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
-            callback.setReturnValue(3);
-        } else if ("hbm:gun_henry_lincoln".equals(itemId)
-                && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(15)) {
-            callback.setReturnValue(3);
+        if (("hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5))
+                || ("hbm:gun_henry_lincoln".equals(itemId)
+                && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(15))) {
+            callback.setReturnValue(1);
         }
     }
 

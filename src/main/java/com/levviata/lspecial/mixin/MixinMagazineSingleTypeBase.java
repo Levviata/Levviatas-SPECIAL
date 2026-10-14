@@ -4,6 +4,7 @@ import com.hbm.items.ModItems;
 import com.hbm.items.tool.ItemAmmoBag;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
+import com.levviata.lspecial.AMATQuackosRailgun;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.SPECIALScoreboard;
 import net.minecraft.inventory.IInventory;
@@ -37,6 +38,8 @@ public abstract class MixinMagazineSingleTypeBase {
         BulletConfig requested = null;
         if ("hbm:gun_pepperbox".equals(itemId)) {
             requested = XFactory44.m44_sp;
+        } else if ("hbm:gun_amat".equals(itemId)) {
+            requested = AMATQuackosRailgun.getBulletConfig();
         } else if ("hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId)) {
             requested = XFactory50.bmg50_sp;
         } else if ("hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId)) {
@@ -156,9 +159,17 @@ public abstract class MixinMagazineSingleTypeBase {
     /** applies the Intelligence higher-perk capacity without changing the shared base magazine capacity. */
     @Inject(method = "getCapacity", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$applyHigherPerkCapacity(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
-        if (stack == null || stack.isEmpty() || !LSPECIALConfig.intelligence || !LSPECIALConfig.revolverPerk) {
+        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) return;
+
+        String earlyRegistryName = stack.getItem().getRegistryName().toString();
+        if (("hbm:gun_star_f".equals(earlyRegistryName) || "hbm:gun_star_f_akimbo".equals(earlyRegistryName))
+                && stack.hasTagCompound()
+                && stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()) == XFactory50.bmg50_sp.id) {
+            callback.setReturnValue(10);
             return;
         }
+
+        if (!LSPECIALConfig.intelligence || !LSPECIALConfig.revolverPerk) return;
 
         if (SPECIALScoreboard.inst == null || SPECIALScoreboard.inst.getIntelligenceScore() == null
                 || SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() < 15 || stack.getItem().getRegistryName() == null) {

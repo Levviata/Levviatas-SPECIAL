@@ -73,6 +73,8 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 lines.add("HIGHER PERK — Levels 15");
                 lines.add("All Revolvers: +1 penetration and x3 headshot multiplier");
                 lines.add("Henry Lincoln Repeater: 3 bullet burst");
+                lines.add("Star-F: BMG ammunition uses a 10-round magazine.");
+                lines.add("BMG: tertiary fire switches to deuterium plasma capsules; homing shots target Quackos.");
                 lines.add("Carbine: increases magazine capacity, enables semi-automatic secondary fire, and reduces recoil.");
                 lines.add("Minigun: accepts Capacitor ammo.");
                 lines.add("Double Barrel: entity grappling on crouch + Second Fire.");

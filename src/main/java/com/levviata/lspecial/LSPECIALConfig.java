@@ -140,6 +140,7 @@ public final class LSPECIALConfig {
     public static boolean scopedSecondarySpread = true;
     public static double scopedSpreadMultiplier = 0.5;
     public static boolean henryLincolnSecondaryBurst = true;
+    public static boolean AMATQuackosRailgun = true;
     public static boolean stingerSelfDamageProtection = true;
     public static boolean carbineHigherPerkCapacity = true;
     public static int carbineMagazineCapacity = 30;
@@ -349,7 +350,8 @@ public final class LSPECIALConfig {
         burstProjectileDamageFraction = d(GUNS, "burstProjectileDamageFraction", 0.3333333333333333, 0.01, 1.0, "Damage fraction per projectile for three-projectile secondary bursts");
         scopedSecondarySpread = b(GUNS, "scopedSecondarySpread", true, "Reduce spread while aiming with configured lesser-perk weapons");
         scopedSpreadMultiplier = d(GUNS, "scopedSpreadMultiplier", 0.5, 0.05, 1.0, "Spread multiplier while aiming");
-        henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-projectile burst");
+        henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-shot sequential burst");
+        AMATQuackosRailgun = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: BMG tertiary fire switches to a deuterium plasma capsule caliber; its native projectile homes to and kills Quackos");
         stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Intelligence 15: suppress self-inflicted damage from configured Stinger-family projectiles");
         carbineHigherPerkCapacity = b(GUNS, "carbineHigherPerkCapacity", true, "Intelligence 15: increase the carbine magazine capacity");
         carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");
