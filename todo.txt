@@ -1,2 +1,4 @@
 the ai is retarded and tries to use mixins so much, it makes me want to drown it in lava.
 revise the mixins and see if they can be avoided
+
+make all secondary fire perks be toggable with right click, this should also trigger the same sound as G3
