@@ -1,6 +1,7 @@
 package com.levviata.lspecial;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -30,8 +31,9 @@ public final class GrappleOverlayHandler {
     private static final ResourceLocation RETICLE_TEXTURE =
             new ResourceLocation("hbm", "textures/misc/shotgun_crosshair.png");
     private static final float FOLLOW_SPEED = 0.18F;
-    private static final float RETICLE_SIZE = 192.0F;
-    private static final float HOOK_SIZE = 28.0F;
+    private static final float RETICLE_HEIGHT_RATIO = 192.0F / 1080.0F;
+    private static final float HOOK_TO_RETICLE_RATIO = 28.0F / 192.0F;
+    private static final float DEFAULT_HOOK_OFFSET_RATIO = 7.0F / 192.0F;
 
     private float reticleX = -1.0F;
     private float reticleY = -1.0F;
@@ -59,10 +61,15 @@ public final class GrappleOverlayHandler {
             return;
         }
 
-        int screenWidth = mc.displayWidth;
-        int screenHeight = mc.displayHeight;
+        ScaledResolution resolution = new ScaledResolution(mc);
+        int screenWidth = resolution.getScaledWidth();
+        int screenHeight = resolution.getScaledHeight();
+        float scaleFactor = mc.displayWidth / (float) screenWidth;
         float centerX = screenWidth / 2.0F;
         float centerY = screenHeight / 2.0F;
+        float reticleSize = screenHeight * RETICLE_HEIGHT_RATIO;
+        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO;
+        float defaultHookOffset = reticleSize * DEFAULT_HOOK_OFFSET_RATIO;
         float targetX = centerX;
         float targetY = centerY;
         int cooldownTicks = GrappleClientHandler.getCooldownTicks();
@@ -71,7 +78,7 @@ public final class GrappleOverlayHandler {
         boolean hasTarget = grappleTarget != null;
         if (grappleTarget != null) {
             float[] projected = projectEntity(grappleTarget, event.getPartialTicks(), mc);
-            if (projected != null) { targetX = projected[0]; targetY = projected[1]; }
+            if (projected != null) { targetX = projected[0] / scaleFactor; targetY = projected[1] / scaleFactor; }
         }
 
         if (reticleX < 0.0F || reticleY < 0.0F) { reticleX = centerX; reticleY = centerY; }
@@ -80,31 +87,39 @@ public final class GrappleOverlayHandler {
         reticleY += (targetY - reticleY) * amount;
 
         // the crosshair remains centered and has its own cooldown colour transition
-        drawReticle(mc, centerX, centerY, RETICLE_SIZE, cooldownTicks);
+        drawReticle(mc, centerX, centerY, reticleSize, cooldownTicks, scaleFactor, screenHeight);
+        float defaultY = centerY + reticleSize * 0.5F + defaultHookOffset;
+        int refreshAnimationTicks = GrappleClientHandler.getFangRefreshTicks();
         if (cooldown) {
-            float progress = 1.0F - Math.min(1.0F, cooldownTicks / 60.0F);
-            float hookSize = HOOK_SIZE;
-            float defaultY = centerY + RETICLE_SIZE * 0.5F + 7.0F;
-            float split = (RETICLE_SIZE * 0.5F - hookSize * 0.25F) * (1.0F - progress);
-            float hookX = centerX + (reticleX - centerX) * progress;
-            float hookY = centerY + (defaultY - centerY) * progress;
-            drawHookHalf(mc, hookX - split, hookY, hookSize, false, progress);
-            drawHookHalf(mc, hookX + split, hookY, hookSize, true, progress);
+            float startX = (float) LSPECIALConfig.doubleBarrelGrappleFangStartX * reticleSize;
+            float startY = (float) LSPECIALConfig.doubleBarrelGrappleFangStartY * reticleSize;
+            float split = Math.max(hookSize * 0.5F, Math.min(reticleSize * 0.5F, startX));
+            drawHookHalf(mc, centerX - split, centerY + startY, hookSize, false, 0.0F, scaleFactor, screenWidth, screenHeight);
+            drawHookHalf(mc, centerX + split, centerY + startY, hookSize, true, 0.0F, scaleFactor, screenWidth, screenHeight);
+        } else if (refreshAnimationTicks < 6) {
+            float progress = Math.min(1.0F, refreshAnimationTicks / 5.0F);
+            // ease in quickly once the cooldown has finished
+            progress = progress * progress * (3.0F - 2.0F * progress);
+            float startX = (float) LSPECIALConfig.doubleBarrelGrappleFangStartX * reticleSize;
+            float startY = (float) LSPECIALConfig.doubleBarrelGrappleFangStartY * reticleSize;
+            float split = (hookSize * 0.5F) + (Math.max(hookSize * 0.5F, Math.min(reticleSize * 0.5F, startX)) - hookSize * 0.5F) * (1.0F - progress);
+            float hookY = centerY + startY + (defaultY - (centerY + startY)) * progress;
+            drawHookHalf(mc, centerX - split, hookY, hookSize, false, progress, scaleFactor, screenWidth, screenHeight);
+            drawHookHalf(mc, centerX + split, hookY, hookSize, true, progress, scaleFactor, screenWidth, screenHeight);
         } else {
-            float defaultY = centerY + RETICLE_SIZE * 0.5F + 7.0F;
             float hookX = hasTarget ? reticleX : centerX;
             float hookY = hasTarget ? reticleY : defaultY;
-            drawHookIcon(mc, hookX, hookY, HOOK_SIZE, false);
+            drawHookIcon(mc, hookX, hookY, hookSize, false, screenWidth, screenHeight);
         }
     }
 
-    private static void drawHookIcon(Minecraft mc, float x, float y, float size, boolean red) {
+    private static void drawHookIcon(Minecraft mc, float x, float y, float size, boolean red, int screenWidth, int screenHeight) {
         mc.getTextureManager().bindTexture(new ResourceLocation("lspecial", "textures/gui/meathook.png"));
         GL11.glPushMatrix();
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
-        GL11.glOrtho(0.0D, mc.displayWidth, mc.displayHeight, 0.0D, -1000.0D, 1000.0D);
+        GL11.glOrtho(0.0D, screenWidth, screenHeight, 0.0D, -1000.0D, 1000.0D);
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
@@ -128,11 +143,11 @@ public final class GrappleOverlayHandler {
         GL11.glPopMatrix();
     }
 
-    private static void drawHookHalf(Minecraft mc, float x, float y, float size, boolean rightHalf, float progress) {
+    private static void drawHookHalf(Minecraft mc, float x, float y, float size, boolean rightHalf, float progress, float scaleFactor, int screenWidth, int screenHeight) {
         mc.getTextureManager().bindTexture(new ResourceLocation("lspecial", "textures/gui/meathook.png"));
         GL11.glPushMatrix();
         GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glPushMatrix(); GL11.glLoadIdentity();
-        GL11.glOrtho(0.0D, mc.displayWidth, mc.displayHeight, 0.0D, -1000.0D, 1000.0D);
+        GL11.glOrtho(0.0D, screenWidth, screenHeight, 0.0D, -1000.0D, 1000.0D);
         GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPushMatrix(); GL11.glLoadIdentity();
         GlStateManager.disableLighting(); GlStateManager.disableDepth(); GlStateManager.enableBlend();
         GlStateManager.color(1.0F, 0.12F + 0.88F * progress, 0.12F + 0.88F * progress, 1.0F);
@@ -148,7 +163,7 @@ public final class GrappleOverlayHandler {
         GL11.glPopMatrix(); GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glPopMatrix(); GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPopMatrix();
     }
 
-    private static void drawReticle(Minecraft mc, float x, float y, float size, int cooldownTicks) {
+    private static void drawReticle(Minecraft mc, float x, float y, float size, int cooldownTicks, float scaleFactor, int screenHeight) {
         TextureManager textures = mc.getTextureManager();
         textures.bindTexture(RETICLE_TEXTURE);
 
@@ -156,7 +171,7 @@ public final class GrappleOverlayHandler {
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
-        GL11.glOrtho(0.0D, mc.displayWidth, mc.displayHeight, 0.0D, -1000.0D, 1000.0D);
+        GL11.glOrtho(0.0D, mc.displayWidth / scaleFactor, mc.displayHeight / scaleFactor, 0.0D, -1000.0D, 1000.0D);
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
         GL11.glPushMatrix();
         GL11.glLoadIdentity();
@@ -175,10 +190,10 @@ public final class GrappleOverlayHandler {
             float grayHeight = size * (1.0F - cooldownRemaining);
             if (grayHeight > 0.0F) {
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
-            int sx = Math.round((x - size / 2.0F) * mc.displayWidth / (float)mc.displayWidth);
-            int sy = Math.round((mc.displayHeight - (y - size / 2.0F + grayHeight)));
-            int sw = Math.round(size);
-            int sh = Math.round(grayHeight);
+            int sx = Math.round((x - size / 2.0F) * scaleFactor);
+            int sy = Math.round((screenHeight - (y - size / 2.0F + grayHeight)) * scaleFactor);
+            int sw = Math.round(size * scaleFactor);
+            int sh = Math.round(grayHeight * scaleFactor);
                 GL11.glScissor(sx, sy, sw, sh);
                 drawReticleQuad(x, y, size, 0.62F, 0.62F, 0.62F);
                 GL11.glDisable(GL11.GL_SCISSOR_TEST);

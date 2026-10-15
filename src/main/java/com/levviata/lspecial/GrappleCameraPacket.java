@@ -19,7 +19,10 @@ public class GrappleCameraPacket implements IMessage {
     public static class Handler implements IMessageHandler<GrappleCameraPacket, IMessage> {
         @Override public IMessage onMessage(GrappleCameraPacket message, MessageContext context) {
             if (context.side == Side.CLIENT) {
-                Minecraft.getMinecraft().addScheduledTask(() -> GrappleClientHandler.setTarget(message.active ? message.targetId : -1));
+                Minecraft.getMinecraft().addScheduledTask(() -> {
+                    if (message.targetId == -3) GrappleClientHandler.resetCooldown();
+                    else GrappleClientHandler.setTarget(message.active ? message.targetId : -1);
+                });
             } else if (message.targetId == -2 && context.getServerHandler().player instanceof EntityPlayerMP) {
                 EntityPlayerMP player = context.getServerHandler().player;
                 player.getServerWorld().addScheduledTask(() -> {

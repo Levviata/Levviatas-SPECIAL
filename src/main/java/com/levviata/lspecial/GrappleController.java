@@ -71,7 +71,12 @@ public final class GrappleController {
         State state = ACTIVE.get(player.getUniqueID());
         if (state == null) return;
         Entity target = player.world.getEntityByID(state.targetId);
-        if (target == null || target.isDead || !target.isEntityAlive()) { stop(player); return; }
+        if (target == null || target.isDead || !target.isEntityAlive()) {
+            COOLDOWN_UNTIL.remove(player.getUniqueID());
+            LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-3, false), player);
+            stop(player);
+            return;
+        }
         Entity mover = state.pullTarget ? target : player;
         Entity anchor = state.pullTarget ? player : target;
         Vec3d from = mover.getPositionVector().add(0, mover.height * 0.5D, 0);
