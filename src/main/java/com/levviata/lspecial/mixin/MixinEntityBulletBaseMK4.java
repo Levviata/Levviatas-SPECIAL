@@ -5,6 +5,7 @@ import com.hbm.entity.projectile.EntityRailgunBlast;
 import com.levviata.lspecial.AMATRailgun;
 import net.minecraft.nbt.NBTTagCompound;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -32,6 +33,7 @@ public abstract class MixinEntityBulletBaseMK4 {
         lspecial$spawnRailgunBlast(bullet);
     }
 
+    @Unique
     private boolean lspecial$spawnRailgunBlast(EntityBulletBaseMK4 bullet) {
         if (bullet.isDead || bullet.world.isRemote) return false;
 

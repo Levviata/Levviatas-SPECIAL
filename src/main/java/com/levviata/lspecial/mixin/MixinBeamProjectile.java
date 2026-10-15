@@ -30,13 +30,13 @@ public abstract class MixinBeamProjectile {
     @Unique private boolean lspecial$boostedImpact;
 
     @Inject(method = "<init>(Lnet/minecraft/entity/EntityLivingBase;Lcom/hbm/items/weapon/sedna/BulletConfig;F)V", at = @At("RETURN"), remap = false)
-    private void lspecial$recordBeamOwner(EntityLivingBase shooter, BulletConfig bulletConfig, float damage, CallbackInfo callback) {
-        lspecial$recordShooter(shooter);
+    private void lspecial$recordBeamOwner(EntityLivingBase entity, BulletConfig config, float baseDamage, CallbackInfo callback) {
+        lspecial$recordShooter(entity);
     }
 
     @Inject(method = "<init>(Lnet/minecraft/entity/EntityLivingBase;Lcom/hbm/items/weapon/sedna/BulletConfig;FFDDD)V", at = @At("RETURN"), remap = false)
-    private void lspecial$recordBeamOwnerWithOffset(EntityLivingBase shooter, BulletConfig bulletConfig, float damage, float spread, double offsetX, double offsetY, double offsetZ, CallbackInfo callback) {
-        lspecial$recordShooter(shooter);
+    private void lspecial$recordBeamOwnerWithOffset(EntityLivingBase entity, BulletConfig config, float baseDamage, float angularInaccuracy, double sideOffset, double heightOffset, double frontOffset, CallbackInfo callback) {
+        lspecial$recordShooter(entity);
     }
 
     @Unique
@@ -53,9 +53,9 @@ public abstract class MixinBeamProjectile {
     }
 
     @Inject(method = "onImpact", at = @At("HEAD"), remap = false)
-    private void lspecial$boostTauCharge(RayTraceResult result, CallbackInfo callback) {
+    private void lspecial$boostTauCharge(RayTraceResult mop, CallbackInfo callback) {
         lspecial$boostedImpact = false;
-        if (result == null || result.typeOfHit != RayTraceResult.Type.ENTITY || result.entityHit == null
+        if (mop == null || mop.typeOfHit != RayTraceResult.Type.ENTITY || mop.entityHit == null
                 || ((EntityBulletBeamBase) (Object) this).world.isRemote || !LSPECIALConfig.tauSecondaryDamageBonus
                 || config != XFactoryAccelerator.tau_uranium_charge || !(thrower instanceof EntityPlayer)
                 || !LSPECIALConfig.intelligence || !LSPECIALConfig.pepperboxPerk
@@ -81,7 +81,7 @@ public abstract class MixinBeamProjectile {
     }
 
     @Inject(method = "onImpact", at = @At("RETURN"), remap = false)
-    private void lspecial$restoreTauCharge(RayTraceResult result, CallbackInfo callback) {
+    private void lspecial$restoreTauCharge(RayTraceResult mop, CallbackInfo callback) {
         if (lspecial$boostedImpact) {
             damage = lspecial$damageBeforeImpact;
             lspecial$boostedImpact = false;

@@ -4,6 +4,7 @@ import com.hbm.entity.mob.EntityQuackos;
 import com.hbm.entity.projectile.EntityRailgunBlast;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -14,8 +15,11 @@ import java.util.Comparator;
 @Mixin(value = EntityRailgunBlast.class, remap = false)
 public abstract class MixinEntityRailgunBlast {
 
+    @Unique
     private static final String LSPECIAL_MARKER = "LSPECIAL_AMAT_RAILGUN";
+    @Unique
     private static final double PROJECTILE_SPEED = 10.0D;
+    @Unique
     private static final double HOMING_RANGE = 128.0D;
 
     @Inject(method = "onUpdate()V", at = @At("HEAD"), remap = false)
