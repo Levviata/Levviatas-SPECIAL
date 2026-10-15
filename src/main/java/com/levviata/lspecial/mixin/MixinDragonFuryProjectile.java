@@ -84,9 +84,9 @@ public abstract class MixinDragonFuryProjectile {
 
     /** boosts only direct entity impacts, leaving block impacts and NTM's projectile callbacks intact. */
     @Inject(method = "onImpact", at = @At("HEAD"), remap = false)
-    private void lspecial$boostDragonFuryDirectHit(RayTraceResult result, CallbackInfo callback) {
+    private void lspecial$boostDragonFuryDirectHit(RayTraceResult mop, CallbackInfo callback) {
         lspecial$boostedImpactDamage = false;
-        if (result == null || result.typeOfHit != RayTraceResult.Type.ENTITY || result.entityHit == null
+        if (mop == null || mop.typeOfHit != RayTraceResult.Type.ENTITY || mop.entityHit == null
                 || ((EntityBulletBaseMK4) (Object) this).world.isRemote) {
             return;
         }
@@ -122,7 +122,7 @@ public abstract class MixinDragonFuryProjectile {
 
     /** restores the projectile's base damage after NTM finishes the impact callback. */
     @Inject(method = "onImpact", at = @At("RETURN"), remap = false)
-    private void lspecial$restoreDragonFuryDamage(RayTraceResult result, CallbackInfo callback) {
+    private void lspecial$restoreDragonFuryDamage(RayTraceResult mop, CallbackInfo callback) {
         if (lspecial$boostedImpactDamage) {
             damage = lspecial$damageBeforeImpact;
             lspecial$boostedImpactDamage = false;
