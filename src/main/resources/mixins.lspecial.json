@@ -20,7 +20,7 @@
         "MixinEntityInvoker",
         "MixinWorldRailgunBlast",
         "MixinEntityRailgunBlast",
-          "MixinEntityBulletBaseMK4"
+        "MixinEntityBulletBaseMK4"
     ],
     "server": [],
     "client": [
