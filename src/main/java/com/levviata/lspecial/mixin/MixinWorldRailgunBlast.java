@@ -72,7 +72,7 @@ public abstract class MixinWorldRailgunBlast {
         }
         if (length < 1.0E-5D) return original;
 
-        double speed = original instanceof EntityBulletBeamBase ? 3.5D : length;
+        double speed = 10.0D;
         EntityRailgunBlast blast = new EntityRailgunBlast(world);
         blast.setPosition(original.posX, original.posY, original.posZ);
         blast.motionX = dx / length * speed;
