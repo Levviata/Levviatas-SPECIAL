@@ -9,8 +9,8 @@ import net.minecraftforge.fml.common.gameevent.InputEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.levviata.lspecial.LSPECIALMod.toggleSpecial;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
+import static com.levviata.lspecial.proxy.ClientProxy.toggleSpecial;
 
 public class GuiSPECIAL extends GuiScreen {
 

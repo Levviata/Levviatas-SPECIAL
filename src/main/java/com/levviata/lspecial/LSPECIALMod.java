@@ -21,7 +21,6 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.input.Keyboard;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED_REGENERATION_NAME;
@@ -37,12 +36,6 @@ public class LSPECIALMod {
 
     /*@Mod.Instance
     private static LSPECIALMod inst;*/
-
-    public static KeyBinding toggleSpecial = new KeyBinding(
-            "toggleSpecial",
-            Keyboard.KEY_P,
-            "key.categories.misc"
-    );
 
     public static final Potion AMPLIFIED_REGENERATION = new PotionAmplifiedRegeneration();
 
