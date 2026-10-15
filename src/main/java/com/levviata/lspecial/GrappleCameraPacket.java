@@ -23,8 +23,14 @@ public class GrappleCameraPacket implements IMessage {
             } else if (message.targetId == -2 && context.getServerHandler().player instanceof EntityPlayerMP) {
                 EntityPlayerMP player = context.getServerHandler().player;
                 player.getServerWorld().addScheduledTask(() -> {
+                    boolean wasGrappling = GrappleController.isActive(player);
+                    boolean pullingTarget = GrappleController.isPullingTarget(player);
                     GrappleController.stop(player);
-                    player.motionY = Math.max(player.motionY, 0.42D);
+                    if (wasGrappling && !pullingTarget) {
+                        player.motionY = Math.max(player.motionY, 1.08D);
+                        player.fallDistance = 0.0F;
+                        player.getEntityData().setBoolean("LSPECIALGrappleFallSafe", true);
+                    }
                     player.velocityChanged = true;
                 });
             }

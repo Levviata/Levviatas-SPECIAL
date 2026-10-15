@@ -13,7 +13,7 @@ public final class GrappleClientHandler {
     private static float savedPitch;
     private static boolean saved;
     private static boolean jumpWasDown;
-
+    public GrappleClientHandler() { }
     public static void setTarget(int id) {
         Minecraft mc = Minecraft.getMinecraft();
         if (id >= 0 && mc.player != null && !saved) { savedYaw = mc.player.rotationYaw; savedPitch = mc.player.rotationPitch; saved = true; }

@@ -9,6 +9,7 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -23,24 +24,34 @@ public final class GrappleController {
         final int targetId;
         final boolean pullTarget;
         final double speed;
+        EntityGrappleChain chain;
         State(int targetId, boolean pullTarget, double speed) { this.targetId = targetId; this.pullTarget = pullTarget; this.speed = speed; }
     }
 
+    public GrappleController() { }
+
+    public static boolean isActive(EntityPlayerMP player) { return ACTIVE.containsKey(player.getUniqueID()); }
+    public static boolean isPullingTarget(EntityPlayerMP player) { State state = ACTIVE.get(player.getUniqueID()); return state != null && state.pullTarget; }
+
     public static boolean start(EntityPlayerMP player, Entity target, boolean pullTarget, double speed) {
         if (target == null || target.isDead || target.world != player.world) return false;
-        ACTIVE.put(player.getUniqueID(), new State(target.getEntityId(), pullTarget, speed));
+        State state = new State(target.getEntityId(), pullTarget, speed);
+        ACTIVE.put(player.getUniqueID(), state);
         if (LSPECIALConfig.doubleBarrelGrappleVisuals && target instanceof EntityLivingBase) {
             EntityGrappleChain chain = new EntityGrappleChain(player.world);
-            chain.setEndpoints(player, (EntityLivingBase) target, 200);
+            chain.setEndpoints(player, (EntityLivingBase) target, 1200);
+            state.chain = chain;
             GrappleChainSpawnHandler.queue(chain);
         }
         LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(target.getEntityId(), true), player);
-        player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_BOBBER_THROW, SoundCategory.PLAYERS, 0.9F, 1.15F);
+        player.world.playSound(null, player.getPosition(), net.minecraft.init.SoundEvents.ENTITY_BOBBER_THROW, SoundCategory.PLAYERS, 0.9F, 1.15F);
         return true;
     }
 
     public static void stop(EntityPlayerMP player) {
-        if (ACTIVE.remove(player.getUniqueID()) != null) {
+        State state = ACTIVE.remove(player.getUniqueID());
+        if (state != null) {
+            if (state.chain != null) state.chain.setDead();
             LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-1, false), player);
             player.world.playSound(null, player.getPosition(), net.minecraft.init.SoundEvents.ENTITY_LEASHKNOT_BREAK, SoundCategory.PLAYERS, 0.8F, 1.0F);
         }
@@ -50,6 +61,10 @@ public final class GrappleController {
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || event.player.world.isRemote || !(event.player instanceof EntityPlayerMP)) return;
         EntityPlayerMP player = (EntityPlayerMP) event.player;
+        if (player.getEntityData().getBoolean("LSPECIALGrappleFallSafe")) {
+            player.fallDistance = 0.0F;
+            if (player.onGround) player.getEntityData().setBoolean("LSPECIALGrappleFallSafe", false);
+        }
         State state = ACTIVE.get(player.getUniqueID());
         if (state == null) return;
         Entity target = player.world.getEntityByID(state.targetId);
@@ -65,18 +80,32 @@ public final class GrappleController {
             stop(player);
             return;
         }
-        Vec3d velocity = delta.normalize().scale(Math.min(state.speed, Math.max(0.25D, distance * 0.32D)));
-        mover.motionX = velocity.x;
-        mover.motionY = velocity.y;
-        mover.motionZ = velocity.z;
+        double acceleration = LSPECIALConfig.doubleBarrelGrappleAcceleration;
+        Vec3d velocity = delta.normalize().scale(Math.min(state.speed, Math.max(0.25D, distance * acceleration)));
+        mover.motionX += (velocity.x - mover.motionX) * acceleration;
+        mover.motionY += (velocity.y - mover.motionY) * acceleration;
+        mover.motionZ += (velocity.z - mover.motionZ) * acceleration;
         mover.fallDistance = 0;
         mover.velocityChanged = true;
         if (mover instanceof EntityPlayerMP) {
             EntityPlayerMP movingPlayer = (EntityPlayerMP) mover;
-            movingPlayer.motionX += movingPlayer.moveStrafing * 0.16D;
-            movingPlayer.motionZ += movingPlayer.moveForward * 0.16D;
+            movingPlayer.motionX += movingPlayer.moveStrafing * LSPECIALConfig.doubleBarrelGrappleAirStrafe;
+            movingPlayer.motionZ += movingPlayer.moveForward * LSPECIALConfig.doubleBarrelGrappleAirStrafe;
             movingPlayer.velocityChanged = true;
         }
+        if (!state.pullTarget) player.fallDistance = 0.0F;
         if (player.ticksExisted % 8 == 0) player.world.playSound(null, player.getPosition(), SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 0.25F, 1.1F);
+    }
+
+    @SubscribeEvent
+    public void onLivingFall(LivingFallEvent event) {
+        if (event.getEntityLiving() instanceof EntityPlayerMP) {
+            EntityPlayerMP player = (EntityPlayerMP) event.getEntityLiving();
+            if (player.getEntityData().getBoolean("LSPECIALGrappleFallSafe")) {
+                event.setCanceled(true);
+                player.fallDistance = 0.0F;
+                if (player.onGround) player.getEntityData().setBoolean("LSPECIALGrappleFallSafe", false);
+            }
+        }
     }
 }

@@ -11,6 +11,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -31,10 +32,18 @@ public final class GrappleOverlayHandler {
     private static final ResourceLocation RETICLE_TEXTURE =
             new ResourceLocation("hbm", "textures/misc/shotgun_crosshair.png");
     private static final float FOLLOW_SPEED = 0.18F;
-    private static final float RETICLE_SIZE = 22.0F;
+    private static final float RETICLE_SIZE = 48.0F;
 
     private float reticleX = -1.0F;
     private float reticleY = -1.0F;
+
+    @SubscribeEvent
+    public void onCrosshair(RenderGameOverlayEvent.Pre event) {
+        if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.player == null || mc.player.getHeldItemMainhand().isEmpty() || !isDoubleBarrel(mc.player.getHeldItemMainhand()) || !isEnabled()) return;
+        event.setCanceled(true);
+    }
 
     @SubscribeEvent
     public void onRenderWorldLast(RenderWorldLastEvent event) {
@@ -57,35 +66,16 @@ public final class GrappleOverlayHandler {
         float centerY = screenHeight / 2.0F;
         float targetX = centerX;
         float targetY = centerY;
-
-        Entity target = findGrappleTarget(player, LSPECIALConfig.doubleBarrelGrappleRange);
-        if (target instanceof EntityLivingBase && target.isEntityAlive()) {
-            RenderManager rm = mc.getRenderManager();
-            double pt = event.getPartialTicks();
-            double x = target.lastTickPosX + (target.posX - target.lastTickPosX) * pt - rm.viewerPosX;
-            double y = target.lastTickPosY + (target.posY - target.lastTickPosY) * pt
-                    + target.height * 0.5D - rm.viewerPosY;
-            double z = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * pt - rm.viewerPosZ;
-
-            FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
-            FloatBuffer projection = BufferUtils.createFloatBuffer(16);
-            IntBuffer viewport = BufferUtils.createIntBuffer(16);
-            GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelView);
-            GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projection);
-            GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
-
-            FloatBuffer winPos = BufferUtils.createFloatBuffer(3);
-
-            if (GLU.gluProject(
-                    (float) x, (float) y, (float) z,
-                    modelView, projection, viewport, winPos)
-                    && winPos.get(2) >= 0.0F
-                    && winPos.get(2) <= 1.0F) {
-                targetX = winPos.get(0);
-                targetY = screenHeight - winPos.get(1);
+        Entity grappleTarget = findGrappleTarget(player, LSPECIALConfig.doubleBarrelGrappleRange);
+        if (grappleTarget != null) {
+            float[] projected = projectEntity(grappleTarget, event.getPartialTicks(), mc);
+            if (projected != null) {
+                targetX = projected[0];
+                targetY = projected[1];
             }
         }
 
+        // The shotgun crosshair replaces the vanilla crosshair and remains centered.
         if (reticleX < 0.0F || reticleY < 0.0F) {
             reticleX = centerX;
             reticleY = centerY;
@@ -96,7 +86,7 @@ public final class GrappleOverlayHandler {
         reticleY += (targetY - reticleY) * amount;
 
         drawReticle(mc, reticleX, reticleY, RETICLE_SIZE);
-        drawHookIcon(mc, centerX, centerY + RETICLE_SIZE * 0.72F, 12.0F);
+        drawHookIcon(mc, reticleX, reticleY + RETICLE_SIZE * 0.5F + 7.0F, 14.0F);
     }
 
     private static void drawHookIcon(Minecraft mc, float x, float y, float size) {
@@ -166,6 +156,24 @@ public final class GrappleOverlayHandler {
 
     private void reset() {
         reticleX = reticleY = -1.0F;
+    }
+
+    private static float[] projectEntity(Entity target, float partialTicks, Minecraft mc) {
+        FloatBuffer model = BufferUtils.createFloatBuffer(16);
+        FloatBuffer projection = BufferUtils.createFloatBuffer(16);
+        IntBuffer viewport = BufferUtils.createIntBuffer(16);
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, model);
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projection);
+        GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
+        double x = target.lastTickPosX + (target.posX - target.lastTickPosX) * partialTicks - mc.getRenderManager().viewerPosX;
+        double y = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks + target.height * 0.5D - mc.getRenderManager().viewerPosY;
+        double z = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * partialTicks - mc.getRenderManager().viewerPosZ;
+        FloatBuffer screen = BufferUtils.createFloatBuffer(3);
+        if (!GLU.gluProject((float)x, (float)y, (float)z, model, projection, viewport, screen)) return null;
+        float px = screen.get(0);
+        float py = mc.displayHeight - screen.get(1);
+        if (screen.get(2) < 0.0F || screen.get(2) > 1.0F || px < 0 || py < 0 || px > mc.displayWidth || py > mc.displayHeight) return null;
+        return new float[]{px, py};
     }
 
     /** Ray-traces living entities within grapple range, respecting blocks in the way. */

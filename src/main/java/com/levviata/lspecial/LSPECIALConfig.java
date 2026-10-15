@@ -122,6 +122,8 @@ public final class LSPECIALConfig {
     public static int doubleBarrelGrappleVisualTicks = 12;
     public static double doubleBarrelGrappleRange = 5.0;
     public static double doubleBarrelGrapplePullSpeed = 1.35;
+    public static double doubleBarrelGrappleAcceleration = 0.32;
+    public static double doubleBarrelGrappleAirStrafe = 0.16;
     public static boolean phlogistinatorSustainedFirePerk = true;
     public static int phlogistinatorSustainedFireLevel = 5;
     public static int phlogistinatorFireDelayTicks = 1;
@@ -332,7 +334,9 @@ public final class LSPECIALConfig {
         doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render a text chain and v marker for the double-barrel grapple");
         doubleBarrelGrappleVisualTicks = i(GUNS, "doubleBarrelGrappleVisualTicks", 12, 1, 100, "Duration of the double-barrel grapple chain text, in ticks");
         doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 5.0, 1.0, 128.0, "Maximum entity grapple range in blocks");
-        doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Velocity applied toward the grapple target");
+        doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Maximum grapple travel speed");
+        doubleBarrelGrappleAcceleration = d(GUNS, "doubleBarrelGrappleAcceleration", 0.32, 0.01, 1.0, "Grapple velocity acceleration; higher values reach the configured speed faster");
+        doubleBarrelGrappleAirStrafe = d(GUNS, "doubleBarrelGrappleAirStrafe", 0.16, 0.0, 1.0, "Air-strafing control while grappling; set to 1 for very strong air control");
         phlogistinatorSustainedFirePerk = b(GUNS, "phlogistinatorSustainedFirePerk", true, "Intelligence perk: use NTM native held-fire cadence for the Phlogistinator-style flamer");
         phlogistinatorSustainedFireLevel = i(GUNS, "phlogistinatorSustainedFireLevel", 5, 1, 100, "Minimum Intelligence required for the Phlogistinator sustained-fire perk");
         phlogistinatorFireDelayTicks = i(GUNS, "phlogistinatorFireDelayTicks", 1, 0, 1200, "Delay between Phlogistinator secondary-fire shots in ticks");
