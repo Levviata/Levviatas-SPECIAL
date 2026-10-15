@@ -120,7 +120,7 @@ public final class LSPECIALConfig {
     public static boolean doubleBarrelGrapple = true;
     public static boolean doubleBarrelGrappleVisuals = true;
     public static int doubleBarrelGrappleVisualTicks = 12;
-    public static double doubleBarrelGrappleRange = 28.0;
+    public static double doubleBarrelGrappleRange = 5.0;
     public static double doubleBarrelGrapplePullSpeed = 1.35;
     public static boolean phlogistinatorSustainedFirePerk = true;
     public static int phlogistinatorSustainedFireLevel = 5;
@@ -331,7 +331,7 @@ public final class LSPECIALConfig {
         doubleBarrelGrapple = b(GUNS, "doubleBarrelGrapple", true, "Intelligence 15: secondary fire grapples toward the targeted entity with the double barrel");
         doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render a text chain and v marker for the double-barrel grapple");
         doubleBarrelGrappleVisualTicks = i(GUNS, "doubleBarrelGrappleVisualTicks", 12, 1, 100, "Duration of the double-barrel grapple chain text, in ticks");
-        doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 28.0, 4.0, 128.0, "Maximum entity grapple range in blocks");
+        doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 5.0, 1.0, 128.0, "Maximum entity grapple range in blocks");
         doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Velocity applied toward the grapple target");
         phlogistinatorSustainedFirePerk = b(GUNS, "phlogistinatorSustainedFirePerk", true, "Intelligence perk: use NTM native held-fire cadence for the Phlogistinator-style flamer");
         phlogistinatorSustainedFireLevel = i(GUNS, "phlogistinatorSustainedFireLevel", 5, 1, 100, "Minimum Intelligence required for the Phlogistinator sustained-fire perk");
