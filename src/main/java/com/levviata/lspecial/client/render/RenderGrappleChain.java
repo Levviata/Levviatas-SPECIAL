@@ -17,7 +17,7 @@ import org.lwjgl.opengl.GL11;
 /** Textured ribbon renderer for the synchronized grapple-chain entity. */
 public class RenderGrappleChain extends Render<EntityGrappleChain> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation("lspecial", "textures/entity/grapple_chain.png");
+            new ResourceLocation("hbm", "textures/models/misc/universaldark.png");
 
     public RenderGrappleChain(RenderManager manager) {
         super(manager);
@@ -64,11 +64,30 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
         double ez = end.z - renderManager.viewerPosZ;
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
+        Vec3d movement = new Vec3d(owner.motionX, 0.0D, owner.motionZ);
+        Vec3d lateral = direction.normalize().crossProduct(new Vec3d(0.0D, 1.0D, 0.0D)).normalize();
+        if (lateral.length() < 0.001D) lateral = new Vec3d(1.0D, 0.0D, 0.0D);
+        double bend = Math.max(-0.45D, Math.min(0.45D, movement.dotProduct(lateral) * 0.45D));
+        int segments = Math.max(2, Math.min(64, (int) Math.ceil(length * 3.0D)));
         buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-        buffer.pos(sx - side.x, sy - side.y, sz - side.z).tex(0.0D, 0.0D).endVertex();
-        buffer.pos(sx + side.x, sy + side.y, sz + side.z).tex(1.0D, 0.0D).endVertex();
-        buffer.pos(ex + side.x, ey + side.y, ez + side.z).tex(1.0D, length * 2.0D).endVertex();
-        buffer.pos(ex - side.x, ey - side.y, ez - side.z).tex(0.0D, length * 2.0D).endVertex();
+        for (int i = 0; i < segments; i++) {
+            double t0 = i / (double) segments;
+            double t1 = (i + 1) / (double) segments;
+            double curve0 = Math.sin(Math.PI * t0) * bend;
+            double curve1 = Math.sin(Math.PI * t1) * bend;
+            Vec3d p0 = new Vec3d(sx + (ex - sx) * t0 + lateral.x * curve0,
+                    sy + (ey - sy) * t0 + lateral.y * curve0,
+                    sz + (ez - sz) * t0 + lateral.z * curve0);
+            Vec3d p1 = new Vec3d(sx + (ex - sx) * t1 + lateral.x * curve1,
+                    sy + (ey - sy) * t1 + lateral.y * curve1,
+                    sz + (ez - sz) * t1 + lateral.z * curve1);
+            double v0 = length * 2.0D * t0;
+            double v1 = length * 2.0D * t1;
+            buffer.pos(p0.x - side.x, p0.y - side.y, p0.z - side.z).tex(0.0D, v0).endVertex();
+            buffer.pos(p0.x + side.x, p0.y + side.y, p0.z + side.z).tex(1.0D, v0).endVertex();
+            buffer.pos(p1.x + side.x, p1.y + side.y, p1.z + side.z).tex(1.0D, v1).endVertex();
+            buffer.pos(p1.x - side.x, p1.y - side.y, p1.z - side.z).tex(0.0D, v1).endVertex();
+        }
         tessellator.draw();
 
         GlStateManager.enableCull();

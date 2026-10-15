@@ -104,8 +104,13 @@ public abstract class MixinWeaponSecondary {
                     tag.setInteger("LSPECIALGrappleVisualTicks", LSPECIALConfig.doubleBarrelGrappleVisualTicks);
                 }
             } else {
-                pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
-                        LSPECIALConfig.doubleBarrelGrapplePullSpeed);
+                if (player.isSneaking()) {
+                    pullTargetTowardPlayer(player, LSPECIALConfig.doubleBarrelGrappleRange,
+                            LSPECIALConfig.doubleBarrelGrapplePullSpeed);
+                } else {
+                    pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
+                            LSPECIALConfig.doubleBarrelGrapplePullSpeed);
+                }
             }
             callback.cancel();
             return;
@@ -527,38 +532,30 @@ public abstract class MixinWeaponSecondary {
     /** finds the nearest entity in the player's look direction and applies a bounded pull velocity. */
     @Unique
     private static void pullPlayerTowardTarget(EntityPlayer player, double range, double pullSpeed) {
-        World world = player.world;
+        if (player.world.isRemote || !(player instanceof net.minecraft.entity.player.EntityPlayerMP)) return;
+        Entity target = lspecial$findGrappleTarget(player, range);
+        if (target != null) GrappleController.start((net.minecraft.entity.player.EntityPlayerMP) player, target, false, pullSpeed);
+    }
+
+    @Unique
+    private static void pullTargetTowardPlayer(EntityPlayer player, double range, double pullSpeed) {
+        if (player.world.isRemote || !(player instanceof net.minecraft.entity.player.EntityPlayerMP)) return;
+        Entity target = lspecial$findGrappleTarget(player, range);
+        if (target != null) GrappleController.start((net.minecraft.entity.player.EntityPlayerMP) player, target, true, pullSpeed);
+    }
+
+    @Unique
+    private static Entity lspecial$findGrappleTarget(EntityPlayer player, double range) {
         Vec3d look = player.getLookVec().normalize();
         Vec3d eye = player.getPositionEyes(1.0F);
-        AxisAlignedBB searchBox = player.getEntityBoundingBox().grow(range);
-        List<Entity> targets = world.getEntitiesWithinAABBExcludingEntity(player, searchBox);
-
-        Entity target = targets.stream()
+        return player.world.getEntitiesWithinAABBExcludingEntity(player, player.getEntityBoundingBox().grow(range)).stream()
                 .filter(candidate -> candidate instanceof EntityLivingBase && candidate.isEntityAlive())
                 .filter(candidate -> candidate.getDistance(player) <= range)
                 .filter(candidate -> {
-                    Vec3d direction = candidate.getPositionVector().add(0, candidate.height * 0.5, 0)
-                            .subtract(eye).normalize();
-                    return look.dotProduct(direction) >= 0.94;
+                    Vec3d direction = candidate.getPositionVector().add(0, candidate.height * 0.5D, 0).subtract(eye).normalize();
+                    return look.dotProduct(direction) >= 0.94D;
                 })
-                .min(Comparator.comparingDouble(player::getDistanceSq))
-                .orElse(null);
-
-        if (target == null) return;
-
-        // queue the chain until the end of the server tick, outside EntityTracker's update iteration.
-        if (!world.isRemote && LSPECIALConfig.doubleBarrelGrappleVisuals) {
-            EntityGrappleChain chain = new EntityGrappleChain(world);
-            chain.setEndpoints(player, (EntityLivingBase) target, LSPECIALConfig.doubleBarrelGrappleVisualTicks);
-            GrappleChainSpawnHandler.queue(chain);
-        }
-
-        Vec3d destination = target.getPositionVector().add(0, target.height * 0.5, 0);
-        Vec3d velocity = destination.subtract(player.getPositionVector()).normalize().scale(pullSpeed);
-        player.motionX = velocity.x;
-        player.motionY = velocity.y + 0.08;
-        player.motionZ = velocity.z;
-        player.fallDistance = 0;
-        player.velocityChanged = true;
+                .min(Comparator.comparingDouble(player::getDistanceSq)).orElse(null);
     }
+
 }

@@ -29,7 +29,7 @@ import java.nio.IntBuffer;
 @SideOnly(Side.CLIENT)
 public final class GrappleOverlayHandler {
     private static final ResourceLocation RETICLE_TEXTURE =
-            new ResourceLocation("lspecial", "textures/gui/meathook.png");
+            new ResourceLocation("hbm", "textures/misc/shotgun_crosshair.png");
     private static final float FOLLOW_SPEED = 0.18F;
     private static final float RETICLE_SIZE = 22.0F;
 
@@ -96,6 +96,37 @@ public final class GrappleOverlayHandler {
         reticleY += (targetY - reticleY) * amount;
 
         drawReticle(mc, reticleX, reticleY, RETICLE_SIZE);
+        drawHookIcon(mc, centerX, centerY + RETICLE_SIZE * 0.72F, 12.0F);
+    }
+
+    private static void drawHookIcon(Minecraft mc, float x, float y, float size) {
+        mc.getTextureManager().bindTexture(new ResourceLocation("lspecial", "textures/gui/meathook.png"));
+        GL11.glPushMatrix();
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        GL11.glOrtho(0.0D, mc.displayWidth, mc.displayHeight, 0.0D, -1000.0D, 1000.0D);
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        GlStateManager.disableLighting();
+        GlStateManager.disableDepth();
+        GlStateManager.enableBlend();
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        GL11.glBegin(GL11.GL_QUADS);
+        GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 0.0F); GL11.glVertex3f(x + size / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(0.0F, 0.0F); GL11.glVertex3f(x - size / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glEnd();
+        GlStateManager.disableBlend();
+        GlStateManager.enableDepth();
+        GlStateManager.enableLighting();
+        GL11.glPopMatrix();
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPopMatrix();
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPopMatrix();
     }
 
     private static void drawReticle(Minecraft mc, float x, float y, float size) {

@@ -28,6 +28,7 @@ public class ClientProxy extends CommonProxy { // client only
         MinecraftForge.EVENT_BUS.register(new LSplashText());
         MinecraftForge.EVENT_BUS.register(new PlayerModelScaleHandler());
         MinecraftForge.EVENT_BUS.register(new GrappleOverlayHandler());
+        MinecraftForge.EVENT_BUS.register(new GrappleClientHandler());
         MinecraftForge.EVENT_BUS.register(new TooltipAdder());
         if (LSPECIALConfig.toggleSpecial) {
             ClientRegistry.registerKeyBinding(toggleSpecial);

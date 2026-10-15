@@ -63,6 +63,9 @@ public class LSPECIALMod {
         ForgeRegistries.POTIONS.register(AMPLIFIED_REGENERATION);
 
         NETWORK.registerMessage(RequestSPECIALStatsPacket.Handler.class, RequestSPECIALStatsPacket.class, 0, Side.SERVER);
+        NETWORK.registerMessage(GrappleCameraPacket.Handler.class, GrappleCameraPacket.class, 2, Side.CLIENT);
+        NETWORK.registerMessage(GrappleCameraPacket.Handler.class, GrappleCameraPacket.class, 3, Side.SERVER);
+        MinecraftForge.EVENT_BUS.register(new GrappleController());
 
         proxy.preInit(event);
     }
