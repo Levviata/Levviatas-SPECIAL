@@ -8,9 +8,9 @@
   "mixins": [
     "MixinBeamProjectile",
     "MixinDragonFuryProjectile",
-    "MixinEntityAITargetNeutrality",
     "MixinEntityBulletBaseMK4",
     "MixinEntityInvoker",
+    "MixinEntityLivingNeutrality",
     "MixinEntityRailgunBlast",
     "MixinEntityVillager",
     "MixinLightRevolverRapidFire",

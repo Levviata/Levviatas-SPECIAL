@@ -51,12 +51,6 @@ public abstract class MixinWeaponSecondary {
         String itemId = registryId(stack);
         if (itemId == null) return;
 
-        // The Minigun's belt selects its own projectile from the loaded ammunition; crouch-secondary is disabled.
-        if (isMinigun(itemId) && player.isSneaking() && keybind == HbmKeybinds.EnumKeybind.GUN_SECONDARY) {
-            callback.cancel();
-            return;
-        }
-
         if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
                 && !player.isSneaking() && keybind.name().contains("SECONDARY") && pressed
                 && lspecial$hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
@@ -268,6 +262,24 @@ public abstract class MixinWeaponSecondary {
         if (!(stack.getItem() instanceof ItemGunBaseNT)) return false;
         ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
         List<BulletConfig> alternateCalibers = getAlternateCalibers(itemId);
+        if (isMinigun(itemId)) {
+            for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+                GunConfig config = gun.getConfig(stack, configIndex);
+                if (config == null) continue;
+                Receiver[] receivers = config.getReceivers(stack);
+                if (receivers == null) continue;
+                for (Receiver receiver : receivers) {
+                    if (receiver == null) continue;
+                    IMagazine magazine = receiver.getMagazine(stack);
+                    if (magazine instanceof MagazineBelt
+                            && lspecial$cycleBeltAmmo(stack, (MagazineBelt) magazine)) {
+                        player.inventory.markDirty();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
         if (alternateCalibers.isEmpty()) return false;
 
         Set<String> visitedMagazineKeys = new HashSet<>();
@@ -340,7 +352,11 @@ public abstract class MixinWeaponSecondary {
         if (alternateOptions.isEmpty()) return false;
         int currentAlternate = alternateOptions.indexOf(current);
         BulletConfig target;
-        if (currentAlternate < 0) {
+        if (isStarF(registryId(stack))) {
+            // Star F switches between the original .22 group and the BMG group,
+            // rather than cycling every individual BMG projectile configuration.
+            target = currentAlternate < 0 ? alternateOptions.get(0) : defaultAmmo;
+        } else if (currentAlternate < 0) {
             target = alternateOptions.get(0);
         } else if (currentAlternate + 1 < alternateOptions.size()) {
             target = alternateOptions.get(currentAlternate + 1);
@@ -408,12 +424,14 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** adds the native capacitor configurations used by NTM's laser, Tesla, and emerald energy weapons. */
+    @Unique
     private static void lspecial$registerEnergyCapacitors(List<BulletConfig> accepted) {
         for (BulletConfig config : lspecial$getEnergyCapacitors()) {
             if (!accepted.contains(config)) accepted.add(config);
         }
     }
 
+    @Unique
     private static List<BulletConfig> lspecial$getEnergyCapacitors() {
         return Arrays.asList(XFactoryEnergy.energy_las, XFactoryEnergy.energy_las_overcharge,
                 XFactoryEnergy.energy_las_ir, XFactoryEnergy.energy_tesla,
@@ -422,6 +440,7 @@ public abstract class MixinWeaponSecondary {
                 XFactoryEnergy.energy_emerald_overcharge, XFactoryEnergy.energy_emerald_ir);
     }
 
+    @Unique
     private static BulletConfig lspecial$findBulletConfig(int id) {
         for (BulletConfig config : BulletConfig.configs) {
             if (config != null && config.id == id) return config;
@@ -430,6 +449,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** returns old-caliber ammunition to inventory, dropping every leftover stack beside the player. */
+    @Unique
     private static boolean refundAmmoToPlayer(EntityPlayer player, BulletConfig oldConfig, int count) {
         if (count <= 0) return true;
         if (oldConfig.ammo == null) return false;
@@ -452,6 +472,7 @@ public abstract class MixinWeaponSecondary {
 
 
     /** identifies weapons with implemented alternate fire that can be selected as a persistent mode. */
+    @Unique
     private static boolean lspecial$supportsToggleMode(String itemId) {
         return "hbm:gun_carbine".equals(itemId) || "hbm:gun_flamer_topaz".equals(itemId)
                 || "hbm:gun_flamer".equals(itemId) || "hbm:gun_lag".equals(itemId)
@@ -459,10 +480,12 @@ public abstract class MixinWeaponSecondary {
                 || "hbm:gun_light_revolver".equals(itemId);
     }
 
+    @Unique
     private static int lspecial$toggleRequiredLevel(String itemId) {
         return "hbm:gun_carbine".equals(itemId) || "hbm:gun_henry_lincoln".equals(itemId) ? 15 : 5;
     }
 
+    @Unique
     private static void lspecial$setSecondaryForAllConfigs(ItemStack stack, boolean pressed) {
         if (!(stack.getItem() instanceof ItemGunBaseNT)) return;
         ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
@@ -472,6 +495,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** sets native primary input while the secondary button is held for alternate-fire modes. */
+    @Unique
     private static void lspecial$setPrimaryForAllConfigs(ItemStack stack, boolean pressed) {
         if (!(stack.getItem() instanceof ItemGunBaseNT)) {
             return;
@@ -484,6 +508,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** finds the nearest entity in the player's look direction and applies a bounded pull velocity. */
+    @Unique
     private static void pullPlayerTowardTarget(EntityPlayer player, double range, double pullSpeed) {
         World world = player.world;
         Vec3d look = player.getLookVec().normalize();

@@ -8,6 +8,7 @@ import com.hbm.render.anim.sedna.AnimationEnums.GunAnimation;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -16,6 +17,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -323,33 +325,5 @@ public final class SPECIALGameplayHandler {
                 }
             }
         }
-
-        if (LSPECIALConfig.charisma && LSPECIALConfig.charismaNeutralMobs
-                && inst.getCharismaScore().getScorePoints() >= LSPECIALConfig.charismaNeutralLevel
-                && player.ticksExisted % 10 == 0) {
-            for (Entity entity : player.world.loadedEntityList) {
-                if (!(entity instanceof EntityLiving) || entity == player
-                        || entity.getDistanceSq(player) > 32 * 32) continue;
-
-                EntityLiving mob = (EntityLiving) entity;
-
-                if (isConfiguredNeutralMob(mob) && mob.getAttackTarget() == player) {
-                    mob.setAttackTarget(null);
-                }
-            }
-        }
-    }
-
-    private boolean isConfiguredNeutralMob(EntityLivingBase entity) {
-        ResourceLocation key = net.minecraft.entity.EntityList.getKey(entity);
-        String registryId = key == null ? null : key.toString();
-        if (registryId == null || LSPECIALConfig.charismaNeutralEntityList == null) return false;
-        for (String raw : LSPECIALConfig.charismaNeutralEntityList.split(",")) {
-            String id = raw.trim();
-            if (id.isEmpty()) continue;
-            if (id.indexOf(':') < 0) id = "minecraft:" + id;
-            if (id.equals(registryId)) return true;
-        }
-        return false;
     }
 }
