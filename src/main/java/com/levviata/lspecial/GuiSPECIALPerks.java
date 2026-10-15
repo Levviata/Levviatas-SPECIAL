@@ -1,10 +1,15 @@
 package com.levviata.lspecial;
 
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.entity.player.EntityPlayer;
 import org.lwjgl.input.Keyboard;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
 /** small, scrollable overlay for the non-weapon SPECIAL perk descriptions. */
 public final class GuiSPECIALPerks extends GuiScreen {
@@ -49,7 +54,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
             case "Charisma":
                 lines.add("LESSER PERK — Level 5");
                 lines.add("Configured entities may ignore the player when supported.");
-                lines.add("Villagers have a discount in proportion to your current level. To see how much is discounted, over the item to trade.");
+                lines.add("Villagers have a discount in proportion to your current level. Your current discount is " + getVillagerDiscountPercent() + "%");
                 /*lines.add("HIGHER PERK — Levels 10–15");
                 lines.add("Additional effects depend on the active configuration.");*/
                 break;
@@ -164,4 +169,29 @@ public final class GuiSPECIALPerks extends GuiScreen {
         return Math.max(0, Math.min(value, Math.max(0, getWrappedLines(innerWidth).size() - visible)));
     }
     @Override public boolean doesGuiPauseGame() { return false; }
+
+    private static int getVillagerDiscountPercent() {
+        if (!LSPECIALConfig.charisma || !LSPECIALConfig.charismaVillagerDiscount) {
+            return 0;
+        }
+
+        int charisma = inst.getCharismaScore().getScorePoints();
+
+        if (charisma < LSPECIALConfig.charismaVillagerDiscountLevel) {
+            return 0;
+        }
+
+        Map<String, Double> variables = new HashMap<>();
+        variables.put("charisma", (double) charisma);
+
+        double fraction = LSPECIALExpression.eval(
+                LSPECIALConfig.charismaVillagerDiscountFormula,
+                variables,
+                0.0D
+        );
+
+        fraction = Math.max(0.0D, Math.min(0.75D, fraction));
+
+        return (int) Math.round(fraction * 100.0D);
+    }
 }
