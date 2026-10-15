@@ -31,6 +31,7 @@ public final class GrappleOverlayHandler {
             new ResourceLocation("hbm", "textures/misc/shotgun_crosshair.png");
     private static final float FOLLOW_SPEED = 0.18F;
     private static final float RETICLE_SIZE = 192.0F;
+    private static final float HOOK_SIZE = 28.0F;
 
     private float reticleX = -1.0F;
     private float reticleY = -1.0F;
@@ -67,6 +68,7 @@ public final class GrappleOverlayHandler {
         int cooldownTicks = GrappleClientHandler.getCooldownTicks();
         boolean cooldown = cooldownTicks > 0;
         Entity grappleTarget = cooldown ? null : findGrappleTarget(player, LSPECIALConfig.doubleBarrelGrappleRange);
+        boolean hasTarget = grappleTarget != null;
         if (grappleTarget != null) {
             float[] projected = projectEntity(grappleTarget, event.getPartialTicks(), mc);
             if (projected != null) { targetX = projected[0]; targetY = projected[1]; }
@@ -78,19 +80,21 @@ public final class GrappleOverlayHandler {
         reticleY += (targetY - reticleY) * amount;
 
         // the crosshair remains centered and has its own cooldown colour transition
-        drawReticle(mc, centerX, centerY, RETICLE_SIZE, cooldownTicks / 60.0F);
+        drawReticle(mc, centerX, centerY, RETICLE_SIZE, cooldownTicks);
         if (cooldown) {
             float progress = 1.0F - Math.min(1.0F, cooldownTicks / 60.0F);
-            float hookSize = 14.0F;
+            float hookSize = HOOK_SIZE;
             float defaultY = centerY + RETICLE_SIZE * 0.5F + 7.0F;
-            float split = hookSize * 0.5F * (1.0F - progress);
+            float split = (RETICLE_SIZE * 0.5F - hookSize * 0.25F) * (1.0F - progress);
             float hookX = centerX + (reticleX - centerX) * progress;
             float hookY = centerY + (defaultY - centerY) * progress;
             drawHookHalf(mc, hookX - split, hookY, hookSize, false, progress);
             drawHookHalf(mc, hookX + split, hookY, hookSize, true, progress);
         } else {
-            // target-following indicator is centered on the tracked entity, not below the crosshair
-            drawHookIcon(mc, reticleX, reticleY, 14.0F, false);
+            float defaultY = centerY + RETICLE_SIZE * 0.5F + 7.0F;
+            float hookX = hasTarget ? reticleX : centerX;
+            float hookY = hasTarget ? reticleY : defaultY;
+            drawHookIcon(mc, hookX, hookY, HOOK_SIZE, false);
         }
     }
 
@@ -144,7 +148,7 @@ public final class GrappleOverlayHandler {
         GL11.glPopMatrix(); GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glPopMatrix(); GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPopMatrix();
     }
 
-    private static void drawReticle(Minecraft mc, float x, float y, float size, float cooldownRemaining) {
+    private static void drawReticle(Minecraft mc, float x, float y, float size, int cooldownTicks) {
         TextureManager textures = mc.getTextureManager();
         textures.bindTexture(RETICLE_TEXTURE);
 
@@ -162,18 +166,23 @@ public final class GrappleOverlayHandler {
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA,
                 GL11.GL_ONE, GL11.GL_ZERO);
-        drawReticleQuad(x, y, size, 1.0F, 0.12F, 0.12F);
-        // the gray overlay grows downward as the cooldown elapses
-        float grayHeight = size * (1.0F - Math.max(0.0F, Math.min(1.0F, cooldownRemaining)));
-        if (grayHeight > 0.0F) {
+        if (cooldownTicks <= 0) {
+            drawReticleQuad(x, y, size, 1.0F, 1.0F, 1.0F);
+        } else {
+            drawReticleQuad(x, y, size, 1.0F, 0.12F, 0.12F);
+            // the gray overlay grows downward as the cooldown elapses
+            float cooldownRemaining = Math.max(0.0F, Math.min(1.0F, cooldownTicks / 60.0F));
+            float grayHeight = size * (1.0F - cooldownRemaining);
+            if (grayHeight > 0.0F) {
             GL11.glEnable(GL11.GL_SCISSOR_TEST);
             int sx = Math.round((x - size / 2.0F) * mc.displayWidth / (float)mc.displayWidth);
             int sy = Math.round((mc.displayHeight - (y - size / 2.0F + grayHeight)));
             int sw = Math.round(size);
             int sh = Math.round(grayHeight);
-            GL11.glScissor(sx, sy, sw, sh);
-            drawReticleQuad(x, y, size, 0.62F, 0.62F, 0.62F);
-            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+                GL11.glScissor(sx, sy, sw, sh);
+                drawReticleQuad(x, y, size, 0.62F, 0.62F, 0.62F);
+                GL11.glDisable(GL11.GL_SCISSOR_TEST);
+            }
         }
 
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);

@@ -32,6 +32,7 @@ public final class GrappleClientHandler {
         boolean jumpDown = mc.gameSettings.keyBindJump.isKeyDown();
         if (jumpDown && !jumpWasDown) LSPECIALMod.NETWORK.sendToServer(new GrappleCameraPacket(-2, false));
         jumpWasDown = jumpDown;
+        if (!LSPECIALConfig.doubleBarrelGrappleCamera) return;
         Entity target = mc.world.getEntityByID(targetId);
         if (target == null || target.isDead) return;
         double dx = target.posX - mc.player.posX;

@@ -119,6 +119,7 @@ public final class LSPECIALConfig {
     public static int starFCapacity = 30;
     public static boolean doubleBarrelGrapple = true;
     public static boolean doubleBarrelGrappleVisuals = true;
+    public static boolean doubleBarrelGrappleCamera = true;
     public static int doubleBarrelGrappleVisualTicks = 12;
     public static double doubleBarrelGrappleRange = 5.0;
     public static double doubleBarrelGrapplePullSpeed = 1.35;
@@ -331,7 +332,8 @@ public final class LSPECIALConfig {
         secondaryFireToggle = b(GUNS, "secondaryFireToggle", true, "Toggle supported secondary-fire modes with Secondary Fire; primary fire then fires the selected mode");
         starFCapacity = i(GUNS, "starFCapacity", 30, 1, 1000, "Star-F magazine capacity at Intelligence 15");
         doubleBarrelGrapple = b(GUNS, "doubleBarrelGrapple", true, "Intelligence 15: secondary fire grapples toward the targeted entity with the double barrel");
-        doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render a text chain and v marker for the double-barrel grapple");
+        doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render the double-barrel grapple chain and HUD");
+        doubleBarrelGrappleCamera = b(GUNS, "doubleBarrelGrappleCamera", true, "Smoothly turn the camera toward the grapple target while grappling");
         doubleBarrelGrappleVisualTicks = i(GUNS, "doubleBarrelGrappleVisualTicks", 12, 1, 100, "Duration of the double-barrel grapple chain text, in ticks");
         doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 5.0, 1.0, 128.0, "Maximum entity grapple range in blocks");
         doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Maximum grapple travel speed");
