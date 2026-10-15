@@ -10,6 +10,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.storage.loot.LootContext;
 import net.minecraft.world.storage.loot.LootTable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -67,6 +68,7 @@ public abstract class MixinLootTable {
     }
 
     /** reads a player's score without creating a missing objective or score entry. */
+    @Unique
     private static int lspecial$getScore(EntityPlayer player, String objectiveName) {
         Scoreboard scoreboard = player.world.getScoreboard();
         ScoreObjective objective = scoreboard.getObjective(objectiveName);
