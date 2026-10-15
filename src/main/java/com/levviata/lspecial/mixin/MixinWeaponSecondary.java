@@ -89,6 +89,28 @@ public abstract class MixinWeaponSecondary {
             }
         }
 
+        // Route the double-barrel grapple through NTM's tertiary/scope key.
+        // Cancel the native tertiary action for this weapon so it cannot scope.
+        if (keybind.name().contains("TERTIARY") && "hbm:gun_double_barrel".equals(itemId)
+                && LSPECIALConfig.doubleBarrelGrapple && pressed
+                && lspecial$hasIntelligence(player, 15)) {
+            if (player.world.isRemote) {
+                if (LSPECIALConfig.doubleBarrelGrappleVisuals) {
+                    net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+                    if (tag == null) {
+                        tag = new net.minecraft.nbt.NBTTagCompound();
+                        stack.setTagCompound(tag);
+                    }
+                    tag.setInteger("LSPECIALGrappleVisualTicks", LSPECIALConfig.doubleBarrelGrappleVisualTicks);
+                }
+            } else {
+                pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
+                        LSPECIALConfig.doubleBarrelGrapplePullSpeed);
+            }
+            callback.cancel();
+            return;
+        }
+
         if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
 
         boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && lspecial$hasIntelligence(player, 15);
@@ -168,12 +190,6 @@ public abstract class MixinWeaponSecondary {
             return;
         }
 
-        if (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
-                && LSPECIALConfig.doubleBarrelGrapple && lspecial$hasIntelligence(player, 15)) {
-            pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
-                    LSPECIALConfig.doubleBarrelGrapplePullSpeed);
-            callback.cancel();
-        }
     }
 
     /** returns whether the player's current Intelligence score meets the requested perk level. */
