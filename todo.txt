@@ -1,3 +1,9 @@
 the ai is retarded and tries to use mixins so much, it makes me want to drown it in lava.
 revise the mixins and see if they can be avoided
 
+missing:
+
+light revolver rapid fire
+heretic scoping
+rocket self damage
+lincoln triple burst?
