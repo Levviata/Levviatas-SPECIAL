@@ -16,6 +16,7 @@ public final class GrappleClientHandler {
     private static int cooldownTicks;
     public GrappleClientHandler() { }
     public static boolean isOnCooldown() { return cooldownTicks > 0; }
+    public static int getCooldownTicks() { return cooldownTicks; }
     public static void setTarget(int id) {
         if (id >= 0) cooldownTicks = 60;
         Minecraft mc = Minecraft.getMinecraft();

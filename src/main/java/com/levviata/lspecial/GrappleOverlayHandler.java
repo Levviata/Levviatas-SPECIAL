@@ -64,7 +64,8 @@ public final class GrappleOverlayHandler {
         float centerY = screenHeight / 2.0F;
         float targetX = centerX;
         float targetY = centerY;
-        boolean cooldown = GrappleClientHandler.isOnCooldown();
+        int cooldownTicks = GrappleClientHandler.getCooldownTicks();
+        boolean cooldown = cooldownTicks > 0;
         Entity grappleTarget = cooldown ? null : findGrappleTarget(player, LSPECIALConfig.doubleBarrelGrappleRange);
         if (grappleTarget != null) {
             float[] projected = projectEntity(grappleTarget, event.getPartialTicks(), mc);
@@ -76,14 +77,20 @@ public final class GrappleOverlayHandler {
         reticleX += (targetX - reticleX) * amount;
         reticleY += (targetY - reticleY) * amount;
 
-        // the crosshair stays centered; only the meathook indicator tracks targets
-        drawReticle(mc, centerX, centerY, RETICLE_SIZE, cooldown);
+        // the crosshair remains centered and has its own cooldown colour transition
+        drawReticle(mc, centerX, centerY, RETICLE_SIZE, cooldownTicks / 60.0F);
         if (cooldown) {
-            float displacement = Math.max(14.0F, RETICLE_SIZE * 0.5F);
-            drawHookHalf(mc, centerX - displacement, centerY + RETICLE_SIZE * 0.5F + 7.0F, 14.0F, false);
-            drawHookHalf(mc, centerX + displacement, centerY + RETICLE_SIZE * 0.5F + 7.0F, 14.0F, true);
+            float progress = 1.0F - Math.min(1.0F, cooldownTicks / 60.0F);
+            float hookSize = 14.0F;
+            float defaultY = centerY + RETICLE_SIZE * 0.5F + 7.0F;
+            float split = hookSize * 0.5F * (1.0F - progress);
+            float hookX = centerX + (reticleX - centerX) * progress;
+            float hookY = centerY + (defaultY - centerY) * progress;
+            drawHookHalf(mc, hookX - split, hookY, hookSize, false, progress);
+            drawHookHalf(mc, hookX + split, hookY, hookSize, true, progress);
         } else {
-            drawHookIcon(mc, reticleX, reticleY + RETICLE_SIZE * 0.5F + 7.0F, 14.0F, false);
+            // target-following indicator is centered on the tracked entity, not below the crosshair
+            drawHookIcon(mc, reticleX, reticleY, 14.0F, false);
         }
     }
 
@@ -117,14 +124,14 @@ public final class GrappleOverlayHandler {
         GL11.glPopMatrix();
     }
 
-    private static void drawHookHalf(Minecraft mc, float x, float y, float size, boolean rightHalf) {
+    private static void drawHookHalf(Minecraft mc, float x, float y, float size, boolean rightHalf, float progress) {
         mc.getTextureManager().bindTexture(new ResourceLocation("lspecial", "textures/gui/meathook.png"));
         GL11.glPushMatrix();
         GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glPushMatrix(); GL11.glLoadIdentity();
         GL11.glOrtho(0.0D, mc.displayWidth, mc.displayHeight, 0.0D, -1000.0D, 1000.0D);
         GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPushMatrix(); GL11.glLoadIdentity();
         GlStateManager.disableLighting(); GlStateManager.disableDepth(); GlStateManager.enableBlend();
-        GlStateManager.color(1.0F, 0.12F, 0.12F, 1.0F);
+        GlStateManager.color(1.0F, 0.12F + 0.88F * progress, 0.12F + 0.88F * progress, 1.0F);
         float u0 = rightHalf ? 0.5F : 0.0F, u1 = rightHalf ? 1.0F : 0.5F;
         float x0 = rightHalf ? x : x - size / 2.0F, x1 = rightHalf ? x + size / 2.0F : x;
         GL11.glBegin(GL11.GL_QUADS);
@@ -137,7 +144,7 @@ public final class GrappleOverlayHandler {
         GL11.glPopMatrix(); GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glPopMatrix(); GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPopMatrix();
     }
 
-    private static void drawReticle(Minecraft mc, float x, float y, float size, boolean red) {
+    private static void drawReticle(Minecraft mc, float x, float y, float size, float cooldownRemaining) {
         TextureManager textures = mc.getTextureManager();
         textures.bindTexture(RETICLE_TEXTURE);
 
@@ -155,14 +162,21 @@ public final class GrappleOverlayHandler {
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA,
                 GL11.GL_ONE, GL11.GL_ZERO);
-        GlStateManager.color(1.0F, red ? 0.12F : 1.0F, red ? 0.12F : 1.0F, 1.0F);
-        GL11.glBegin(GL11.GL_QUADS);
-        GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(1.0F, 0.0F); GL11.glVertex3f(x + size / 2.0F, y - size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(0.0F, 0.0F); GL11.glVertex3f(x - size / 2.0F, y - size / 2.0F, 0.0F);
-        GL11.glEnd();
+        drawReticleQuad(x, y, size, 1.0F, 0.12F, 0.12F);
+        // the gray overlay grows downward as the cooldown elapses
+        float grayHeight = size * (1.0F - Math.max(0.0F, Math.min(1.0F, cooldownRemaining)));
+        if (grayHeight > 0.0F) {
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            int sx = Math.round((x - size / 2.0F) * mc.displayWidth / (float)mc.displayWidth);
+            int sy = Math.round((mc.displayHeight - (y - size / 2.0F + grayHeight)));
+            int sw = Math.round(size);
+            int sh = Math.round(grayHeight);
+            GL11.glScissor(sx, sy, sw, sh);
+            drawReticleQuad(x, y, size, 0.62F, 0.62F, 0.62F);
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+        }
 
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.disableBlend();
         GlStateManager.enableDepth();
         GlStateManager.enableLighting();
@@ -170,6 +184,16 @@ public final class GrappleOverlayHandler {
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPopMatrix();
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
+    }
+
+    private static void drawReticleQuad(float x, float y, float size, float red, float green, float blue) {
+        GlStateManager.color(red, green, blue, 1.0F);
+        GL11.glBegin(GL11.GL_QUADS);
+        GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 0.0F); GL11.glVertex3f(x + size / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(0.0F, 0.0F); GL11.glVertex3f(x - size / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glEnd();
     }
 
     private void reset() {
