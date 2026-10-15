@@ -33,7 +33,7 @@ public final class GrappleOverlayHandler {
         RenderManager renderManager = minecraft.getRenderManager();
         double partialTicks = event.getPartialTicks();
         double targetX = target.lastTickPosX + (target.posX - target.lastTickPosX) * partialTicks;
-        double targetY = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks + target.height + 0.15D;
+        double targetY = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks + target.height / 2 + 0.35D;
         double targetZ = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * partialTicks;
         drawWorldText(minecraft, renderManager, targetX, targetY, targetZ, "v", 0xFFFFFFFF, 0.05F);
     }
