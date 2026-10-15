@@ -24,6 +24,17 @@ public final class AMATQuackosRailgun {
         return projectileConfig;
     }
 
+    /**
+     * Identifies the custom AMAT capsule configuration even when a magazine
+     * returns a synchronized/re-registered instance with the same config ID.
+     */
+    public static boolean isRailgunConfig(BulletConfig config) {
+        if (config == null) return false;
+        init();
+        return projectileConfig != null
+                && (config == projectileConfig || config.id == projectileConfig.id);
+    }
+
     public static void init() {
         if (projectileConfig != null || ModItems.charge_railgun == null) return;
 

@@ -17,7 +17,10 @@
         "MixinDragonFuryProjectile",
         "MixinProjectileShooter",
         "MixinBeamProjectile",
-        "MixinEntityInvoker"
+        "MixinEntityInvoker",
+        "MixinWorldRailgunBlast",
+        "MixinEntityRailgunBlast",
+          "MixinEntityBulletBaseMK4"
     ],
     "server": [],
     "client": [
