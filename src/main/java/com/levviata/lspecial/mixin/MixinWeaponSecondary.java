@@ -94,15 +94,6 @@ public abstract class MixinWeaponSecondary {
             }
         }
 
-        // mirror the Heretic's hold-to-aim behavior through NTM's native aiming state.
-        if (isHereticScopeCopyWeapon(itemId) && LSPECIALConfig.modifyGuns
-                && LSPECIALConfig.hereticStyleScoping && lspecial$hasIntelligence(player, 5)
-                && keybind == HbmKeybinds.EnumKeybind.GUN_SECONDARY) {
-            ItemGunBaseNT.setIsAiming(stack, pressed);
-            callback.cancel();
-            return;
-        }
-
         if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
 
         boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && lspecial$hasIntelligence(player, 15);
