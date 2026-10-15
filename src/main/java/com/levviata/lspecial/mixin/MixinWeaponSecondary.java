@@ -236,7 +236,7 @@ public abstract class MixinWeaponSecondary {
 
     /** returns every native NTM bullet configuration in the alternate caliber family. */
     private static List<BulletConfig> getAlternateCalibers(String itemId) {
-        if ("hbm:gun_amat".equals(itemId)) return java.util.Collections.singletonList(AMATQuackosRailgun.getBulletConfig());
+        if ("hbm:gun_amat".equals(itemId)) return java.util.Collections.singletonList(AMATRailgun.getBulletConfig());
         String prefix;
         Class<?> factory;
         if ("hbm:gun_pepperbox".equals(itemId)) { factory = XFactory44.class; prefix = "m44_"; }

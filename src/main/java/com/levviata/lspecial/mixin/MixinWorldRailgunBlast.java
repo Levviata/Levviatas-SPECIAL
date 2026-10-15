@@ -5,7 +5,7 @@ import com.hbm.entity.projectile.EntityBulletBeamBase;
 import com.hbm.entity.projectile.EntityRailgunBlast;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.BulletConfig;
-import com.levviata.lspecial.AMATQuackosRailgun;
+import com.levviata.lspecial.AMATRailgun;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
@@ -29,8 +29,7 @@ public abstract class MixinWorldRailgunBlast {
     @ModifyVariable(
             method = "spawnEntity(Lnet/minecraft/entity/Entity;)Z",
             at = @At("HEAD"),
-            argsOnly = true,
-            remap = true
+            argsOnly = true
     )
     private Entity lspecial$replaceAmatShotWithRailgunBlast(Entity original) {
         if (original == null) return null;
@@ -80,12 +79,12 @@ public abstract class MixinWorldRailgunBlast {
         blast.motionZ = dz / length * speed;
         blast.rotationYaw = original.rotationYaw;
         blast.rotationPitch = original.rotationPitch;
-        blast.getEntityData().setBoolean("LSPECIAL_AMAT_QUACKOS_RAILGUN", true);
+        blast.getEntityData().setBoolean("LSPECIAL_AMAT_RAILGUN", true);
         return blast;
     }
 
     private static boolean lspecial$isAmatCapsuleShot(BulletConfig config, EntityLivingBase shooter) {
-        if (AMATQuackosRailgun.isRailgunConfig(config)) return true;
+        if (AMATRailgun.isRailgunConfig(config)) return true;
 
         // Defensive fallback: some NTM magazine paths resolve the registered
         // ammo config rather than returning the custom BulletConfig instance.

@@ -75,7 +75,7 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
 
         original.reloadAction(stack, inventory);
 
-        if (selectedConfig != null && selectedConfig == AMATQuackosRailgun.getBulletConfig()) return;
+        if (selectedConfig != null && selectedConfig == AMATRailgun.getBulletConfig()) return;
 
         int ammoAfter = countAmmo(inventory, selectedConfig);
 

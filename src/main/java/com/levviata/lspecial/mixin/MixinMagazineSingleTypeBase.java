@@ -4,7 +4,7 @@ import com.hbm.items.ModItems;
 import com.hbm.items.tool.ItemAmmoBag;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
-import com.levviata.lspecial.AMATQuackosRailgun;
+import com.levviata.lspecial.AMATRailgun;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.SPECIALScoreboard;
 import net.minecraft.inventory.IInventory;
@@ -39,7 +39,7 @@ public abstract class MixinMagazineSingleTypeBase {
         String prefix = null;
         if ("hbm:gun_pepperbox".equals(itemId)) { factory = XFactory44.class; prefix = "m44_"; }
         else if ("hbm:gun_amat".equals(itemId)) {
-            BulletConfig requested = AMATQuackosRailgun.getBulletConfig();
+            BulletConfig requested = AMATRailgun.getBulletConfig();
             if (requested != null && !acceptedBullets.contains(requested)) acceptedBullets.add(requested);
             return;
         } else if ("hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId)) { factory = XFactory50.class; prefix = "bmg50_"; }
@@ -168,13 +168,13 @@ public abstract class MixinMagazineSingleTypeBase {
 
         String earlyRegistryName = stack.getItem().getRegistryName().toString();
         if ("hbm:gun_amat".equals(earlyRegistryName) && stack.hasTagCompound()
-                && stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()) == AMATQuackosRailgun.getBulletConfig().id) {
+                && stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()) == AMATRailgun.getBulletConfig().id) {
             callback.setReturnValue(1);
             return;
         }
 
         if ("hbm:gun_amat".equals(earlyRegistryName) && stack.hasTagCompound()) {
-            BulletConfig capsule = AMATQuackosRailgun.getBulletConfig();
+            BulletConfig capsule = AMATRailgun.getBulletConfig();
             if (capsule != null && stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()) == capsule.id) {
                 callback.setReturnValue(1);
                 return;
