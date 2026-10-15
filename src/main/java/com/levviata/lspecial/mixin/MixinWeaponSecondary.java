@@ -50,6 +50,12 @@ public abstract class MixinWeaponSecondary {
         String itemId = registryId(stack);
         if (itemId == null) return;
 
+        // The Minigun's belt selects its own projectile from the loaded ammunition; crouch-secondary is disabled.
+        if (isMinigun(itemId) && player.isSneaking() && keybind == HbmKeybinds.EnumKeybind.GUN_SECONDARY) {
+            callback.cancel();
+            return;
+        }
+
         if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
                 && !player.isSneaking() && keybind.name().contains("SECONDARY") && pressed
                 && hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
@@ -125,8 +131,7 @@ public abstract class MixinWeaponSecondary {
                     && LSPECIALConfig.lagSecondarySelfKill && hasIntelligence(player, 5))
                     || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
                     && hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
-                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && hasIntelligence(player, 15)))
-                    && (!isMinigun(itemId) || LSPECIALConfig.minigunLaserModePerk))
+                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && hasIntelligence(player, 15))))
                     || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
                     && LSPECIALConfig.doubleBarrelGrapple && hasIntelligence(player, 15));
             if (isSpecialAction) {
@@ -161,7 +166,6 @@ public abstract class MixinWeaponSecondary {
         if (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
                 && hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
                 && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && hasIntelligence(player, 15)))
-                && (!isMinigun(itemId) || LSPECIALConfig.minigunLaserModePerk)
                 && cycleSupportedAmmo(player, stack, inventory, itemId)) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
             if (tag == null) {
@@ -202,7 +206,7 @@ public abstract class MixinWeaponSecondary {
     /** identifies the guns with a defined alternate caliber or energy-projectile mode. */
     private static boolean supportsAmmoCycling(String itemId) {
         return "hbm:gun_pepperbox".equals(itemId) || isStarF(itemId) || isUzi(itemId)
-                || isG3(itemId) || isMinigun(itemId) || "hbm:gun_amat".equals(itemId);
+                || isG3(itemId) || "hbm:gun_amat".equals(itemId);
     }
 
 
@@ -230,23 +234,37 @@ public abstract class MixinWeaponSecondary {
                 || "hbm:gun_am180".equals(itemId);
     }
 
-    /** returns the requested native NTM bullet configuration for a weapon's alternate mode. */
-    private static BulletConfig getRequestedAmmo(String itemId) {
-        if ("hbm:gun_pepperbox".equals(itemId)) return XFactory44.m44_sp;
-        if ("hbm:gun_amat".equals(itemId)) return AMATQuackosRailgun.getBulletConfig();
-        if (isStarF(itemId)) return XFactory50.bmg50_sp;
-        if (isUzi(itemId)) return XFactory556mm.r556_sp;
-        if (isG3(itemId)) return XFactory10ga.g10;
-        if (isMinigun(itemId)) return XFactoryEnergy.energy_las;
-        return null;
+    /** returns every native NTM bullet configuration in the alternate caliber family. */
+    private static List<BulletConfig> getAlternateCalibers(String itemId) {
+        if ("hbm:gun_amat".equals(itemId)) return java.util.Collections.singletonList(AMATQuackosRailgun.getBulletConfig());
+        String prefix;
+        Class<?> factory;
+        if ("hbm:gun_pepperbox".equals(itemId)) { factory = XFactory44.class; prefix = "m44_"; }
+        else if (isStarF(itemId)) { factory = XFactory50.class; prefix = "bmg50_"; }
+        else if (isUzi(itemId)) { factory = XFactory556mm.class; prefix = "r556_"; }
+        else if (isG3(itemId)) { factory = XFactory10ga.class; prefix = "g10"; }
+        else return java.util.Collections.emptyList();
+
+        List<BulletConfig> result = new java.util.ArrayList<>();
+        try {
+            for (java.lang.reflect.Field field : factory.getFields()) {
+                if (field.getType() != BulletConfig.class || !field.getName().startsWith(prefix)) continue;
+                BulletConfig config = (BulletConfig) field.get(null);
+                if (config != null && !result.contains(config)) result.add(config);
+            }
+        } catch (IllegalAccessException ignored) {
+            // Public factory fields are expected; an inaccessible field simply isn't a usable caliber.
+        }
+        result.sort(Comparator.comparingInt(config -> config.id));
+        return result;
     }
 
     /** swaps each distinct magazine on single and akimbo weapons without changing NTM's firing pipeline. */
     private static boolean cycleSupportedAmmo(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
         if (!(stack.getItem() instanceof ItemGunBaseNT)) return false;
         ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
-        BulletConfig requested = getRequestedAmmo(itemId);
-        if (requested == null) return false;
+        List<BulletConfig> alternateCalibers = getAlternateCalibers(itemId);
+        if (alternateCalibers.isEmpty()) return false;
 
         Set<String> visitedMagazineKeys = new HashSet<>();
         boolean changed = false;
@@ -262,7 +280,7 @@ public abstract class MixinWeaponSecondary {
                 if (magazine == null) continue;
                 String magazineKey = getMagazineKey(magazine);
                 if (magazineKey == null || !visitedMagazineKeys.add(magazineKey)) continue;
-                changed |= cycleOneMagazine(player, stack, inventory, magazine, requested);
+                changed |= cycleOneMagazine(player, stack, inventory, magazine, alternateCalibers);
             }
         }
 
@@ -292,23 +310,36 @@ public abstract class MixinWeaponSecondary {
 
     /** changes one magazine's selected caliber and refunds only ammunition physically loaded into that magazine. */
     private static boolean cycleOneMagazine(EntityPlayer player, ItemStack stack, IInventory inventory,
-                                            IMagazine magazine, BulletConfig requested) {
+                                            IMagazine magazine, List<BulletConfig> alternateCalibers) {
         IMagazine original = unwrapMagazine(magazine);
-        if (original instanceof MagazineBelt) {
-            return lspecial$cycleBeltAmmo(stack, (MagazineBelt) original);
-        }
+        if (original instanceof MagazineBelt) return false;
         if (!(original instanceof MagazineSingleTypeBase)) return false;
 
         MagazineSingleTypeBase single = (MagazineSingleTypeBase) original;
         List<BulletConfig> accepted = single.acceptedBullets;
         if (accepted == null || accepted.isEmpty()) return false;
-        if (!accepted.contains(requested)) accepted.add(requested);
+        for (BulletConfig config : alternateCalibers) {
+            if (config != null && !accepted.contains(config)) accepted.add(config);
+        }
 
         Object currentObject = single.getType(stack, null);
         if (!(currentObject instanceof BulletConfig)) return false;
         BulletConfig current = (BulletConfig) currentObject;
         BulletConfig defaultAmmo = accepted.get(0);
-        BulletConfig target = current == requested ? defaultAmmo : requested;
+        List<BulletConfig> alternateOptions = new java.util.ArrayList<>();
+        for (BulletConfig config : alternateCalibers) {
+            if (config != null && config != defaultAmmo && !alternateOptions.contains(config)) alternateOptions.add(config);
+        }
+        if (alternateOptions.isEmpty()) return false;
+        int currentAlternate = alternateOptions.indexOf(current);
+        BulletConfig target;
+        if (currentAlternate < 0) {
+            target = alternateOptions.get(0);
+        } else if (currentAlternate + 1 < alternateOptions.size()) {
+            target = alternateOptions.get(currentAlternate + 1);
+        } else {
+            target = defaultAmmo;
+        }
         if (target == null || target == current) return false;
 
         int loadedAmount = single.getAmount(stack, null);

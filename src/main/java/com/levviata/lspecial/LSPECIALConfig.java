@@ -318,9 +318,9 @@ public final class LSPECIALConfig {
         laserPewPewMagazineCapacity = i(GUNS, "laserPewPewMagazineCapacity", 30, 1, 1000, "Pew-Pew laser pistol magazine capacity with the higher perk");
         drillHigherPerkCapacity = b(GUNS, "drillHigherPerkCapacity", true, "Intelligence 15: add fluid capacity to the drill");
         drillAdditionalCapacityMb = i(GUNS, "drillAdditionalCapacityMb", 4000, 0, 1000000, "Additional drill fluid capacity in mB");
-        weaponSecondaryAmmoCycling = b(GUNS, "weaponSecondaryAmmoCycling", true, "Allow crouch + secondary to swap the configured caliber and refund loaded old-caliber ammunition");
+        weaponSecondaryAmmoCycling = b(GUNS, "weaponSecondaryAmmoCycling", true, "Allow crouch + secondary to cycle supported single-magazine alternate calibers");
         hereticStyleScoping = b(GUNS, "hereticStyleScoping", true, "Allow secondary-fire hold-to-scope behavior on supported lesser-perk weapons");
-        minigunLaserModePerk = b(GUNS, "minigunLaserModePerk", true, "Intelligence 15: crouch + secondary swaps the minigun to the native laser-rifle energy projectile");
+        minigunLaserModePerk = b(GUNS, "minigunLaserModePerk", true, "Legacy setting retained for config compatibility; the minigun uses the caliber of its loaded magazine");
         minigunLaserModeDelayTicks = i(GUNS, "minigunLaserModeDelayTicks", 4, 0, 1200, "Minigun laser-mode firing delay in ticks");
         starFFiftyBmgDelayTicks = i(GUNS, "starFFiftyBmgDelayTicks", 20, 0, 1200, "Star-F .50 BMG mode firing delay in ticks (20 = 1 second)");
         uzi556DelayTicks = i(GUNS, "uzi556DelayTicks", 2, 0, 1200, "UZI 5.56 mm mode firing delay in ticks");
@@ -351,7 +351,7 @@ public final class LSPECIALConfig {
         scopedSecondarySpread = b(GUNS, "scopedSecondarySpread", true, "Reduce spread while aiming with configured lesser-perk weapons");
         scopedSpreadMultiplier = d(GUNS, "scopedSpreadMultiplier", 0.5, 0.05, 1.0, "Spread multiplier while aiming");
         henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-shot sequential burst");
-        AMATQuackosRailgun = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: BMG tertiary fire switches to a deuterium plasma capsule caliber; its native projectile homes to and kills Quackos");
+        AMATQuackosRailgun = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: crouch + secondary selects the deuterium plasma capsule caliber for the AMAT; its native Sedna projectile homes to Quackos");
         stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Intelligence 15: suppress self-inflicted damage from configured Stinger-family projectiles");
         carbineHigherPerkCapacity = b(GUNS, "carbineHigherPerkCapacity", true, "Intelligence 15: increase the carbine magazine capacity");
         carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");

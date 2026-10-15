@@ -29,26 +29,31 @@ public abstract class MixinMagazineSingleTypeBase {
     @Shadow public int index;
     @Shadow public int capacity;
 
-    /** registers each supported alternate bullet config before NTM validates the saved magazine type. */
+    /** registers every supported bullet variant in each alternate caliber family before NTM validates saved types. */
     @Inject(method = "getType(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lcom/hbm/items/weapon/sedna/BulletConfig;", at = @At("HEAD"), remap = false)
     private void lspecial$registerSavedAlternateCaliber(ItemStack stack, IInventory inventory,
             CallbackInfoReturnable<BulletConfig> callback) {
         if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null || acceptedBullets == null) return;
         String itemId = stack.getItem().getRegistryName().toString();
-        BulletConfig requested = null;
-        if ("hbm:gun_pepperbox".equals(itemId)) {
-            requested = XFactory44.m44_sp;
-        } else if ("hbm:gun_amat".equals(itemId)) {
-            requested = AMATQuackosRailgun.getBulletConfig();
-        } else if ("hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId)) {
-            requested = XFactory50.bmg50_sp;
-        } else if ("hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId)) {
-            requested = XFactory556mm.r556_sp;
-        } else if ("hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId)) {
-            requested = XFactory10ga.g10;
-        }
-        if (requested != null && !acceptedBullets.contains(requested)) {
-            acceptedBullets.add(requested);
+        Class<?> factory = null;
+        String prefix = null;
+        if ("hbm:gun_pepperbox".equals(itemId)) { factory = XFactory44.class; prefix = "m44_"; }
+        else if ("hbm:gun_amat".equals(itemId)) {
+            BulletConfig requested = AMATQuackosRailgun.getBulletConfig();
+            if (requested != null && !acceptedBullets.contains(requested)) acceptedBullets.add(requested);
+            return;
+        } else if ("hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId)) { factory = XFactory50.class; prefix = "bmg50_"; }
+        else if ("hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId)) { factory = XFactory556mm.class; prefix = "r556_"; }
+        else if ("hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId)) { factory = XFactory10ga.class; prefix = "g10"; }
+        if (factory == null) return;
+        try {
+            for (java.lang.reflect.Field field : factory.getFields()) {
+                if (field.getType() != BulletConfig.class || !field.getName().startsWith(prefix)) continue;
+                BulletConfig config = (BulletConfig) field.get(null);
+                if (config != null && !acceptedBullets.contains(config)) acceptedBullets.add(config);
+            }
+        } catch (IllegalAccessException ignored) {
+            // Factory configs are public; ignore any unavailable entry without breaking native ammo lookup.
         }
     }
 
@@ -162,11 +167,27 @@ public abstract class MixinMagazineSingleTypeBase {
         if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) return;
 
         String earlyRegistryName = stack.getItem().getRegistryName().toString();
-        if (("hbm:gun_star_f".equals(earlyRegistryName) || "hbm:gun_star_f_akimbo".equals(earlyRegistryName))
-                && stack.hasTagCompound()
-                && stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()) == XFactory50.bmg50_sp.id) {
-            callback.setReturnValue(10);
+        if ("hbm:gun_amat".equals(earlyRegistryName) && stack.hasTagCompound()
+                && stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()) == AMATQuackosRailgun.getBulletConfig().id) {
+            callback.setReturnValue(1);
             return;
+        }
+
+        if ("hbm:gun_amat".equals(earlyRegistryName) && stack.hasTagCompound()) {
+            BulletConfig capsule = AMATQuackosRailgun.getBulletConfig();
+            if (capsule != null && stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()) == capsule.id) {
+                callback.setReturnValue(1);
+                return;
+            }
+        }
+
+        if (("hbm:gun_star_f".equals(earlyRegistryName) || "hbm:gun_star_f_akimbo".equals(earlyRegistryName))
+                && stack.hasTagCompound() && stack.getTagCompound().hasKey(lspecial$selectedCaliberKey())) {
+            BulletConfig selected = lspecial$findConfig(stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()));
+            if (lspecial$isBmgConfig(selected)) {
+                callback.setReturnValue(10);
+                return;
+            }
         }
 
         if (!LSPECIALConfig.intelligence || !LSPECIALConfig.revolverPerk) return;
@@ -187,6 +208,14 @@ public abstract class MixinMagazineSingleTypeBase {
                 && LSPECIALConfig.modifyGuns && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= 15) {
             callback.setReturnValue(LSPECIALConfig.starFCapacity);
         }
+    }
+
+    @Unique
+    private static boolean lspecial$isBmgConfig(BulletConfig config) {
+        return config != null && (config == XFactory50.bmg50_sp || config == XFactory50.bmg50_fmj
+                || config == XFactory50.bmg50_jhp || config == XFactory50.bmg50_ap || config == XFactory50.bmg50_du
+                || config == XFactory50.bmg50_he || config == XFactory50.bmg50_sm || config == XFactory50.bmg50_black
+                || config == XFactory50.bmg50_equestrian);
     }
 
     @Unique

@@ -9,7 +9,6 @@
         "MixinReceiver",
         "MixinLightRevolverRapidFire",
         "MixinMagazineSingleTypeBase",
-        "MixinMagazineBelt",
         "MixinMagazineFluid",
         "MixinWeaponSecondary",
         "MixinStingerProjectile",

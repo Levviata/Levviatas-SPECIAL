@@ -4,6 +4,7 @@ import com.hbm.entity.mob.EntityQuackos;
 import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.BulletConfig;
+import com.hbm.util.DamageResistanceHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
@@ -30,7 +31,11 @@ public final class AMATQuackosRailgun {
                 .setItem(ModItems.charge_railgun)
                 .setVel(3.5F)
                 .setSpread(0.0F)
-                .setDamage(1.0F)
+                .setDamage(2.0F)
+                .setThresholdNegation(0.5F)
+                .setArmorPiercing(0.5F)
+                .setupDamageClass(DamageResistanceHandler.DamageClass.LASER)
+                .setReloadCount(1)
                 .setGrav(0.0F)
                 .setLife(120)
                 .setImpactsEntities(true)

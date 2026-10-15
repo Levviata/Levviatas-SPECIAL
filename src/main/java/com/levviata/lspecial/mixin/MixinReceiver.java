@@ -4,7 +4,6 @@ import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
-import com.hbm.items.weapon.sedna.factory.XFactoryEnergy;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.LSPECIALExpression;
@@ -89,9 +88,6 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
                 delay = LSPECIALConfig.uzi556DelayTicks;
             } else if (lspecial$isG3(itemId)) {
                 delay = LSPECIALConfig.g3TenGaugeDelayTicks;
-            } else if (lspecial$isMinigun(itemId) && LSPECIALConfig.minigunLaserModePerk
-                    && activeAmmo == XFactoryEnergy.energy_las) {
-                delay = LSPECIALConfig.minigunLaserModeDelayTicks;
             }
         }
 
@@ -168,11 +164,6 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         return "hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId);
     }
 
-    @Unique
-    private static boolean lspecial$isMinigun(String itemId) {
-        return "hbm:gun_minigun".equals(itemId) || "hbm:gun_minigun_dual".equals(itemId);
-    }
-
     /** selects the attached custom sound for a supported secondary-fire flame mode. */
     @Inject(method = "getFireSound", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$useSecondaryFlamerSound(ItemStack stack, CallbackInfoReturnable<SoundEvent> callback) {
@@ -188,9 +179,15 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         }
     }
 
-    /** limits the Carbine's higher-perk secondary fire to one shot per right-click press. */
+    /** allows the selected Lag/Lincoln secondary mode to repeat for the duration of its managed burst. */
     @Inject(method = "getRefireOnHold", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$carbineSecondarySemiAuto(ItemStack stack, CallbackInfoReturnable<Boolean> callback) {
+    private void lspecial$configureSecondaryRefire(ItemStack stack, CallbackInfoReturnable<Boolean> callback) {
+        String itemId = lspecial$registryId(stack);
+        if (lspecial$isSecondaryHeld(stack) && (("hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5))
+                || ("hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(15)))) {
+            callback.setReturnValue(true);
+            return;
+        }
         if (LSPECIALConfig.carbineSemiAutoPerk && lspecial$isCarbineHigherPerk(stack) && lspecial$isSecondaryHeld(stack)) {
             callback.setReturnValue(false);
         }
