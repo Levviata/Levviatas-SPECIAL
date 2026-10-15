@@ -26,10 +26,9 @@ public final class GrappleOverlayHandler {
         ItemStack held = player.getHeldItemMainhand();
         if (held.isEmpty() || !isDoubleBarrel(held)) return;
 
-        RayTraceResult hit = minecraft.objectMouseOver;
-        Entity target = hit != null && hit.typeOfHit == RayTraceResult.Type.ENTITY ? hit.entityHit : null;
-        if (!(target instanceof EntityLivingBase) || !target.isEntityAlive()
-                || target.getDistance(player) > LSPECIALConfig.doubleBarrelGrappleRange) return;
+        // use the configured grapple range instead of Minecraft's short interaction reach.
+        Entity target = findGrappleTarget(player, LSPECIALConfig.doubleBarrelGrappleRange);
+        if (!(target instanceof EntityLivingBase) || !target.isEntityAlive()) return;
 
         RenderManager renderManager = minecraft.getRenderManager();
         double partialTicks = event.getPartialTicks();
@@ -37,6 +36,50 @@ public final class GrappleOverlayHandler {
         double targetY = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks + target.height + 0.15D;
         double targetZ = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * partialTicks;
         drawWorldText(minecraft, renderManager, targetX, targetY, targetZ, "v", 0xFFFFFFFF, 0.05F);
+    }
+
+    /**
+     * ray-traces living entities out to the configured grapple range, while still respecting
+     * blocks that obstruct the player's line of sight.
+     */
+    private static Entity findGrappleTarget(EntityPlayer player, double range) {
+        if (range <= 0.0D) return null;
+
+        net.minecraft.util.math.Vec3d eye = player.getPositionEyes(1.0F);
+        net.minecraft.util.math.Vec3d look = player.getLook(1.0F).normalize();
+        net.minecraft.util.math.Vec3d end = eye.add(look.scale(range));
+
+        RayTraceResult blockHit = player.world.rayTraceBlocks(eye, end, false, true, false);
+        double maxDistanceSq = blockHit == null ? range * range : eye.squareDistanceTo(blockHit.hitVec);
+
+        net.minecraft.util.math.AxisAlignedBB searchBox = player.getEntityBoundingBox()
+                .expand(look.x * range, look.y * range, look.z * range).grow(1.0D);
+        Entity closest = null;
+        double closestDistanceSq = maxDistanceSq;
+
+        for (Entity candidate : player.world.getEntitiesWithinAABBExcludingEntity(player, searchBox)) {
+            if (!(candidate instanceof EntityLivingBase) || !candidate.isEntityAlive()) continue;
+
+            net.minecraft.util.math.AxisAlignedBB bounds = candidate.getEntityBoundingBox()
+                    .grow(candidate.getCollisionBorderSize());
+            RayTraceResult intercept = bounds.calculateIntercept(eye, end);
+            if (intercept == null) {
+                if (!bounds.contains(eye)) continue;
+                if (0.0D < closestDistanceSq) {
+                    closestDistanceSq = 0.0D;
+                    closest = candidate;
+                }
+                continue;
+            }
+
+            double distanceSq = eye.squareDistanceTo(intercept.hitVec);
+            if (distanceSq < closestDistanceSq) {
+                closestDistanceSq = distanceSq;
+                closest = candidate;
+            }
+        }
+
+        return closest;
     }
 
     private static void drawWorldText(Minecraft minecraft, RenderManager renderManager,
