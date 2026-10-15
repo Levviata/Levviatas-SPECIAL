@@ -25,6 +25,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -58,7 +59,7 @@ public abstract class MixinWeaponSecondary {
 
         if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
                 && !player.isSneaking() && keybind.name().contains("SECONDARY") && pressed
-                && hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
+                && lspecial$hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
             if (tag == null) {
                 tag = new net.minecraft.nbt.NBTTagCompound();
@@ -82,7 +83,7 @@ public abstract class MixinWeaponSecondary {
                 int requiredLevel = "hbm:gun_lag".equals(itemId) ? 5 : 15;
                 boolean enabled = "hbm:gun_lag".equals(itemId)
                         ? LSPECIALConfig.lagSecondaryBurst : LSPECIALConfig.henryLincolnSecondaryBurst;
-                if (enabled && hasIntelligence(player, requiredLevel)) {
+                if (enabled && lspecial$hasIntelligence(player, requiredLevel)) {
                     if (!player.world.isRemote) {
                         SPECIALGameplayHandler.startSequentialBurst(player, stack,
                                 LSPECIALConfig.lagSecondaryBurstDelay, requiredLevel);
@@ -95,7 +96,7 @@ public abstract class MixinWeaponSecondary {
 
         // mirror the Heretic's hold-to-aim behavior through NTM's native aiming state.
         if (isHereticScopeCopyWeapon(itemId) && LSPECIALConfig.modifyGuns
-                && LSPECIALConfig.hereticStyleScoping && hasIntelligence(player, 5)
+                && LSPECIALConfig.hereticStyleScoping && lspecial$hasIntelligence(player, 5)
                 && keybind == HbmKeybinds.EnumKeybind.GUN_SECONDARY) {
             ItemGunBaseNT.setIsAiming(stack, pressed);
             callback.cancel();
@@ -104,13 +105,13 @@ public abstract class MixinWeaponSecondary {
 
         if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
 
-        boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && hasIntelligence(player, 15);
-        boolean dragonSecondary = "hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryDirectHitPerk && hasIntelligence(player, LSPECIALConfig.dragonsFuryDirectHitLevel);
-        boolean phlogSecondary = "hbm:gun_flamer".equals(itemId) && LSPECIALConfig.phlogistinatorSustainedFirePerk && hasIntelligence(player, LSPECIALConfig.phlogistinatorSustainedFireLevel);
-        boolean lagSecondary = "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && hasIntelligence(player, 5);
-        boolean lincolnSecondary = "hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && hasIntelligence(player, 15);
-        boolean tauSecondary = "hbm:gun_tau".equals(itemId) && LSPECIALConfig.tauSecondaryDamageBonus && hasIntelligence(player, 5);
-        boolean lightRevolverSecondary = "hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk && hasIntelligence(player, 5);
+        boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && lspecial$hasIntelligence(player, 15);
+        boolean dragonSecondary = "hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryDirectHitPerk && lspecial$hasIntelligence(player, LSPECIALConfig.dragonsFuryDirectHitLevel);
+        boolean phlogSecondary = "hbm:gun_flamer".equals(itemId) && LSPECIALConfig.phlogistinatorSustainedFirePerk && lspecial$hasIntelligence(player, LSPECIALConfig.phlogistinatorSustainedFireLevel);
+        boolean lagSecondary = "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(player, 5);
+        boolean lincolnSecondary = "hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(player, 15);
+        boolean tauSecondary = "hbm:gun_tau".equals(itemId) && LSPECIALConfig.tauSecondaryDamageBonus && lspecial$hasIntelligence(player, 5);
+        boolean lightRevolverSecondary = "hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk && lspecial$hasIntelligence(player, 5);
         if (carbineSecondary || dragonSecondary || phlogSecondary || lagSecondary || lincolnSecondary
                 || tauSecondary || lightRevolverSecondary) {
             // NTM reads the secondary state for the modified mode, but still needs primary input to run its firing pipeline.
@@ -121,19 +122,19 @@ public abstract class MixinWeaponSecondary {
 
         if (player.world.isRemote) {
             boolean lightRevolverTrigger = "hbm:gun_light_revolver".equals(itemId)
-                    && LSPECIALConfig.lightRevolverRapidFirePerk && hasIntelligence(player, 5);
+                    && LSPECIALConfig.lightRevolverRapidFirePerk && lspecial$hasIntelligence(player, 5);
             if (lightRevolverTrigger && SPECIALGameplayHandler.startLightRevolverRapidFire(player, stack)) {
                 callback.cancel();
                 return;
             }
 
             boolean isSpecialAction = (player.isSneaking() && "hbm:gun_lag".equals(itemId)
-                    && LSPECIALConfig.lagSecondarySelfKill && hasIntelligence(player, 5))
+                    && LSPECIALConfig.lagSecondarySelfKill && lspecial$hasIntelligence(player, 5))
                     || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
-                    && hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
-                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && hasIntelligence(player, 15))))
+                    && lspecial$hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
+                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && lspecial$hasIntelligence(player, 15))))
                     || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
-                    && LSPECIALConfig.doubleBarrelGrapple && hasIntelligence(player, 15));
+                    && LSPECIALConfig.doubleBarrelGrapple && lspecial$hasIntelligence(player, 15));
             if (isSpecialAction) {
                 if (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
                         && LSPECIALConfig.doubleBarrelGrappleVisuals) {
@@ -148,7 +149,7 @@ public abstract class MixinWeaponSecondary {
             }
             return;
         }
-        if (!hasIntelligence(player, 5)) return;
+        if (!lspecial$hasIntelligence(player, 5)) return;
 
         if (!player.isSneaking() && "hbm:gun_light_revolver".equals(itemId)
                 && LSPECIALConfig.lightRevolverRapidFirePerk
@@ -164,8 +165,8 @@ public abstract class MixinWeaponSecondary {
         }
 
         if (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
-                && hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
-                && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && hasIntelligence(player, 15)))
+                && lspecial$hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
+                && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && lspecial$hasIntelligence(player, 15)))
                 && cycleSupportedAmmo(player, stack, inventory, itemId)) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
             if (tag == null) {
@@ -182,7 +183,7 @@ public abstract class MixinWeaponSecondary {
         }
 
         if (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
-                && LSPECIALConfig.doubleBarrelGrapple && hasIntelligence(player, 15)) {
+                && LSPECIALConfig.doubleBarrelGrapple && lspecial$hasIntelligence(player, 15)) {
             pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
                     LSPECIALConfig.doubleBarrelGrapplePullSpeed);
             callback.cancel();
@@ -190,7 +191,8 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** returns whether the player's current Intelligence score meets the requested perk level. */
-    private static boolean hasIntelligence(EntityPlayer player, int level) {
+    @Unique
+    private static boolean lspecial$hasIntelligence(EntityPlayer player, int level) {
         return LSPECIALConfig.intelligence
                 && (level >= 15 ? LSPECIALConfig.revolverPerk : LSPECIALConfig.pepperboxPerk)
                 && SPECIALScoreboard.inst != null
@@ -199,34 +201,41 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** returns the registry identifier used to match a weapon without relying on its display name. */
+    @Unique
     private static String registryId(ItemStack stack) {
         return stack.getItem().getRegistryName() == null ? null : stack.getItem().getRegistryName().toString();
     }
 
     /** identifies the guns with a defined alternate caliber or energy-projectile mode. */
+    @Unique
     private static boolean supportsAmmoCycling(String itemId) {
         return "hbm:gun_pepperbox".equals(itemId) || isStarF(itemId) || isUzi(itemId)
                 || isG3(itemId) || "hbm:gun_amat".equals(itemId);
     }
 
 
+    @Unique
     private static boolean isStarF(String itemId) {
         return "hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId);
     }
 
+    @Unique
     private static boolean isUzi(String itemId) {
         return "hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId);
     }
 
+    @Unique
     private static boolean isG3(String itemId) {
         return "hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId);
     }
 
+    @Unique
     private static boolean isMinigun(String itemId) {
         return "hbm:gun_minigun".equals(itemId) || "hbm:gun_minigun_dual".equals(itemId);
     }
 
     /** identifies weapons that should copy the Heretic's secondary-fire aiming behavior. */
+    @Unique
     private static boolean isHereticScopeCopyWeapon(String itemId) {
         return "hbm:gun_maresleg".equals(itemId) || "hbm:gun_liberator".equals(itemId)
                 || "hbm:gun_autoshotgun".equals(itemId) || "hbm:gun_autoshotgun_heretic".equals(itemId)
@@ -235,8 +244,11 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** returns every native NTM bullet configuration in the alternate caliber family. */
+    @Unique
     private static List<BulletConfig> getAlternateCalibers(String itemId) {
-        if ("hbm:gun_amat".equals(itemId)) return java.util.Collections.singletonList(AMATRailgun.getBulletConfig());
+        if ("hbm:gun_amat".equals(itemId)) {
+            return java.util.Collections.singletonList(AMATRailgun.getBulletConfig());
+        }
         String prefix;
         Class<?> factory;
         if ("hbm:gun_pepperbox".equals(itemId)) { factory = XFactory44.class; prefix = "m44_"; }
@@ -260,6 +272,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** swaps each distinct magazine on single and akimbo weapons without changing NTM's firing pipeline. */
+    @Unique
     private static boolean cycleSupportedAmmo(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
         if (!(stack.getItem() instanceof ItemGunBaseNT)) return false;
         ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
@@ -291,6 +304,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** unwraps the Luck wrapper so magazine-specific mode and capacity logic sees the native magazine type. */
+    @Unique
     private static IMagazine unwrapMagazine(IMagazine magazine) {
         while (magazine instanceof RefundMagazine) {
             magazine = ((RefundMagazine) magazine).getOriginalMagazine();
@@ -299,6 +313,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** creates a stable key so shared magazines are switched once even on multi-receiver guns. */
+    @Unique
     private static String getMagazineKey(IMagazine magazine) {
         IMagazine original = unwrapMagazine(magazine);
         if (original instanceof MagazineSingleTypeBase) {
@@ -309,6 +324,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** changes one magazine's selected caliber and refunds only ammunition physically loaded into that magazine. */
+    @Unique
     private static boolean cycleOneMagazine(EntityPlayer player, ItemStack stack, IInventory inventory,
                                             IMagazine magazine, List<BulletConfig> alternateCalibers) {
         IMagazine original = unwrapMagazine(magazine);
@@ -361,6 +377,7 @@ public abstract class MixinWeaponSecondary {
     }
 
     /** cycles the Minigun's inventory-fed belt through native capacitor configurations without refunding inventory ammo. */
+    @Unique
     private static boolean lspecial$cycleBeltAmmo(ItemStack stack, MagazineBelt magazine) {
         List<BulletConfig> accepted = magazine.acceptedBullets;
         if (accepted == null || accepted.isEmpty()) return false;
