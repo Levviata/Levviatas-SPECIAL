@@ -1,10 +1,13 @@
 package com.levviata.lspecial;
 
 import com.levviata.lspecial.entity.EntityGrappleChain;
+import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.items.weapon.sedna.GunConfig;
+import com.hbm.items.weapon.sedna.Receiver;
+import com.hbm.items.weapon.sedna.mags.IMagazine;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.SoundEvents;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
@@ -26,6 +29,7 @@ public final class GrappleController {
         final boolean pullTarget;
         final double speed;
         EntityGrappleChain chain;
+        long targetDeathGraceUntil;
         State(int targetId, boolean pullTarget, double speed) { this.targetId = targetId; this.pullTarget = pullTarget; this.speed = speed; }
     }
 
@@ -72,9 +76,13 @@ public final class GrappleController {
         if (state == null) return;
         Entity target = player.world.getEntityByID(state.targetId);
         if (target == null || target.isDead || !target.isEntityAlive()) {
-            COOLDOWN_UNTIL.remove(player.getUniqueID());
-            LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-3, false), player);
-            stop(player);
+            if (state.targetDeathGraceUntil == 0L) {
+                state.targetDeathGraceUntil = player.world.getTotalWorldTime() + 20L;
+                COOLDOWN_UNTIL.remove(player.getUniqueID());
+                LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-3, false), player);
+                refillDoubleBarrelMagazine(player);
+            }
+            if (player.world.getTotalWorldTime() >= state.targetDeathGraceUntil) stop(player);
             return;
         }
         Entity mover = state.pullTarget ? target : player;
@@ -110,7 +118,35 @@ public final class GrappleController {
             movingPlayer.velocityChanged = true;
         }
         if (!state.pullTarget) player.fallDistance = 0.0F;
-        if (player.ticksExisted % 8 == 0) player.world.playSound(null, player.getPosition(), SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 0.25F, 1.1F);
+        if (player.ticksExisted % 8 == 0) player.world.playSound(null, player.getPosition(), net.minecraft.init.SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 0.25F, 1.1F);
+    }
+
+    /** refills the held double-barrel's loaded magazine after a grapple target is killed. */
+    private static void refillDoubleBarrelMagazine(EntityPlayerMP player) {
+        net.minecraft.item.ItemStack stack = player.getHeldItemMainhand();
+        if (stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT)
+                || stack.getItem().getRegistryName() == null
+                || !"hbm:gun_double_barrel".equals(stack.getItem().getRegistryName().toString())) return;
+
+        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        boolean changed = false;
+        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+            GunConfig config = gun.getConfig(stack, configIndex);
+            if (config == null) continue;
+            Receiver[] receivers = config.getReceivers(stack);
+            if (receivers == null) continue;
+            for (Receiver receiver : receivers) {
+                if (receiver == null) continue;
+                IMagazine magazine = receiver.getMagazine(stack);
+                if (magazine == null) continue;
+                int capacity = magazine.getCapacity(stack);
+                if (capacity > magazine.getAmount(stack, null)) {
+                    magazine.setAmount(stack, capacity);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) player.inventory.markDirty();
     }
 
     @SubscribeEvent

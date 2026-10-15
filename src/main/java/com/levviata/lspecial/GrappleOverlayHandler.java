@@ -98,14 +98,15 @@ public final class GrappleOverlayHandler {
             drawHookHalf(mc, centerX + split, centerY + startY, hookSize, true, 0.0F, scaleFactor, screenWidth, screenHeight);
         } else if (refreshAnimationTicks < 6) {
             float progress = Math.min(1.0F, refreshAnimationTicks / 5.0F);
-            // ease in quickly once the cooldown has finished
-            progress = progress * progress * (3.0F - 2.0F * progress);
+            // blend the intact hook in as the fangs converge
+            float eased = progress * progress * (3.0F - 2.0F * progress);
             float startX = (float) LSPECIALConfig.doubleBarrelGrappleFangStartX * reticleSize;
             float startY = (float) LSPECIALConfig.doubleBarrelGrappleFangStartY * reticleSize;
-            float split = (hookSize * 0.5F) + (Math.max(hookSize * 0.5F, Math.min(reticleSize * 0.5F, startX)) - hookSize * 0.5F) * (1.0F - progress);
-            float hookY = centerY + startY + (defaultY - (centerY + startY)) * progress;
-            drawHookHalf(mc, centerX - split, hookY, hookSize, false, progress, scaleFactor, screenWidth, screenHeight);
-            drawHookHalf(mc, centerX + split, hookY, hookSize, true, progress, scaleFactor, screenWidth, screenHeight);
+            float split = (hookSize * 0.5F) + (Math.max(hookSize * 0.5F, Math.min(reticleSize * 0.5F, startX)) - hookSize * 0.5F) * (1.0F - eased);
+            float hookY = centerY + startY + (defaultY - (centerY + startY)) * eased;
+            drawHookIcon(mc, centerX, defaultY, hookSize, false, screenWidth, screenHeight, eased);
+            drawHookHalf(mc, centerX - split, hookY, hookSize, false, eased, scaleFactor, screenWidth, screenHeight, 1.0F - eased);
+            drawHookHalf(mc, centerX + split, hookY, hookSize, true, eased, scaleFactor, screenWidth, screenHeight, 1.0F - eased);
         } else {
             float hookX = hasTarget ? reticleX : centerX;
             float hookY = hasTarget ? reticleY : defaultY;
@@ -114,6 +115,10 @@ public final class GrappleOverlayHandler {
     }
 
     private static void drawHookIcon(Minecraft mc, float x, float y, float size, boolean red, int screenWidth, int screenHeight) {
+        drawHookIcon(mc, x, y, size, red, screenWidth, screenHeight, 1.0F);
+    }
+
+    private static void drawHookIcon(Minecraft mc, float x, float y, float size, boolean red, int screenWidth, int screenHeight, float alpha) {
         mc.getTextureManager().bindTexture(new ResourceLocation("lspecial", "textures/gui/meathook.png"));
         GL11.glPushMatrix();
         GL11.glMatrixMode(GL11.GL_PROJECTION);
@@ -126,7 +131,7 @@ public final class GrappleOverlayHandler {
         GlStateManager.disableLighting();
         GlStateManager.disableDepth();
         GlStateManager.enableBlend();
-        GlStateManager.color(red ? 1.0F : 1.0F, red ? 0.12F : 1.0F, red ? 0.12F : 1.0F, 1.0F);
+        GlStateManager.color(1.0F, red ? 0.12F : 1.0F, red ? 0.12F : 1.0F, alpha);
         GL11.glBegin(GL11.GL_QUADS);
         GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
         GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
@@ -144,13 +149,17 @@ public final class GrappleOverlayHandler {
     }
 
     private static void drawHookHalf(Minecraft mc, float x, float y, float size, boolean rightHalf, float progress, float scaleFactor, int screenWidth, int screenHeight) {
+        drawHookHalf(mc, x, y, size, rightHalf, progress, scaleFactor, screenWidth, screenHeight, 1.0F);
+    }
+
+    private static void drawHookHalf(Minecraft mc, float x, float y, float size, boolean rightHalf, float progress, float scaleFactor, int screenWidth, int screenHeight, float alpha) {
         mc.getTextureManager().bindTexture(new ResourceLocation("lspecial", "textures/gui/meathook.png"));
         GL11.glPushMatrix();
         GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glPushMatrix(); GL11.glLoadIdentity();
         GL11.glOrtho(0.0D, screenWidth, screenHeight, 0.0D, -1000.0D, 1000.0D);
         GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPushMatrix(); GL11.glLoadIdentity();
         GlStateManager.disableLighting(); GlStateManager.disableDepth(); GlStateManager.enableBlend();
-        GlStateManager.color(1.0F, 0.12F + 0.88F * progress, 0.12F + 0.88F * progress, 1.0F);
+        GlStateManager.color(1.0F, 0.12F + 0.88F * progress, 0.12F + 0.88F * progress, alpha);
         float u0 = rightHalf ? 0.5F : 0.0F, u1 = rightHalf ? 1.0F : 0.5F;
         float x0 = rightHalf ? x : x - size / 2.0F, x1 = rightHalf ? x + size / 2.0F : x;
         GL11.glBegin(GL11.GL_QUADS);
