@@ -23,10 +23,5 @@ build
 # other
 eclipse
 run
-/src/src.zip
-/src/src2.zip
-/src3.zip
-/src.zip
-/src2.zip
-/src4.zip
+/*.zip
 /Levviatas-SPECIAL-keybind-in-dedicated-fix/
