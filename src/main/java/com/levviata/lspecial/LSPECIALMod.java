@@ -17,6 +17,9 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import net.minecraftforge.fml.common.registry.EntityRegistry;
+import net.minecraft.util.ResourceLocation;
+import com.levviata.lspecial.entity.EntityGrappleChain;
 import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,6 +49,9 @@ public class LSPECIALMod {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LSPECIALConfig.init(event.getSuggestedConfigurationFile());
+        EntityRegistry.registerModEntity(new ResourceLocation(Tags.MOD_ID, "grapple_chain"),
+                EntityGrappleChain.class, "grapple_chain", 1, this,  64, 1, true);
+        MinecraftForge.EVENT_BUS.register(new GrappleChainSpawnHandler());
         MinecraftForge.EVENT_BUS.register(new BobbleheadUse());
         MinecraftForge.EVENT_BUS.register(new StatsLogic());
         MinecraftForge.EVENT_BUS.register(new SPECIALGameplayHandler());

@@ -15,6 +15,7 @@ import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.items.weapon.sedna.mags.MagazineBelt;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
 import com.levviata.lspecial.*;
+import com.levviata.lspecial.entity.EntityGrappleChain;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -528,6 +529,14 @@ public abstract class MixinWeaponSecondary {
                 .orElse(null);
 
         if (target == null) return;
+
+        // queue the chain until the end of the server tick, outside EntityTracker's update iteration.
+        if (!world.isRemote && LSPECIALConfig.doubleBarrelGrappleVisuals) {
+            EntityGrappleChain chain = new EntityGrappleChain(world);
+            chain.setEndpoints(player, (EntityLivingBase) target, LSPECIALConfig.doubleBarrelGrappleVisualTicks);
+            GrappleChainSpawnHandler.queue(chain);
+        }
+
         Vec3d destination = target.getPositionVector().add(0, target.height * 0.5, 0);
         Vec3d velocity = destination.subtract(player.getPositionVector()).normalize().scale(pullSpeed);
         player.motionX = velocity.x;
