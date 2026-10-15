@@ -23,15 +23,4 @@ build
 # other
 eclipse
 run
-/src/src.zip
-/src/src2.zip
-/src3.zip
-/src.zip
-/src2.zip
-/src4.zip
-/src7.zip
-/src8.zip
-/src9.zip
-/src10.zip
-/src11.zip
-/src12.zip
+/*.zip
