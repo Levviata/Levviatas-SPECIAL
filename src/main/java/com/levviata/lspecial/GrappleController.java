@@ -5,6 +5,7 @@ import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.Receiver;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
+import net.minecraft.item.ItemStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -26,11 +27,18 @@ public final class GrappleController {
     private static final Map<UUID, Long> COOLDOWN_UNTIL = new HashMap<>();
     private static final class State {
         final int targetId;
+        final Entity targetEntity;
         final boolean pullTarget;
         final double speed;
         EntityGrappleChain chain;
         long targetDeathGraceUntil;
-        State(int targetId, boolean pullTarget, double speed) { this.targetId = targetId; this.pullTarget = pullTarget; this.speed = speed; }
+        boolean killRewardGranted;
+        State(Entity target, boolean pullTarget, double speed) {
+            this.targetId = target.getEntityId();
+            this.targetEntity = target;
+            this.pullTarget = pullTarget;
+            this.speed = speed;
+        }
     }
 
     public GrappleController() { }
@@ -41,7 +49,7 @@ public final class GrappleController {
 
     public static boolean start(EntityPlayerMP player, Entity target, boolean pullTarget, double speed) {
         if (target == null || target.isDead || target.world != player.world || target == player || isActive(player) || isOnCooldown(player)) return false;
-        State state = new State(target.getEntityId(), pullTarget, speed);
+        State state = new State(target, pullTarget, speed);
         ACTIVE.put(player.getUniqueID(), state);
         COOLDOWN_UNTIL.put(player.getUniqueID(), player.world.getTotalWorldTime() + 60L);
         if (LSPECIALConfig.doubleBarrelGrappleVisuals && target instanceof EntityLivingBase) {
@@ -74,13 +82,16 @@ public final class GrappleController {
         }
         State state = ACTIVE.get(player.getUniqueID());
         if (state == null) return;
-        Entity target = player.world.getEntityByID(state.targetId);
+        Entity target = state.targetEntity;
         if (target == null || target.isDead || !target.isEntityAlive()) {
-            if (state.targetDeathGraceUntil == 0L) {
-                state.targetDeathGraceUntil = player.world.getTotalWorldTime() + 20L;
+            if (!state.pullTarget && !state.killRewardGranted && target != null && target.isDead) {
+                state.killRewardGranted = true;
                 COOLDOWN_UNTIL.remove(player.getUniqueID());
                 LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-3, false), player);
-                refillDoubleBarrelMagazine(player);
+                lspecial$refillDoubleBarrel(player);
+            }
+            if (state.targetDeathGraceUntil == 0L) {
+                state.targetDeathGraceUntil = player.world.getTotalWorldTime() + 20L;
             }
             if (player.world.getTotalWorldTime() >= state.targetDeathGraceUntil) stop(player);
             return;
@@ -121,15 +132,12 @@ public final class GrappleController {
         if (player.ticksExisted % 8 == 0) player.world.playSound(null, player.getPosition(), net.minecraft.init.SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, SoundCategory.PLAYERS, 0.25F, 1.1F);
     }
 
-    /** refills the held double-barrel's loaded magazine after a grapple target is killed. */
-    private static void refillDoubleBarrelMagazine(EntityPlayerMP player) {
-        net.minecraft.item.ItemStack stack = player.getHeldItemMainhand();
+    /** refills the held double-barrel magazine after killing an entity while pulling the player toward it. */
+    private static void lspecial$refillDoubleBarrel(EntityPlayerMP player) {
+        ItemStack stack = player.getHeldItemMainhand();
         if (stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT)
-                || stack.getItem().getRegistryName() == null
                 || !"hbm:gun_double_barrel".equals(stack.getItem().getRegistryName().toString())) return;
-
         ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
-        boolean changed = false;
         for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
             GunConfig config = gun.getConfig(stack, configIndex);
             if (config == null) continue;
@@ -138,15 +146,12 @@ public final class GrappleController {
             for (Receiver receiver : receivers) {
                 if (receiver == null) continue;
                 IMagazine magazine = receiver.getMagazine(stack);
-                if (magazine == null) continue;
-                int capacity = magazine.getCapacity(stack);
-                if (capacity > magazine.getAmount(stack, null)) {
-                    magazine.setAmount(stack, capacity);
-                    changed = true;
+                if (magazine != null) {
+                    magazine.setAmount(stack, magazine.getCapacity(stack));
+                    return;
                 }
             }
         }
-        if (changed) player.inventory.markDirty();
     }
 
     @SubscribeEvent
