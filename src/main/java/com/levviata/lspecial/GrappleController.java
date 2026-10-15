@@ -20,6 +20,7 @@ import java.util.UUID;
 /** server-authoritative grapple movement shared by both grapple directions. */
 public final class GrappleController {
     private static final Map<UUID, State> ACTIVE = new HashMap<>();
+    private static final Map<UUID, Long> COOLDOWN_UNTIL = new HashMap<>();
     private static final class State {
         final int targetId;
         final boolean pullTarget;
@@ -31,12 +32,14 @@ public final class GrappleController {
     public GrappleController() { }
 
     public static boolean isActive(EntityPlayerMP player) { return ACTIVE.containsKey(player.getUniqueID()); }
+    public static boolean isOnCooldown(EntityPlayerMP player) { Long until = COOLDOWN_UNTIL.get(player.getUniqueID()); return until != null && player.world.getTotalWorldTime() < until; }
     public static boolean isPullingTarget(EntityPlayerMP player) { State state = ACTIVE.get(player.getUniqueID()); return state != null && state.pullTarget; }
 
     public static boolean start(EntityPlayerMP player, Entity target, boolean pullTarget, double speed) {
-        if (target == null || target.isDead || target.world != player.world) return false;
+        if (target == null || target.isDead || target.world != player.world || target == player || isActive(player) || isOnCooldown(player)) return false;
         State state = new State(target.getEntityId(), pullTarget, speed);
         ACTIVE.put(player.getUniqueID(), state);
+        COOLDOWN_UNTIL.put(player.getUniqueID(), player.world.getTotalWorldTime() + 60L);
         if (LSPECIALConfig.doubleBarrelGrappleVisuals && target instanceof EntityLivingBase) {
             EntityGrappleChain chain = new EntityGrappleChain(player.world);
             chain.setEndpoints(player, (EntityLivingBase) target, 1200);
@@ -81,7 +84,8 @@ public final class GrappleController {
             return;
         }
         double acceleration = LSPECIALConfig.doubleBarrelGrappleAcceleration;
-        Vec3d velocity = delta.normalize().scale(Math.min(state.speed, Math.max(0.25D, distance * acceleration)));
+        Vec3d direction = delta.normalize();
+        Vec3d velocity = direction.scale(Math.min(state.speed, Math.max(0.25D, distance * acceleration)));
         mover.motionX += (velocity.x - mover.motionX) * acceleration;
         mover.motionY += (velocity.y - mover.motionY) * acceleration;
         mover.motionZ += (velocity.z - mover.motionZ) * acceleration;
@@ -89,8 +93,15 @@ public final class GrappleController {
         mover.velocityChanged = true;
         if (mover instanceof EntityPlayerMP) {
             EntityPlayerMP movingPlayer = (EntityPlayerMP) mover;
-            movingPlayer.motionX += movingPlayer.moveStrafing * LSPECIALConfig.doubleBarrelGrappleAirStrafe;
-            movingPlayer.motionZ += movingPlayer.moveForward * LSPECIALConfig.doubleBarrelGrappleAirStrafe;
+            float yaw = movingPlayer.rotationYaw * 0.017453292F;
+            double forwardX = -Math.sin(yaw);
+            double forwardZ = Math.cos(yaw);
+            double rightX = Math.cos(yaw);
+            double rightZ = Math.sin(yaw);
+            double strafe = movingPlayer.moveStrafing * LSPECIALConfig.doubleBarrelGrappleAirStrafe;
+            double forward = movingPlayer.moveForward * LSPECIALConfig.doubleBarrelGrappleAirStrafe;
+            movingPlayer.motionX += rightX * strafe + forwardX * forward;
+            movingPlayer.motionZ += rightZ * strafe + forwardZ * forward;
             movingPlayer.velocityChanged = true;
         }
         if (!state.pullTarget) player.fallDistance = 0.0F;

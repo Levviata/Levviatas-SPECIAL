@@ -13,8 +13,11 @@ public final class GrappleClientHandler {
     private static float savedPitch;
     private static boolean saved;
     private static boolean jumpWasDown;
+    private static int cooldownTicks;
     public GrappleClientHandler() { }
+    public static boolean isOnCooldown() { return cooldownTicks > 0; }
     public static void setTarget(int id) {
+        if (id >= 0) cooldownTicks = 60;
         Minecraft mc = Minecraft.getMinecraft();
         if (id >= 0 && mc.player != null && !saved) { savedYaw = mc.player.rotationYaw; savedPitch = mc.player.rotationPitch; saved = true; }
         targetId = id;
@@ -22,6 +25,7 @@ public final class GrappleClientHandler {
     }
     @SubscribeEvent public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        if (cooldownTicks > 0) cooldownTicks--;
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.player == null || mc.world == null || targetId < 0) { jumpWasDown = false; return; }
         boolean jumpDown = mc.gameSettings.keyBindJump.isKeyDown();

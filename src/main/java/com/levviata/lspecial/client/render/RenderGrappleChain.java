@@ -27,7 +27,12 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
     private static final List<float[]> UVS = new ArrayList<>();
     private static final List<int[]> FACES = new ArrayList<>();
     private static boolean modelLoaded;
-    private static final java.util.Map<Integer, Double> BEND_STATE = new java.util.HashMap<>();
+    private static final java.util.Map<Integer, BendState> BEND_STATE = new java.util.HashMap<>();
+    private static final class BendState {
+        double bend;
+        double bendVelocity;
+        double previousSideSpeed;
+    }
 
     public RenderGrappleChain(RenderManager manager) { super(manager); }
 
@@ -90,10 +95,20 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
         Vec3d side = axis.crossProduct(new Vec3d(0, 1, 0)).normalize();
         if (side.lengthSquared() < 0.001D) side = new Vec3d(1, 0, 0);
         Vec3d playerMotion = new Vec3d(owner.motionX, 0, owner.motionZ);
-        double desiredBend = Math.max(-0.9D, Math.min(0.9D, playerMotion.dotProduct(side) * 0.8D));
-        double bendState = BEND_STATE.containsKey(chain.getEntityId()) ? BEND_STATE.get(chain.getEntityId()) : 0.0D;
-        bendState += (desiredBend - bendState) * 0.12D;
-        BEND_STATE.put(chain.getEntityId(), bendState);
+        double sideSpeed = playerMotion.dotProduct(side);
+        BendState physics = BEND_STATE.get(chain.getEntityId());
+        if (physics == null) {
+            physics = new BendState();
+            BEND_STATE.put(chain.getEntityId(), physics);
+        }
+        double lateralAcceleration = sideSpeed - physics.previousSideSpeed;
+        physics.previousSideSpeed = sideSpeed;
+        double force = Math.max(-1.6D, Math.min(1.6D, sideSpeed * 0.55D + lateralAcceleration * 1.8D));
+        physics.bendVelocity += (force - physics.bend) * 0.10D;
+        physics.bendVelocity *= 0.82D;
+        physics.bend += physics.bendVelocity;
+        physics.bend = Math.max(-1.25D, Math.min(1.25D, physics.bend));
+        double bendState = physics.bend;
         int links = Math.max(1, Math.min(100, (int)Math.ceil(length / 0.38D)));
 
         bindTexture(TEXTURE);
@@ -104,9 +119,13 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
         GlStateManager.disableCull();
         for (int i = 0; i < links; i++) {
             double t = (i + 0.5D) / links;
-            double bend = bendState * Math.sin(Math.PI * t) * Math.min(1.0D, t * 3.0D);
-            Vec3d point = start.add(direction.scale(t)).add(side.scale(bend));
-            Vec3d tangent = direction.add(side.scale(bendState * Math.PI * Math.cos(Math.PI * t)));
+            double nearPlayerInfluence = Math.min(1.0D, t * 3.5D);
+            double nearTargetLag = Math.min(1.0D, (1.0D - t) * 2.2D);
+            double influence = nearPlayerInfluence * nearTargetLag;
+            double bend = bendState * Math.sin(Math.PI * t) * influence;
+            double sag = Math.min(0.65D, length * 0.012D) * Math.sin(Math.PI * t);
+            Vec3d point = start.add(direction.scale(t)).add(side.scale(bend)).add(0.0D, -sag, 0.0D);
+            Vec3d tangent = direction.add(side.scale(bendState * Math.PI * Math.cos(Math.PI * t))).add(0.0D, -sag * Math.PI * Math.cos(Math.PI * t), 0.0D);
             renderLink(point, tangent.normalize(), side);
         }
         GlStateManager.enableCull();
@@ -119,7 +138,10 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
     public boolean shouldRender(EntityGrappleChain chain, net.minecraft.client.renderer.culling.ICamera camera, double camX, double camY, double camZ) {
         Entity owner = chain.world.getEntityByID(chain.getOwnerId());
         Entity target = chain.world.getEntityByID(chain.getTargetId());
-        if (owner == null || target == null || owner.isDead || target.isDead || chain.isDead) return false;
+        if (owner == null || target == null || owner.isDead || target.isDead || chain.isDead) {
+            BEND_STATE.remove(chain.getEntityId());
+            return false;
+        }
         return true;
     }
 
