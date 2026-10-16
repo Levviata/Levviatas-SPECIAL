@@ -57,6 +57,7 @@ public class LSPECIALMod {
         MinecraftForge.EVENT_BUS.register(new SPECIALGameplayHandler());
         MinecraftForge.EVENT_BUS.register(new SPECIALRenamer());
         MinecraftForge.EVENT_BUS.register(new BobbleheadRecipeManager());
+        MinecraftForge.EVENT_BUS.register(new LSPECIALContainerOpenHandler());
 
         AMPLIFIED_REGENERATION.setRegistryName(Tags.MOD_ID, AMPLIFIED_REGENERATION_NAME);
 
