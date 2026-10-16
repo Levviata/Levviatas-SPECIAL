@@ -40,6 +40,7 @@ public final class GrappleOverlayHandler {
     private double hookX = -1.0D;
     private double hookY = -1.0D;
     private boolean hookWasFollowingTarget;
+    private int previousTargetId = -1;
 
     @SubscribeEvent
     public void onCrosshair(RenderGameOverlayEvent.Pre event) {
@@ -71,7 +72,7 @@ public final class GrappleOverlayHandler {
         float centerX = screenWidth / 2.0F;
         float centerY = screenHeight / 2.0F;
         float reticleSize = screenHeight * RETICLE_HEIGHT_RATIO * (float)LSPECIALConfig.doubleBarrelGrappleCrosshairScale;
-        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * (float)LSPECIALConfig.doubleBarrelGrappleHookScale;
+        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * 0.7F * (float)LSPECIALConfig.doubleBarrelGrappleHookScale;
         float defaultHookOffset = reticleSize * DEFAULT_HOOK_OFFSET_RATIO;
         float targetX = centerX;
         float targetY = centerY;
@@ -79,6 +80,9 @@ public final class GrappleOverlayHandler {
         boolean cooldown = cooldownTicks > 0;
         Entity grappleTarget = cooldown ? null : findGrappleTarget(player, LSPECIALConfig.doubleBarrelGrappleRange);
         boolean hasTarget = grappleTarget != null;
+        boolean targetChanged = hasTarget && grappleTarget.getEntityId() != previousTargetId;
+        if (targetChanged) previousTargetId = grappleTarget.getEntityId();
+        if (!hasTarget) previousTargetId = -1;
         if (grappleTarget != null) {
             float[] projected = projectEntity(grappleTarget, event.getPartialTicks(), mc);
             if (projected != null) { targetX = projected[0] / scaleFactor; targetY = projected[1] / scaleFactor; }
@@ -122,12 +126,18 @@ public final class GrappleOverlayHandler {
                 double dx = reticleX - hookX;
                 double dy = reticleY - hookY;
                 double distance = Math.sqrt(dx * dx + dy * dy);
-                double normalizedDistance = Math.min(1.0D, distance / Math.max(1.0D, reticleSize * 2.0D));
-                double followAmount = 0.035D + 0.30D * normalizedDistance;
-                followAmount = Math.min(0.38D, followAmount);
-                hookX += dx * followAmount;
-                hookY += dy * followAmount;
-                hookWasFollowingTarget = true;
+                if (targetChanged) hookWasFollowingTarget = false;
+                if (distance <= Math.max(1.0D, hookSize * 0.12D)) {
+                    hookX = reticleX;
+                    hookY = reticleY;
+                    hookWasFollowingTarget = true;
+                } else {
+                    double normalizedDistance = Math.min(1.0D, distance / Math.max(1.0D, reticleSize * 2.0D));
+                    double followAmount = 0.035D + 0.30D * normalizedDistance;
+                    followAmount = Math.min(0.38D, followAmount);
+                    hookX += dx * followAmount;
+                    hookY += dy * followAmount;
+                }
             }
             drawHookIcon(mc, (float)hookX, (float)hookY, hookSize, false, screenWidth, screenHeight);
         }
@@ -146,7 +156,7 @@ public final class GrappleOverlayHandler {
         GlStateManager.disableLighting();
         GlStateManager.disableDepth();
         GlStateManager.enableBlend();
-        GlStateManager.color(1.0F, red ? 0.12F : 1.0F, red ? 0.12F : 1.0F, 1.0F);
+        GlStateManager.color(1.0F, red ? 0.12F : 1.0F, red ? 0.12F : 1.0F, red ? 1.0F : 0.85F);
         GL11.glBegin(GL11.GL_QUADS);
         GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
         GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
@@ -203,12 +213,18 @@ public final class GrappleOverlayHandler {
                 GL11.GL_ONE, GL11.GL_ZERO);
         boolean cooldownVisual = cooldownTicks > 0 || GrappleClientHandler.getFangRefreshTicks() == 0;
         if (!cooldownVisual) {
-            drawReticleQuad(x, y, size, 1.0F, 1.0F, 1.0F);
+            drawReticleQuad(x, y, size, 1.0F, 1.0F, 1.0F, 0.85F);
         } else {
             drawReticleQuad(x, y, size, 1.0F, 0.12F, 0.12F);
             // gray fills from top to bottom as the cooldown expires
             float cooldownRemaining = Math.max(0.0F, Math.min(1.0F, cooldownTicks / 60.0F));
-            float grayHeight = size * (1.0F - cooldownRemaining);
+            double transitionStart = Math.min(LSPECIALConfig.doubleBarrelGrappleReticleColorStart, LSPECIALConfig.doubleBarrelGrappleReticleColorEnd);
+            double transitionEnd = Math.max(LSPECIALConfig.doubleBarrelGrappleReticleColorStart, LSPECIALConfig.doubleBarrelGrappleReticleColorEnd);
+            double progress = 1.0D - cooldownRemaining;
+            double transitionProgress = transitionEnd <= transitionStart
+                    ? (progress >= transitionEnd ? 1.0D : 0.0D)
+                    : Math.max(0.0D, Math.min(1.0D, (progress - transitionStart) / (transitionEnd - transitionStart)));
+            float grayHeight = (float)(size * transitionProgress);
             if (grayHeight > 0.0F) {
                 GL11.glEnable(GL11.GL_SCISSOR_TEST);
                 int sx = Math.round((x - size / 2.0F) * scaleFactor);
@@ -232,7 +248,11 @@ public final class GrappleOverlayHandler {
     }
 
     private static void drawReticleQuad(float x, float y, float size, float red, float green, float blue) {
-        GlStateManager.color(red, green, blue, 1.0F);
+        drawReticleQuad(x, y, size, red, green, blue, 1.0F);
+    }
+
+    private static void drawReticleQuad(float x, float y, float size, float red, float green, float blue, float alpha) {
+        GlStateManager.color(red, green, blue, alpha);
         GL11.glBegin(GL11.GL_QUADS);
         GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
         GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
@@ -255,7 +275,7 @@ public final class GrappleOverlayHandler {
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projection);
         GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
         double x = target.lastTickPosX + (target.posX - target.lastTickPosX) * partialTicks - mc.getRenderManager().viewerPosX;
-        double y = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks + target.height * 0.5D - mc.getRenderManager().viewerPosY;
+        double y = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks + target.height * 0.68D - mc.getRenderManager().viewerPosY;
         double z = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * partialTicks - mc.getRenderManager().viewerPosZ;
         FloatBuffer screen = BufferUtils.createFloatBuffer(3);
         if (!GLU.gluProject((float)x, (float)y, (float)z, model, projection, viewport, screen)) return null;
@@ -271,27 +291,25 @@ public final class GrappleOverlayHandler {
 
         net.minecraft.util.math.Vec3d eye = player.getPositionEyes(1.0F);
         net.minecraft.util.math.Vec3d look = player.getLook(1.0F).normalize();
+        double coneCos = Math.cos(Math.toRadians(LSPECIALConfig.doubleBarrelGrappleTargetCone));
         net.minecraft.util.math.Vec3d end = eye.add(look.scale(range));
         RayTraceResult blockHit = player.world.rayTraceBlocks(eye, end, false, true, false);
-        double maxDistanceSq = blockHit == null ? range * range : eye.squareDistanceTo(blockHit.hitVec);
-        net.minecraft.util.math.AxisAlignedBB searchBox = player.getEntityBoundingBox()
-                .expand(look.x * range, look.y * range, look.z * range).grow(1.0D);
+        double maxDistance = blockHit == null ? range : eye.distanceTo(blockHit.hitVec);
+        net.minecraft.util.math.AxisAlignedBB searchBox = player.getEntityBoundingBox().grow(range);
         Entity closest = null;
+        double closestDistance = Double.MAX_VALUE;
 
         for (Entity candidate : player.world.getEntitiesWithinAABBExcludingEntity(player, searchBox)) {
             if (!(candidate instanceof EntityLivingBase) || !candidate.isEntityAlive()) continue;
-            net.minecraft.util.math.AxisAlignedBB bounds = candidate.getEntityBoundingBox()
-                    .grow(candidate.getCollisionBorderSize());
-            RayTraceResult intercept = bounds.calculateIntercept(eye, end);
-            if (intercept == null) {
-                if (!bounds.contains(eye)) continue;
-                closest = candidate;
-                maxDistanceSq = 0.0D;
-                continue;
-            }
-            double distanceSq = eye.squareDistanceTo(intercept.hitVec);
-            if (distanceSq < maxDistanceSq) {
-                maxDistanceSq = distanceSq;
+            net.minecraft.util.math.Vec3d chest = candidate.getPositionVector().add(0.0D, candidate.height * 0.68D, 0.0D);
+            net.minecraft.util.math.Vec3d toTarget = chest.subtract(eye);
+            double distance = toTarget.length();
+            if (distance <= 0.0D || distance > maxDistance) continue;
+            if (look.dotProduct(toTarget.scale(1.0D / distance)) < coneCos) continue;
+            RayTraceResult blockCheck = player.world.rayTraceBlocks(eye, chest, false, true, false);
+            if (blockCheck != null && eye.distanceTo(blockCheck.hitVec) + 0.05D < distance) continue;
+            if (distance < closestDistance) {
+                closestDistance = distance;
                 closest = candidate;
             }
         }
