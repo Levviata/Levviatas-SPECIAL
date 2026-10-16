@@ -120,6 +120,8 @@ public final class LSPECIALConfig {
     public static boolean doubleBarrelGrapple = true;
     public static boolean doubleBarrelGrappleVisuals = true;
     public static boolean doubleBarrelGrappleCamera = true;
+    public static double doubleBarrelGrappleCrosshairScale = 1.0;
+    public static double doubleBarrelGrappleHookScale = 1.0;
     public static int doubleBarrelGrappleVisualTicks = 12;
     public static double doubleBarrelGrappleRange = 5.0;
     public static double doubleBarrelGrapplePullSpeed = 1.35;
@@ -334,6 +336,8 @@ public final class LSPECIALConfig {
         doubleBarrelGrapple = b(GUNS, "doubleBarrelGrapple", true, "Intelligence 15: secondary fire grapples toward the targeted entity with the double barrel");
         doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render the double-barrel grapple chain and HUD");
         doubleBarrelGrappleCamera = b(GUNS, "doubleBarrelGrappleCamera", true, "Smoothly turn the camera toward the grapple target while grappling");
+        doubleBarrelGrappleCrosshairScale = d(GUNS, "doubleBarrelGrappleCrosshairScale", 1.0, 0.25, 4.0, "Scale multiplier for the double-barrel grapple crosshair");
+        doubleBarrelGrappleHookScale = d(GUNS, "doubleBarrelGrappleHookScale", 1.0, 0.25, 4.0, "Scale multiplier for the double-barrel meathook icon");
         doubleBarrelGrappleVisualTicks = i(GUNS, "doubleBarrelGrappleVisualTicks", 12, 1, 100, "Duration of the double-barrel grapple chain text, in ticks");
         doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 5.0, 1.0, 128.0, "Maximum entity grapple range in blocks");
         doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Maximum grapple travel speed");

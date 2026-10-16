@@ -67,8 +67,8 @@ public final class GrappleOverlayHandler {
         float scaleFactor = mc.displayWidth / (float) screenWidth;
         float centerX = screenWidth / 2.0F;
         float centerY = screenHeight / 2.0F;
-        float reticleSize = screenHeight * RETICLE_HEIGHT_RATIO;
-        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO;
+        float reticleSize = screenHeight * RETICLE_HEIGHT_RATIO * (float)LSPECIALConfig.doubleBarrelGrappleCrosshairScale;
+        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * (float)LSPECIALConfig.doubleBarrelGrappleHookScale;
         float defaultHookOffset = reticleSize * DEFAULT_HOOK_OFFSET_RATIO;
         float targetX = centerX;
         float targetY = centerY;
