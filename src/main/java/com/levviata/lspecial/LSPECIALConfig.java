@@ -163,14 +163,11 @@ public final class LSPECIALConfig {
     public static boolean carbineSemiAutoPerk = true;
     public static double carbineRecoilMultiplier = 0.5;
 
-    public static boolean perceptionLootDuplication = true;
-    public static int perceptionLootDuplicateLevel = 5;
-    public static int perceptionLootTripleLevel = 10;
-    public static boolean luckRareLootBonus = true;
-    public static int luckRareLootLevel = 15;
-    public static double luckRareLootChancePerPoint = 0.01;
-    public static double luckRareLootChanceCap = 0.25;
-    public static String luckRareLootTablePattern = "rare";
+    public static boolean perceptionContainerLootBonus = true;
+    public static int perceptionContainerLootLevel = 10;
+    public static boolean luckPerceptionContainerLootInjection = true;
+    public static int luckPerceptionContainerLootLevel = 10;
+    public static String luckPerceptionContainerLootPool = "minecraft:chests/simple_dungeon";
 
     public static String systemStatusText = "SYSTEM STATUS";
     public static String neuralLinkText = "LEVVIATA NEURA-LINK  //  ACTIVE";
@@ -380,14 +377,11 @@ public final class LSPECIALConfig {
         carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");
         carbineSemiAutoPerk = b(GUNS, "carbineSemiAutoPerk", true, "Intelligence 15: right-click fires one Carbine shot per press; left-click retains native fire behavior");
         carbineRecoilMultiplier = d(GUNS, "carbineRecoilMultiplier", 0.5, 0, 1, "Carbine recoil multiplier with the higher perk; 0 disables recoil and 1 keeps native recoil");
-        perceptionLootDuplication = b(STATS, "perceptionLootDuplication", true, "Perception duplicates non-stackable loot from supported loot-table results");
-        perceptionLootDuplicateLevel = i(STATS, "perceptionLootDuplicateLevel", 5, 1, 100, "Perception level for two total copies of non-stackable loot");
-        perceptionLootTripleLevel = i(STATS, "perceptionLootTripleLevel", 10, 1, 100, "Perception level for three total copies of non-stackable loot");
-        luckRareLootBonus = b(STATS, "luckRareLootBonus", true, "Luck can add one extra item to loot tables whose path matches the configured rare-table pattern");
-        luckRareLootLevel = i(STATS, "luckRareLootLevel", 15, 1, 100, "Minimum Luck level for the rare-loot bonus");
-        luckRareLootChancePerPoint = d(STATS, "luckRareLootChancePerPoint", 0.01, 0, 1, "Chance per Luck point to add one extra item to a matching rare loot table");
-        luckRareLootChanceCap = d(STATS, "luckRareLootChanceCap", 0.25, 0, 1, "Maximum chance for the rare-loot bonus");
-        luckRareLootTablePattern = s(STATS, "luckRareLootTablePattern", "rare", "Case-insensitive substring used to identify rare loot table paths");
+        perceptionContainerLootBonus = b(STATS, "perceptionContainerLootBonus", true, "At the configured Perception level, reroll the original loot pool once for eligible NTM structure containers");
+        perceptionContainerLootLevel = i(STATS, "perceptionContainerLootLevel", 10, 1, 100, "Minimum Perception level for the container loot-pool bonus");
+        luckPerceptionContainerLootInjection = b(STATS, "luckPerceptionContainerLootInjection", true, "At the configured Luck and Perception levels, inject loot from a separate pool into eligible NTM structure containers");
+        luckPerceptionContainerLootLevel = i(STATS, "luckPerceptionContainerLootLevel", 10, 1, 100, "Minimum Luck and Perception levels for bonus loot injection");
+        luckPerceptionContainerLootPool = s(STATS, "luckPerceptionContainerLootPool", "minecraft:chests/simple_dungeon", "Loot table identifier used for the Luck + Perception container bonus");
         showPerkScreens = b(PERKS, "showPerkScreens", true, "Allow clicking a SPECIAL row to open its perk overlay");
         showPerkTierHint = b(PERKS, "showPerkTierHint", true, "Show the Lesser/Higher perk level explanation");
         systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in the stats screen");
