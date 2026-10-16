@@ -114,43 +114,54 @@ public final class LSPECIALConfig {
     public static int starFFiftyBmgDelayTicks = 20;
     public static int uzi556DelayTicks = 2;
     public static int g3TenGaugeDelayTicks = 10;
-    public static boolean lagSecondarySelfKill = true;
+
     public static boolean secondaryFireToggle = true;
     public static int starFCapacity = 30;
+
     public static boolean doubleBarrelGrapple = true;
     public static boolean doubleBarrelGrappleVisuals = true;
     public static boolean doubleBarrelGrappleCamera = true;
     public static double doubleBarrelGrappleCrosshairScale = 1.0;
     public static double doubleBarrelGrappleHookScale = 1.0;
     public static int doubleBarrelGrappleVisualTicks = 12;
-    public static double doubleBarrelGrappleRange = 5.0;
+    public static double doubleBarrelGrappleRange = 20;
     public static double doubleBarrelGrapplePullSpeed = 1.35;
     public static double doubleBarrelGrappleAcceleration = 0.32;
     public static double doubleBarrelGrappleAirStrafe = 0.16;
+
     public static boolean phlogistinatorSustainedFirePerk = true;
     public static int phlogistinatorSustainedFireLevel = 5;
     public static int phlogistinatorFireDelayTicks = 1;
+    public static double phlogSecondaryRange = 5.0;
+    public static double phlogSecondaryWidth = 2.0;
+
     public static boolean dragonsFuryDirectHitPerk = true;
     public static int dragonsFuryDirectHitLevel = 15;
     public static double dragonsFuryDirectHitMultiplier = 1.5;
     public static int dragonsFuryBurstDelayTicks = 10;
     public static double dragonsFuryBurstRange = 3.0;
-    public static double phlogSecondaryRange = 5.0;
-    public static double phlogSecondaryWidth = 2.0;
+
     public static boolean tauSecondaryDamageBonus = true;
     public static double tauSecondaryDamageMultiplier = 6.0;
+
+    public static boolean lagSecondarySelfKill = true;
     public static boolean lagSecondaryBurst = true;
     public static int lagSecondaryBurstDelay = 16;
+    public static boolean henryLincolnSecondaryBurst = true;
     public static double burstProjectileDamageFraction = 0.3333333333333333;
+
     public static boolean scopedSecondarySpread = true;
     public static double scopedSpreadMultiplier = 0.5;
-    public static boolean henryLincolnSecondaryBurst = true;
-    public static boolean AMATQuackosRailgun = true;
+
+    public static boolean AMATRailgunProjectile = true;
+
     public static boolean stingerSelfDamageProtection = true;
+
     public static boolean carbineHigherPerkCapacity = true;
     public static int carbineMagazineCapacity = 30;
     public static boolean carbineSemiAutoPerk = true;
     public static double carbineRecoilMultiplier = 0.5;
+
     public static boolean perceptionLootDuplication = true;
     public static int perceptionLootDuplicateLevel = 5;
     public static int perceptionLootTripleLevel = 10;
@@ -361,7 +372,7 @@ public final class LSPECIALConfig {
         scopedSecondarySpread = b(GUNS, "scopedSecondarySpread", true, "Reduce spread while aiming with configured lesser-perk weapons");
         scopedSpreadMultiplier = d(GUNS, "scopedSpreadMultiplier", 0.5, 0.05, 1.0, "Spread multiplier while aiming");
         henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-shot sequential burst");
-        AMATQuackosRailgun = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: crouch + secondary selects the deuterium plasma capsule caliber for the AMAT; its native Sedna projectile homes to Quackos");
+        AMATRailgunProjectile = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: crouch + secondary selects the deuterium plasma capsule caliber for the AMAT; its native Sedna projectile homes to Quackos");
         stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Intelligence 15: suppress self-inflicted damage from configured Stinger-family projectiles");
         carbineHigherPerkCapacity = b(GUNS, "carbineHigherPerkCapacity", true, "Intelligence 15: increase the carbine magazine capacity");
         carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");

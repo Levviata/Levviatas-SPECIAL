@@ -15,16 +15,13 @@ import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.items.weapon.sedna.mags.MagazineBelt;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
 import com.levviata.lspecial.*;
-import com.levviata.lspecial.entity.EntityGrappleChain;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.SoundCategory;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -145,7 +142,7 @@ public abstract class MixinWeaponSecondary {
                     && LSPECIALConfig.lagSecondarySelfKill && lspecial$hasIntelligence(player, 5))
                     || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
                     && lspecial$hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
-                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && lspecial$hasIntelligence(player, 15))))
+                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATRailgunProjectile && lspecial$hasIntelligence(player, 15))))
                     || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
                     && LSPECIALConfig.doubleBarrelGrapple && lspecial$hasIntelligence(player, 15));
             if (isSpecialAction) {
@@ -179,7 +176,7 @@ public abstract class MixinWeaponSecondary {
 
         if (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
                 && lspecial$hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
-                && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATQuackosRailgun && lspecial$hasIntelligence(player, 15)))
+                && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATRailgunProjectile && lspecial$hasIntelligence(player, 15)))
                 && cycleSupportedAmmo(player, stack, inventory, itemId)) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
             if (tag == null) {
