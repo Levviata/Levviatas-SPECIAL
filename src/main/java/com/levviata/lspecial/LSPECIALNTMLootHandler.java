@@ -7,6 +7,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.item.ItemStack;
@@ -109,7 +110,110 @@ public final class LSPECIALNTMLootHandler {
             Object handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
             if (handler instanceof IItemHandlerModifiable) return (IItemHandlerModifiable) handler;
         }
+        // Vanilla TileEntityChest implements IInventory but does not expose Forge's item-handler capability.
+        if (tile instanceof IInventory) {
+            return new VanillaInventoryAdapter((IInventory) tile);
+        }
         return null;
+    }
+
+    /** bridges vanilla inventories to the item-handler API used by the loot insertion code. */
+    private static final class VanillaInventoryAdapter implements IItemHandlerModifiable {
+        private final IInventory inventory;
+
+        private VanillaInventoryAdapter(IInventory inventory) {
+            this.inventory = inventory;
+        }
+
+        @Override
+        public int getSlots() {
+            return inventory.getSizeInventory();
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            if (slot < 0 || slot >= getSlots()) return ItemStack.EMPTY;
+            ItemStack stack = inventory.getStackInSlot(slot);
+            return stack == null ? ItemStack.EMPTY : stack;
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            if (stack == null || stack.isEmpty()) return ItemStack.EMPTY;
+            if (slot < 0 || slot >= getSlots() || !inventory.isItemValidForSlot(slot, stack)) return stack;
+
+            ItemStack existing = getStackInSlot(slot);
+            int limit = Math.min(stack.getMaxStackSize(), getSlotLimit(slot));
+            if (limit <= 0) return stack;
+
+            if (existing.isEmpty()) {
+                int inserted = Math.min(stack.getCount(), limit);
+                if (!simulate) {
+                    ItemStack result = stack.copy();
+                    result.setCount(inserted);
+                    inventory.setInventorySlotContents(slot, result);
+                    inventory.markDirty();
+                }
+                if (inserted >= stack.getCount()) return ItemStack.EMPTY;
+                ItemStack remainder = stack.copy();
+                remainder.shrink(inserted);
+                return remainder;
+            }
+
+            if (!ItemHandlerHelper.canItemStacksStack(existing, stack)) return stack;
+            int space = limit - existing.getCount();
+            if (space <= 0) return stack;
+            int inserted = Math.min(space, stack.getCount());
+            if (!simulate) {
+                ItemStack result = existing.copy();
+                result.grow(inserted);
+                inventory.setInventorySlotContents(slot, result);
+                inventory.markDirty();
+            }
+            if (inserted >= stack.getCount()) return ItemStack.EMPTY;
+            ItemStack remainder = stack.copy();
+            remainder.shrink(inserted);
+            return remainder;
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot < 0 || slot >= getSlots() || amount <= 0) return ItemStack.EMPTY;
+            ItemStack existing = getStackInSlot(slot);
+            if (existing.isEmpty()) return ItemStack.EMPTY;
+            int extracted = Math.min(amount, existing.getCount());
+            ItemStack result = existing.copy();
+            result.setCount(extracted);
+            if (!simulate) {
+                if (extracted >= existing.getCount()) {
+                    inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
+                } else {
+                    ItemStack remainder = existing.copy();
+                    remainder.shrink(extracted);
+                    inventory.setInventorySlotContents(slot, remainder);
+                }
+                inventory.markDirty();
+            }
+            return result;
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return slot < 0 || slot >= getSlots() ? 0 : inventory.getInventoryStackLimit();
+        }
+
+        @Override
+        public void setStackInSlot(int slot, ItemStack stack) {
+            if (slot < 0 || slot >= getSlots()) throw new IndexOutOfBoundsException("slot " + slot);
+            if (stack == null || stack.isEmpty()) {
+                inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
+            } else {
+                ItemStack result = stack.copy();
+                result.setCount(Math.min(result.getCount(), getSlotLimit(slot)));
+                inventory.setInventorySlotContents(slot, result);
+            }
+            inventory.markDirty();
+        }
     }
 
     /** reads the player's stat score without creating missing scoreboard objectives. */
