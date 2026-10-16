@@ -210,7 +210,7 @@ public final class LSPECIALConfig {
     public static String oreLuckAccessory = "luckAccessory";
     public static String oreLuckyGem = "luckyGem";
 
-    public static String oreBobbleheadEntries = "hbm:bobblehead:8-28";
+    public static String oreBobbleheadEntries = "hbm:bobblehead:0-28";
     public static String oreAppleLeadEntries = "hbm:apple_lead:0-2";
     public static String oreAmmoEntries = "hbm:ammo_standard:0-94";
     public static String oreLuckAccessoryEntries = "hbm:bandaid,hbm:serum,hbm:spider_milk,hbm:heart_piece,hbm:wd40";
