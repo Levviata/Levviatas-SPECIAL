@@ -22,7 +22,8 @@ import java.util.Random;
 public final class LSPECIALNTMLootHandler {
     public static final String CONTAINER_TAG = "LSPECIALContainer";
     public static final String POOL_TAG = "LSPECIALootPool";
-    public static final String BONUS_TAG = "LSPECIALContainerBonus";
+    public static final String PERCEPTION_BONUS_TAG = "LSPECIALPerceptionBonus";
+    public static final String LUCK_PERCEPTION_BONUS_TAG = "LSPECIALLuckPerceptionBonus";
     public static final String MIN_ITEMS_TAG = "LSPECIALLootMinItems";
     public static final String MAX_ITEMS_TAG = "LSPECIALLootMaxItems";
 
@@ -40,7 +41,7 @@ public final class LSPECIALNTMLootHandler {
         tile.markDirty();
     }
 
-    /** applies each eligible player's bonus once, preserving existing stacks and never overwriting slots. */
+    /** applies each eligible perk independently, preserving existing stacks and never overwriting slots. */
     public static void onContainerOpened(TileEntity tile, EntityPlayer player) {
         if (tile == null || player == null || player.world == null || player.world.isRemote || !(player.world instanceof net.minecraft.world.WorldServer)) return;
         NBTTagCompound data = tile.getTileData();
@@ -48,39 +49,57 @@ public final class LSPECIALNTMLootHandler {
 
         int perception = getScore(player, "Perception");
         int luck = getScore(player, "Luck");
-        boolean duplicate = LSPECIALConfig.perception && LSPECIALConfig.perceptionLootDuplication
+        boolean duplicateEligible = LSPECIALConfig.perception && LSPECIALConfig.perceptionLootDuplication
                 && perception >= LSPECIALConfig.perceptionLootDuplicationLevel;
-        boolean bonus = LSPECIALConfig.perception && LSPECIALConfig.luck && LSPECIALConfig.luckPerceptionLootBonus
-                && perception >= LSPECIALConfig.luckPerceptionLootBonusLevel && luck >= LSPECIALConfig.luckPerceptionLootBonusLevel;
-        if (!duplicate && !bonus) return;
-
-        String uuid = player.getUniqueID().toString();
-        NBTTagList players = data.getTagList(BONUS_TAG, 8);
-        for (int i = 0; i < players.tagCount(); i++) {
-            if (uuid.equals(players.getStringTagAt(i))) return;
-        }
+        boolean bonusEligible = LSPECIALConfig.perception && LSPECIALConfig.luck && LSPECIALConfig.luckPerceptionLootBonus
+                && perception >= LSPECIALConfig.luckPerceptionLootBonusLevel
+                && luck >= LSPECIALConfig.luckPerceptionLootBonusLevel;
+        if (!duplicateEligible && !bonusEligible) return;
 
         IItemHandlerModifiable inventory = getInventory(tile);
         if (inventory == null || inventory.getSlots() == 0) return;
+
+        String uuid = player.getUniqueID().toString();
         Random random = player.world.rand;
-        if (duplicate) {
+
+        // reroll again the current loot pool
+        if (duplicateEligible && !hasPlayer(data, PERCEPTION_BONUS_TAG, uuid)) {
             String originalPool = data.getString(POOL_TAG);
             if (isValidPool(originalPool)) {
                 int min = Math.max(0, data.getInteger(MIN_ITEMS_TAG));
                 int max = Math.max(min, data.getInteger(MAX_ITEMS_TAG));
                 int rolls = max > min ? min + random.nextInt(max - min + 1) : min;
-                addPoolItems(inventory, originalPool, rolls, random, false);
+                if (addPoolItems(inventory, originalPool, rolls, random, false)) {
+                    recordPlayer(data, PERCEPTION_BONUS_TAG, uuid);
+                }
             }
         }
-        if (bonus && isValidPool(LSPECIALConfig.luckPerceptionLootPool)) {
-            addPoolItems(inventory, LSPECIALConfig.luckPerceptionLootPool, 1, random, true);
+
+        // fill to the brim with the og loot pool
+        if (bonusEligible && !hasPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid)
+                && isValidPool(LSPECIALConfig.luckPerceptionLootPool)) {
+            String originalPool = data.getString(POOL_TAG);
+            if (addPoolItems(inventory, originalPool, 1, random, true)) {
+                recordPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid);
+            }
         }
 
-        players.appendTag(new NBTTagString(uuid));
-        data.setTag(BONUS_TAG, players);
         tile.markDirty();
     }
 
+    private static boolean hasPlayer(NBTTagCompound data, String tagName, String uuid) {
+        NBTTagList players = data.getTagList(tagName, 8);
+        for (int i = 0; i < players.tagCount(); i++) {
+            if (uuid.equals(players.getStringTagAt(i))) return true;
+        }
+        return false;
+    }
+
+    private static void recordPlayer(NBTTagCompound data, String tagName, String uuid) {
+        NBTTagList players = data.getTagList(tagName, 8);
+        players.appendTag(new NBTTagString(uuid));
+        data.setTag(tagName, players);
+    }
 
     /** gets a modifiable inventory from either an NTM crate or a vanilla chest. */
     private static IItemHandlerModifiable getInventory(TileEntity tile) {
@@ -110,15 +129,17 @@ public final class LSPECIALNTMLootHandler {
     }
 
     /** generates NTM weighted items and inserts them safely without replacing existing inventory slots. */
-    private static void addPoolItems(IItemHandlerModifiable inventory, String poolName, int rolls, Random random, boolean fillUntilFull) {
-        if (!isValidPool(poolName) || inventory == null || rolls <= 0) return;
+    // i didnt intend to make the AI fill up the chest fully for luck plus perception bonus but its staying
+    private static boolean addPoolItems(IItemHandlerModifiable inventory, String poolName, int rolls, Random random, boolean fillUntilFull) {
+        if (!isValidPool(poolName) || inventory == null || rolls <= 0) return false;
         WeightedRandomChestContentFrom1710[] pool = ItemPool.pools.get(poolName).pool;
         int attempts = 0;
         int remainingRolls = rolls;
+        boolean insertedAnyTotal = false;
         while ((fillUntilFull || remainingRolls-- > 0) && attempts++ < 4096) {
-            if (isFull(inventory)) return;
+            if (isFull(inventory)) return insertedAnyTotal;
             WeightedRandomChestContentFrom1710 entry = WeightedRandom.getRandomItem(random, Arrays.asList(pool));
-            if (entry == null) return;
+            if (entry == null) return insertedAnyTotal;
             ItemStack[] stacks = entry.generateChestContent(random, inventory);
             boolean insertedAny = false;
             if (stacks != null) {
@@ -128,9 +149,11 @@ public final class LSPECIALNTMLootHandler {
                     if (remainder.getCount() < stack.getCount()) insertedAny = true;
                 }
             }
+            if (insertedAny) insertedAnyTotal = true;
             if (!insertedAny && !fillUntilFull) continue;
-            if (!insertedAny) return;
+            if (!insertedAny) return insertedAnyTotal;
         }
+        return insertedAnyTotal;
     }
 
     private static boolean isFull(IItemHandlerModifiable inventory) {
