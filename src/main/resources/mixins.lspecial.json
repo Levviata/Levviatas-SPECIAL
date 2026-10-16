@@ -23,7 +23,9 @@
     "MixinWeaponSecondary",
     "MixinWorldRailgunBlast",
     "MixinNTMWandLoot",
-    "MixinNTMCrateLootBonus"
+    "MixinNTMCrateLootBonus",
+    "MixinVanillaChestLootBonus",
+    "structures.MixinNTMItemPoolChestTag"
   ],
   "server": [],
   "client": [

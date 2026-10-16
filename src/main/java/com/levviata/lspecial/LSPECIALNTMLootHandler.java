@@ -2,25 +2,21 @@ package com.levviata.lspecial;
 
 import com.hbm.handler.WeightedRandomChestContentFrom1710;
 import com.hbm.itempool.ItemPool;
-import com.hbm.tileentity.machine.storage.TileEntityCrateBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.WeightedRandom;
 import net.minecraftforge.items.ItemHandlerHelper;
-import net.minecraftforge.items.ItemStackHandler;
-import org.apache.logging.log4j.spi.LoggerRegistry;
+import net.minecraftforge.items.IItemHandlerModifiable;
+import net.minecraftforge.items.CapabilityItemHandler;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
-import java.util.UUID;
-
-import static com.levviata.lspecial.LSPECIALMod.LOGGER;
 
 /** applies the NTM wand-loot pool bonuses to crates tagged during wand-loot replacement. */
 public final class LSPECIALNTMLootHandler {
@@ -45,12 +41,10 @@ public final class LSPECIALNTMLootHandler {
     }
 
     /** applies each eligible player's bonus once, preserving existing stacks and never overwriting slots. */
-    public static void onCrateOpened(TileEntityCrateBase crate, EntityPlayer player) {
-        LOGGER.info("crate opened");
-        if (crate == null || player == null || player.world == null || player.world.isRemote || !(player.world instanceof net.minecraft.world.WorldServer)) return;
-        NBTTagCompound data = crate.getTileData();
+    public static void onContainerOpened(TileEntity tile, EntityPlayer player) {
+        if (tile == null || player == null || player.world == null || player.world.isRemote || !(player.world instanceof net.minecraft.world.WorldServer)) return;
+        NBTTagCompound data = tile.getTileData();
         if (!data.getBoolean(CONTAINER_TAG)) return;
-        LOGGER.info("we passed the conditions");
 
         int perception = getScore(player, "Perception");
         int luck = getScore(player, "Luck");
@@ -66,7 +60,7 @@ public final class LSPECIALNTMLootHandler {
             if (uuid.equals(players.getStringTagAt(i))) return;
         }
 
-        ItemStackHandler inventory = crate.inventory;
+        IItemHandlerModifiable inventory = getInventory(tile);
         if (inventory == null || inventory.getSlots() == 0) return;
         Random random = player.world.rand;
         if (duplicate) {
@@ -84,7 +78,20 @@ public final class LSPECIALNTMLootHandler {
 
         players.appendTag(new NBTTagString(uuid));
         data.setTag(BONUS_TAG, players);
-        crate.markDirty();
+        tile.markDirty();
+    }
+
+
+    /** gets a modifiable inventory from either an NTM crate or a vanilla chest. */
+    private static IItemHandlerModifiable getInventory(TileEntity tile) {
+        if (tile instanceof com.hbm.tileentity.machine.storage.TileEntityCrateBase) {
+            return ((com.hbm.tileentity.machine.storage.TileEntityCrateBase) tile).inventory;
+        }
+        if (tile.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null)) {
+            Object handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
+            if (handler instanceof IItemHandlerModifiable) return (IItemHandlerModifiable) handler;
+        }
+        return null;
     }
 
     /** reads the player's stat score without creating missing scoreboard objectives. */
@@ -103,7 +110,7 @@ public final class LSPECIALNTMLootHandler {
     }
 
     /** generates NTM weighted items and inserts them safely without replacing existing inventory slots. */
-    private static void addPoolItems(ItemStackHandler inventory, String poolName, int rolls, Random random, boolean fillUntilFull) {
+    private static void addPoolItems(IItemHandlerModifiable inventory, String poolName, int rolls, Random random, boolean fillUntilFull) {
         if (!isValidPool(poolName) || inventory == null || rolls <= 0) return;
         WeightedRandomChestContentFrom1710[] pool = ItemPool.pools.get(poolName).pool;
         int attempts = 0;
@@ -126,7 +133,7 @@ public final class LSPECIALNTMLootHandler {
         }
     }
 
-    private static boolean isFull(ItemStackHandler inventory) {
+    private static boolean isFull(IItemHandlerModifiable inventory) {
         for (int i = 0; i < inventory.getSlots(); i++) {
             ItemStack stack = inventory.getStackInSlot(i);
             if (stack.isEmpty() || stack.getCount() < Math.min(stack.getMaxStackSize(), inventory.getSlotLimit(i))) return false;
