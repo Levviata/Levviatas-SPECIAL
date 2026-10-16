@@ -27,8 +27,8 @@ public final class GrappleClientHandler {
 
     public static void resetCooldown() {
         cooldownTicks = 0;
-        fangRefreshTicks = 0;
-        fangClinkPending = true;
+        fangRefreshTicks = 17;
+        fangClinkPending = false;
         playOneShot(LSPECIALSounds.GRAPPLE_RESET, 1.0F, 1.0F);
     }
 

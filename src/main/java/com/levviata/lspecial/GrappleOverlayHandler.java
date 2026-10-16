@@ -110,14 +110,13 @@ public final class GrappleOverlayHandler {
             hookX = centerX;
             hookY = defaultY;
             hookWasFollowingTarget = false;
-            float progress = Math.min(1.0F, refreshAnimationTicks / 16.0F);
-            float eased = progress * progress * (3.0F - 2.0F * progress);
+            float progress = Math.min(1.0F, refreshAnimationTicks / 6.0F);
             float startSplit = reticleSize * splitAmount;
-            float split = startSplit * (1.0F - eased);
-            float hookY = centerY + (defaultY - centerY) * eased;
-            // the two fang halves physically join to form the complete hook
-            drawHookHalf(mc, centerX - split, hookY, hookSize, false, eased, scaleFactor, screenWidth, screenHeight);
-            drawHookHalf(mc, centerX + split, hookY, hookSize, true, eased, scaleFactor, screenWidth, screenHeight);
+            float split = startSplit * (1.0F - progress);
+            float hookY = centerY + (defaultY - centerY) * progress;
+            // the two fang halves join the hook at a constant rate
+            drawHookHalf(mc, centerX - split, hookY, hookSize, false, progress, scaleFactor, screenWidth, screenHeight);
+            drawHookHalf(mc, centerX + split, hookY, hookSize, true, progress, scaleFactor, screenWidth, screenHeight);
         } else {
             if (!hasTarget) {
                 hookWasFollowingTarget = false;
