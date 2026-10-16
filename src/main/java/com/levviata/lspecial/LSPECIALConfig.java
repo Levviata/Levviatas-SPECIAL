@@ -351,8 +351,8 @@ public final class LSPECIALConfig {
         doubleBarrelGrappleCrosshairScale = d(GUNS, "doubleBarrelGrappleCrosshairScale", 1.0, 0.25, 4.0, "Scale multiplier for the double-barrel grapple crosshair");
         doubleBarrelGrappleHookScale = d(GUNS, "doubleBarrelGrappleHookScale", 1.0, 0.25, 4.0, "Scale multiplier for the double-barrel meathook icon");
         doubleBarrelGrappleVisualTicks = i(GUNS, "doubleBarrelGrappleVisualTicks", 12, 1, 100, "Duration of the double-barrel grapple chain text, in ticks");
-        doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 5.0, 1.0, 128.0, "Maximum entity grapple range in blocks");
-        doubleBarrelGrappleTargetCone = d(GUNS, "doubleBarrelGrappleTargetCone", 10.0, 0.1, 45.0, "Maximum angle in degrees from the crosshair for grapple target acquisition");
+        doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 20.0, 1.0, 128.0, "Maximum entity grapple range in blocks");
+        doubleBarrelGrappleTargetCone = d(GUNS, "doubleBarrelGrappleTargetCone", 20.0, 0.1, 45.0, "Maximum angle in degrees from the crosshair for grapple target acquisition");
         doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Maximum grapple travel speed");
         doubleBarrelGrappleAcceleration = d(GUNS, "doubleBarrelGrappleAcceleration", 0.32, 0.01, 1.0, "Grapple velocity acceleration; higher values reach the configured speed faster");
         doubleBarrelGrappleAirStrafe = d(GUNS, "doubleBarrelGrappleAirStrafe", 0.16, 0.0, 1.0, "Air-strafing control while grappling; set to 1 for very strong air control");

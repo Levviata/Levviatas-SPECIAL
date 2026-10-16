@@ -31,9 +31,9 @@ public final class GrappleOverlayHandler {
     private static final ResourceLocation RETICLE_TEXTURE =
             new ResourceLocation("lspecial", "textures/gui/shotgun_crosshair.png");
     private static final float FOLLOW_SPEED = 0.18F;
-    private static final float RETICLE_HEIGHT_RATIO = 192.0F / 1080.0F;
+    private static final float RETICLE_HEIGHT_RATIO = 64F / 1080.0F;
     private static final float HOOK_TO_RETICLE_RATIO = 28.0F / 192.0F;
-    private static final float DEFAULT_HOOK_OFFSET_RATIO = 7.0F / 192.0F;
+    private static final float DEFAULT_HOOK_OFFSET_RATIO = 70F / 192.0F;
 
     private double reticleX = -1.0D;
     private double reticleY = -1.0D;
@@ -72,7 +72,7 @@ public final class GrappleOverlayHandler {
         float centerX = screenWidth / 2.0F;
         float centerY = screenHeight / 2.0F;
         float reticleSize = screenHeight * RETICLE_HEIGHT_RATIO * (float)LSPECIALConfig.doubleBarrelGrappleCrosshairScale;
-        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * 0.85F * (float)LSPECIALConfig.doubleBarrelGrappleHookScale;
+        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * 1.2F * (float)LSPECIALConfig.doubleBarrelGrappleHookScale;
         float defaultHookOffset = reticleSize * DEFAULT_HOOK_OFFSET_RATIO;
         float targetX = centerX;
         float targetY = centerY;
@@ -98,11 +98,12 @@ public final class GrappleOverlayHandler {
         drawReticle(mc, centerX, centerY, reticleSize, cooldownTicks, scaleFactor, screenHeight);
         float defaultY = centerY + reticleSize * 0.5F + defaultHookOffset;
         int refreshAnimationTicks = GrappleClientHandler.getFangRefreshTicks();
+        float splitAmount = 0.675F;
         if (cooldown) {
             hookX = centerX;
             hookY = defaultY;
             hookWasFollowingTarget = false;
-            float split = reticleSize * 0.3F;
+            float split = reticleSize * splitAmount;
             drawHookHalf(mc, centerX - split, centerY, hookSize, false, 0.0F, scaleFactor, screenWidth, screenHeight);
             drawHookHalf(mc, centerX + split, centerY, hookSize, true, 0.0F, scaleFactor, screenWidth, screenHeight);
         } else if (refreshAnimationTicks < 6) {
@@ -111,7 +112,7 @@ public final class GrappleOverlayHandler {
             hookWasFollowingTarget = false;
             float progress = Math.min(1.0F, refreshAnimationTicks / 16.0F);
             float eased = progress * progress * (3.0F - 2.0F * progress);
-            float startSplit = reticleSize * 0.3F;
+            float startSplit = reticleSize * splitAmount;
             float split = startSplit * (1.0F - eased);
             float hookY = centerY + (defaultY - centerY) * eased;
             // the two fang halves physically join to form the complete hook
@@ -222,9 +223,10 @@ public final class GrappleOverlayHandler {
             float grayHeight = size * progress;
             if (grayHeight > 0.0F) {
                 GL11.glEnable(GL11.GL_SCISSOR_TEST);
-                int sx = Math.round((x - size / 2.0F) * scaleFactor);
+                float reticleWidth = size * (245.0F / 130.0F);
+                int sx = Math.round((x - reticleWidth / 2.0F) * scaleFactor);
                 int sy = Math.round((screenHeight - (y - size / 2.0F + grayHeight)) * scaleFactor);
-                int sw = Math.round(size * scaleFactor);
+                int sw = Math.round(reticleWidth * scaleFactor);
                 int sh = Math.round(grayHeight * scaleFactor);
                 GL11.glScissor(sx, sy, sw, sh);
                 drawReticleQuad(x, y, size, 0.62F, 0.62F, 0.62F);
@@ -249,10 +251,11 @@ public final class GrappleOverlayHandler {
     private static void drawReticleQuad(float x, float y, float size, float red, float green, float blue, float alpha) {
         GlStateManager.color(red, green, blue, alpha);
         GL11.glBegin(GL11.GL_QUADS);
-        GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(1.0F, 0.0F); GL11.glVertex3f(x + size / 2.0F, y - size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(0.0F, 0.0F); GL11.glVertex3f(x - size / 2.0F, y - size / 2.0F, 0.0F);
+        float width = size * (245.0F / 130.0F);
+        GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - width / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + width / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 0.0F); GL11.glVertex3f(x + width / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(0.0F, 0.0F); GL11.glVertex3f(x - width / 2.0F, y - size / 2.0F, 0.0F);
         GL11.glEnd();
     }
 
