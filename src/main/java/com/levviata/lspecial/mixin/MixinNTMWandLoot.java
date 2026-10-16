@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** captures the original NTM pool when a wand-loot block replaces itself with its target container. */
 @Mixin(targets = "com.hbm.blocks.generic.BlockWandLoot$TileEntityWandLoot")
 public abstract class MixinNTMWandLoot {
-    @Shadow private String poolName;
-    @Shadow private int minItems;
-    @Shadow private int maxItems;
+    @Shadow(remap = false) private String poolName;
+    @Shadow(remap = false) private int minItems;
+    @Shadow(remap = false) private int maxItems;
 
     @Inject(method = "applyLoot(Lnet/minecraft/world/World;Lnet/minecraft/tileentity/TileEntity;[Lcom/hbm/handler/WeightedRandomChestContentFrom1710;)V", at = @At("HEAD"), remap = false)
     private void lspecial$tagWandLootContainer(World world, TileEntity tile, WeightedRandomChestContentFrom1710[] pool, CallbackInfo callback) {

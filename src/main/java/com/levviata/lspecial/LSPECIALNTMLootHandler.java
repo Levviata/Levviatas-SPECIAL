@@ -13,11 +13,14 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.WeightedRandom;
 import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
+import org.apache.logging.log4j.spi.LoggerRegistry;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+
+import static com.levviata.lspecial.LSPECIALMod.LOGGER;
 
 /** applies the NTM wand-loot pool bonuses to crates tagged during wand-loot replacement. */
 public final class LSPECIALNTMLootHandler {
@@ -43,9 +46,11 @@ public final class LSPECIALNTMLootHandler {
 
     /** applies each eligible player's bonus once, preserving existing stacks and never overwriting slots. */
     public static void onCrateOpened(TileEntityCrateBase crate, EntityPlayer player) {
+        LOGGER.info("crate opened");
         if (crate == null || player == null || player.world == null || player.world.isRemote || !(player.world instanceof net.minecraft.world.WorldServer)) return;
         NBTTagCompound data = crate.getTileData();
         if (!data.getBoolean(CONTAINER_TAG)) return;
+        LOGGER.info("we passed the conditions");
 
         int perception = getScore(player, "Perception");
         int luck = getScore(player, "Luck");
@@ -69,7 +74,7 @@ public final class LSPECIALNTMLootHandler {
             if (isValidPool(originalPool)) {
                 int min = Math.max(0, data.getInteger(MIN_ITEMS_TAG));
                 int max = Math.max(min, data.getInteger(MAX_ITEMS_TAG));
-                int rolls = max > min ? min + random.nextInt(max - min) : min;
+                int rolls = max > min ? min + random.nextInt(max - min + 1) : min;
                 addPoolItems(inventory, originalPool, rolls, random, false);
             }
         }
