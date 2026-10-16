@@ -64,7 +64,6 @@ public final class GrappleClientHandler {
         if (previousCooldownTicks > 0 && cooldownTicks == 0) {
             fangRefreshTicks = 0;
             fangClinkPending = true;
-            playOneShot(LSPECIALSounds.GRAPPLE_RESET, 1.0F, 1.0F);
         } else if (cooldownTicks == 0 && fangRefreshTicks < 6) {
             fangRefreshTicks++;
             if (fangRefreshTicks >= 6 && fangClinkPending) {

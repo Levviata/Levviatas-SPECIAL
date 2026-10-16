@@ -35,8 +35,11 @@ public final class GrappleOverlayHandler {
     private static final float HOOK_TO_RETICLE_RATIO = 28.0F / 192.0F;
     private static final float DEFAULT_HOOK_OFFSET_RATIO = 7.0F / 192.0F;
 
-    private float reticleX = -1.0F;
-    private float reticleY = -1.0F;
+    private double reticleX = -1.0D;
+    private double reticleY = -1.0D;
+    private double hookX = -1.0D;
+    private double hookY = -1.0D;
+    private boolean hookWasFollowingTarget;
 
     @SubscribeEvent
     public void onCrosshair(RenderGameOverlayEvent.Pre event) {
@@ -81,20 +84,27 @@ public final class GrappleOverlayHandler {
             if (projected != null) { targetX = projected[0] / scaleFactor; targetY = projected[1] / scaleFactor; }
         }
 
-        if (reticleX < 0.0F || reticleY < 0.0F) { reticleX = centerX; reticleY = centerY; }
-        float amount = 1.0F - (float)Math.pow(1.0F - FOLLOW_SPEED, Math.max(1.0F, event.getPartialTicks() + 1.0F));
+        if (reticleX < 0.0D || reticleY < 0.0D) { reticleX = centerX; reticleY = centerY; }
+        if (hookX < 0.0D || hookY < 0.0D) { hookX = centerX; hookY = centerY + reticleSize * 0.5D + defaultHookOffset; }
+        double amount = 1.0D - Math.pow(1.0D - FOLLOW_SPEED, Math.max(1.0D, event.getPartialTicks() + 1.0D));
         reticleX += (targetX - reticleX) * amount;
         reticleY += (targetY - reticleY) * amount;
 
-        // the crosshair remains centered and has its own cooldown colour transition
+        // the crosshair stays centered; the hook follows targets independently and smoothly
         drawReticle(mc, centerX, centerY, reticleSize, cooldownTicks, scaleFactor, screenHeight);
         float defaultY = centerY + reticleSize * 0.5F + defaultHookOffset;
         int refreshAnimationTicks = GrappleClientHandler.getFangRefreshTicks();
         if (cooldown) {
+            hookX = centerX;
+            hookY = defaultY;
+            hookWasFollowingTarget = false;
             float split = reticleSize * 0.3F;
             drawHookHalf(mc, centerX - split, centerY, hookSize, false, 0.0F, scaleFactor, screenWidth, screenHeight);
             drawHookHalf(mc, centerX + split, centerY, hookSize, true, 0.0F, scaleFactor, screenWidth, screenHeight);
         } else if (refreshAnimationTicks < 6) {
+            hookX = centerX;
+            hookY = defaultY;
+            hookWasFollowingTarget = false;
             float progress = Math.min(1.0F, refreshAnimationTicks / 5.0F);
             float eased = progress * progress * (3.0F - 2.0F * progress);
             float startSplit = reticleSize * 0.3F;
@@ -104,9 +114,22 @@ public final class GrappleOverlayHandler {
             drawHookHalf(mc, centerX - split, hookY, hookSize, false, eased, scaleFactor, screenWidth, screenHeight);
             drawHookHalf(mc, centerX + split, hookY, hookSize, true, eased, scaleFactor, screenWidth, screenHeight);
         } else {
-            float hookX = hasTarget ? reticleX : centerX;
-            float hookY = hasTarget ? reticleY : defaultY;
-            drawHookIcon(mc, hookX, hookY, hookSize, false, screenWidth, screenHeight);
+            if (!hasTarget) {
+                hookWasFollowingTarget = false;
+                hookX += (centerX - hookX) * 0.24D;
+                hookY += (defaultY - hookY) * 0.24D;
+            } else {
+                double dx = reticleX - hookX;
+                double dy = reticleY - hookY;
+                double distance = Math.sqrt(dx * dx + dy * dy);
+                double normalizedDistance = Math.min(1.0D, distance / Math.max(1.0D, reticleSize * 2.0D));
+                double followAmount = 0.035D + 0.30D * normalizedDistance;
+                followAmount = Math.min(0.38D, followAmount);
+                hookX += dx * followAmount;
+                hookY += dy * followAmount;
+                hookWasFollowingTarget = true;
+            }
+            drawHookIcon(mc, (float)hookX, (float)hookY, hookSize, false, screenWidth, screenHeight);
         }
     }
 
@@ -178,19 +201,20 @@ public final class GrappleOverlayHandler {
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA,
                 GL11.GL_ONE, GL11.GL_ZERO);
-        if (cooldownTicks <= 0) {
+        boolean cooldownVisual = cooldownTicks > 0 || GrappleClientHandler.getFangRefreshTicks() == 0;
+        if (!cooldownVisual) {
             drawReticleQuad(x, y, size, 1.0F, 1.0F, 1.0F);
         } else {
             drawReticleQuad(x, y, size, 1.0F, 0.12F, 0.12F);
-            // the gray overlay grows downward as the cooldown elapses
+            // gray fills from top to bottom as the cooldown expires
             float cooldownRemaining = Math.max(0.0F, Math.min(1.0F, cooldownTicks / 60.0F));
             float grayHeight = size * (1.0F - cooldownRemaining);
             if (grayHeight > 0.0F) {
-            GL11.glEnable(GL11.GL_SCISSOR_TEST);
-            int sx = Math.round((x - size / 2.0F) * scaleFactor);
-            int sy = Math.round((screenHeight - (y - size / 2.0F + grayHeight)) * scaleFactor);
-            int sw = Math.round(size * scaleFactor);
-            int sh = Math.round(grayHeight * scaleFactor);
+                GL11.glEnable(GL11.GL_SCISSOR_TEST);
+                int sx = Math.round((x - size / 2.0F) * scaleFactor);
+                int sy = Math.round((screenHeight - (y - size / 2.0F + grayHeight)) * scaleFactor);
+                int sw = Math.round(size * scaleFactor);
+                int sh = Math.round(grayHeight * scaleFactor);
                 GL11.glScissor(sx, sy, sw, sh);
                 drawReticleQuad(x, y, size, 0.62F, 0.62F, 0.62F);
                 GL11.glDisable(GL11.GL_SCISSOR_TEST);
@@ -218,7 +242,9 @@ public final class GrappleOverlayHandler {
     }
 
     private void reset() {
-        reticleX = reticleY = -1.0F;
+        reticleX = reticleY = -1.0D;
+        hookX = hookY = -1.0D;
+        hookWasFollowingTarget = false;
     }
 
     private static float[] projectEntity(Entity target, float partialTicks, Minecraft mc) {
