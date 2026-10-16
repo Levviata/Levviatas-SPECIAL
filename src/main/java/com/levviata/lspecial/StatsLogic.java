@@ -51,7 +51,6 @@ public class StatsLogic {
     private boolean previousCharismaEnabled = true;
     private boolean previousAgilityEnabled = true;
 
-    private ItemStack modifiedGun = ItemStack.EMPTY;
     private ItemStack modifiedStackRef = ItemStack.EMPTY;
     private Receiver modifiedReceiver;
     private boolean modified;
@@ -279,7 +278,6 @@ public class StatsLogic {
                         modifyGuns(heldStack, player, gun.getConfig(heldStack, gunIndex));
                     }
 
-                    modifiedGun = heldStack.copy();
                     modifiedStackRef = heldStack;
                     modified = true;
                 }
@@ -328,9 +326,15 @@ public class StatsLogic {
     private void processReceiver(Receiver recIn, float ogDmg, ItemStack heldStack, EntityPlayer player) {
         recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPerceptionScore().getScorePoints(), "originalDamage", (double)ogDmg) : 0)));
 
-        if (recIn.getMagazine(heldStack) == null) return;
+        if (recIn.getMagazine(heldStack) == null) {
+            return;
+        }
+
         Object ammoType = recIn.getMagazine(heldStack).getType(heldStack, player.inventory);
-        if (!(ammoType instanceof BulletConfig)) return;
+        if (!(ammoType instanceof BulletConfig)) {
+            return;
+        }
+
         BulletConfig bC = (BulletConfig) ammoType;
         if (LSPECIALConfig.perception && LSPECIALConfig.perceptionArmorThresholdNegation && inst.getPerceptionScore().getScorePoints() > LSPECIALConfig.perceptionArmorThresholdNegationLevel) {
             double addedNegation = (inst.getPerceptionScore().getScorePoints() - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
@@ -388,7 +392,6 @@ public class StatsLogic {
         gunStates.clear();
         gunIndex = 0;
         installedMagazine = false;
-        modifiedGun = ItemStack.EMPTY;
         modifiedStackRef = ItemStack.EMPTY;
         modifiedReceiver = null;
         modified = false;
@@ -406,41 +409,6 @@ public class StatsLogic {
                 ((ReceiverStateAccess) rIn).lspecial$getNativeRefireAfterDry(),
                 bCIn.doesPenetrate, bCIn.headshotMult, originalProjectileAmount, originalMagazine,
                 originalWear, originalAmmoPiercing, originalArmorThresholdNegation));
-    }
-
-    private static final class GunState {
-        private final int index;
-        private final Receiver receiver;
-        private final BulletConfig bulletConfig;
-        private final float damage;
-        private final boolean refireOnHold;
-        private final boolean refireAfterDry;
-        private final boolean doesPenetrate;
-        private final float headshotMultiplier;
-        private final int rounds;
-        private final IMagazine magazine;
-        private final float wear;
-        private final float armorPiercing;
-        private final float armorThresholdNegation;
-
-        private GunState(int index, Receiver receiver, BulletConfig bulletConfig, float damage,
-                boolean refireOnHold, boolean refireAfterDry, boolean doesPenetrate,
-                float headshotMultiplier, int rounds, IMagazine magazine, float wear,
-                float armorPiercing, float armorThresholdNegation) {
-            this.index = index;
-            this.receiver = receiver;
-            this.bulletConfig = bulletConfig;
-            this.damage = damage;
-            this.refireOnHold = refireOnHold;
-            this.refireAfterDry = refireAfterDry;
-            this.doesPenetrate = doesPenetrate;
-            this.headshotMultiplier = headshotMultiplier;
-            this.rounds = rounds;
-            this.magazine = magazine;
-            this.wear = wear;
-            this.armorPiercing = armorPiercing;
-            this.armorThresholdNegation = armorThresholdNegation;
-        }
     }
 
     public void givePotions(EntityPlayer player) {
@@ -561,5 +529,40 @@ public class StatsLogic {
            // uuids.add(LUCK_UUID);
         }
         return uuids;
+    }
+
+    private static final class GunState {
+        private final int index;
+        private final Receiver receiver;
+        private final BulletConfig bulletConfig;
+        private final float damage;
+        private final boolean refireOnHold;
+        private final boolean refireAfterDry;
+        private final boolean doesPenetrate;
+        private final float headshotMultiplier;
+        private final int rounds;
+        private final IMagazine magazine;
+        private final float wear;
+        private final float armorPiercing;
+        private final float armorThresholdNegation;
+
+        private GunState(int index, Receiver receiver, BulletConfig bulletConfig, float damage,
+                         boolean refireOnHold, boolean refireAfterDry, boolean doesPenetrate,
+                         float headshotMultiplier, int rounds, IMagazine magazine, float wear,
+                         float armorPiercing, float armorThresholdNegation) {
+            this.index = index;
+            this.receiver = receiver;
+            this.bulletConfig = bulletConfig;
+            this.damage = damage;
+            this.refireOnHold = refireOnHold;
+            this.refireAfterDry = refireAfterDry;
+            this.doesPenetrate = doesPenetrate;
+            this.headshotMultiplier = headshotMultiplier;
+            this.rounds = rounds;
+            this.magazine = magazine;
+            this.wear = wear;
+            this.armorPiercing = armorPiercing;
+            this.armorThresholdNegation = armorThresholdNegation;
+        }
     }
 }

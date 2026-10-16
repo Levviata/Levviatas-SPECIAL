@@ -32,7 +32,7 @@ public final class TooltipAdder {
     public void onTooltip(ItemTooltipEvent event) {
         ItemStack tooltipStack = event.getItemStack();
 
-        // trade discount tooltip
+        /*// trade discount tooltip
         if (!tooltipStack.isEmpty() && tooltipStack.hasTagCompound()
                 && tooltipStack.getTagCompound().hasKey("LSPECIALTradeDiscount")) {
             net.minecraft.nbt.NBTTagCompound discount = tooltipStack.getTagCompound()
@@ -47,7 +47,7 @@ public final class TooltipAdder {
                 event.getToolTip().add(String.format(java.util.Locale.ROOT, "Charisma discount: %.1f%% (Charisma %d)",
                         discount.getDouble("discountFraction") * 100.0D, discount.getInteger("charismaLevel")));
             }
-        }
+        }*/
 
         minigunTooltips(tooltipStack, event);
 
