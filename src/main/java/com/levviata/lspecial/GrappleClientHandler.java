@@ -127,7 +127,7 @@ public final class GrappleClientHandler {
             this.repeatDelay = 0;
             this.volume = 0.7F;
             this.pitch = 1.0F;
-            this.attenuationType = AttenuationType.NONE;
+            this.attenuationType = ISound.AttenuationType.NONE;
             update();
         }
 
