@@ -452,7 +452,7 @@ public final class LSPECIALConfig {
         gunWearFormula = s(ADV, "gunWearFormula", gunWearFormula, "Variables: intelligence, originalWear; output is reduction fraction");
 
         for (String category : Arrays.asList(
-                STATS, BOB, GUNS, POTIONS, RECIPES, MESSAGES, CLIENT, COMMANDS, ADV, PERKS)) {
+                STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV, PERKS)) {
             config.setCategoryComment(category, categoryComment(category));
         }
 
