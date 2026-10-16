@@ -14,9 +14,6 @@
     "MixinEntityRailgunBlast",
     "MixinEntityVillager",
     "MixinLightRevolverRapidFire",
-    "MixinLootContainer",
-    "MixinNTMStructureComponent",
-    "MixinNTMCrateBase",
     "MixinMagazineBelt",
     "MixinMagazineFluid",
     "MixinMagazineSingleTypeBase",
@@ -24,7 +21,9 @@
     "MixinReceiver",
     "MixinStingerProjectile",
     "MixinWeaponSecondary",
-    "MixinWorldRailgunBlast"
+    "MixinWorldRailgunBlast",
+    "MixinNTMWandLoot",
+    "MixinNTMCrateLootBonus"
   ],
   "server": [],
   "client": [

@@ -163,11 +163,11 @@ public final class LSPECIALConfig {
     public static boolean carbineSemiAutoPerk = true;
     public static double carbineRecoilMultiplier = 0.5;
 
-    public static boolean perceptionContainerLootBonus = true;
-    public static int perceptionContainerLootLevel = 10;
-    public static boolean luckPerceptionContainerLootInjection = true;
-    public static int luckPerceptionContainerLootLevel = 10;
-    public static String luckPerceptionContainerLootPool = "minecraft:chests/simple_dungeon";
+    public static boolean perceptionLootDuplication = true;
+    public static int perceptionLootDuplicationLevel = 10;
+    public static boolean luckPerceptionLootBonus = true;
+    public static int luckPerceptionLootBonusLevel = 10;
+    public static String luckPerceptionLootPool = "POOL_MACHINE_PARTS";
 
     public static String systemStatusText = "SYSTEM STATUS";
     public static String neuralLinkText = "LEVVIATA NEURA-LINK  //  ACTIVE";
@@ -377,11 +377,11 @@ public final class LSPECIALConfig {
         carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");
         carbineSemiAutoPerk = b(GUNS, "carbineSemiAutoPerk", true, "Intelligence 15: right-click fires one Carbine shot per press; left-click retains native fire behavior");
         carbineRecoilMultiplier = d(GUNS, "carbineRecoilMultiplier", 0.5, 0, 1, "Carbine recoil multiplier with the higher perk; 0 disables recoil and 1 keeps native recoil");
-        perceptionContainerLootBonus = b(STATS, "perceptionContainerLootBonus", true, "At the configured Perception level, reroll the original loot pool once for eligible NTM structure containers");
-        perceptionContainerLootLevel = i(STATS, "perceptionContainerLootLevel", 10, 1, 100, "Minimum Perception level for the container loot-pool bonus");
-        luckPerceptionContainerLootInjection = b(STATS, "luckPerceptionContainerLootInjection", true, "At the configured Luck and Perception levels, inject loot from a separate pool into eligible NTM structure containers");
-        luckPerceptionContainerLootLevel = i(STATS, "luckPerceptionContainerLootLevel", 10, 1, 100, "Minimum Luck and Perception levels for bonus loot injection");
-        luckPerceptionContainerLootPool = s(STATS, "luckPerceptionContainerLootPool", "minecraft:chests/simple_dungeon", "Loot table identifier used for the Luck + Perception container bonus");
+        perceptionLootDuplication = b(STATS, "perceptionLootDuplication", true, "Perception duplicates the original NTM wand-loot pool in tagged crates");
+        perceptionLootDuplicationLevel = i(STATS, "perceptionLootDuplicationLevel", 10, 1, 100, "Perception level required to duplicate tagged NTM container loot");
+        luckPerceptionLootBonus = b(STATS, "luckPerceptionLootBonus", true, "Luck and Perception can fill tagged NTM crates from a configured NTM item pool");
+        luckPerceptionLootBonusLevel = i(STATS, "luckPerceptionLootBonusLevel", 10, 1, 100, "Minimum Luck and Perception level required for configured bonus loot");
+        luckPerceptionLootPool = s(STATS, "luckPerceptionLootPool", "POOL_MACHINE_PARTS", "NTM ItemPool name used for bonus loot when both Luck and Perception meet the configured level");
         showPerkScreens = b(PERKS, "showPerkScreens", true, "Allow clicking a SPECIAL row to open its perk overlay");
         showPerkTierHint = b(PERKS, "showPerkTierHint", true, "Show the Lesser/Higher perk level explanation");
         systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in the stats screen");
