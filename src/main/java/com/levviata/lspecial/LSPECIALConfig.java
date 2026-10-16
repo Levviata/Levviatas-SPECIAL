@@ -219,9 +219,9 @@ public final class LSPECIALConfig {
     public static String[] recipeIngredients = {
             "bobblehead,hbm:schnitzel_vegan,appleLead,hbm:ingot_u235",
             "bobblehead,hbm:weapon_mod_special:1,hbm:weapon_mod_special:6,ammo",
-            "bobblehead,hbm:med_bag,hbm:crackpipe,potion:healing|strong_healing",
-            "bobblehead,hbm:cobalt_helmet,hbm:steel_helmet,hbm:titanium_helmet",
-            "bobblehead,hbm:part_mechanism:34,hbm:circuit:9,hbm:gun_kit_2",
+            "bobblehead,hbm:med_bag,hbm:syringe_metal_stimpak,potion:healing|strong_healing",
+            "bobblehead,luckyGem,minecraft:diamond_chestplate,hbm:plate_kevlar",
+            "bobblehead,hbm:part_mechanism:50,hbm:circuit:9,hbm:gun_kit_2",
             "bobblehead,hbm:cotton_candy,potion:swiftness|long_swiftness|strong_swiftness,minecraft:sugar",
             "bobblehead,ammo,luckyGem,luckAccessory"
     };
