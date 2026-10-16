@@ -22,8 +22,11 @@ public abstract class MixinNTMWandLoot {
     private void lspecial$tagWandLootContainer(World world, TileEntity tile, WeightedRandomChestContentFrom1710[] pool, CallbackInfo callback) {
         // The target can be a vanilla chest as well as an NTM crate or other loot container.
         // applyLoot is called specifically while a wand-loot block populates its target.
-        if (tile != null) {
-            LSPECIALNTMLootHandler.tagContainer(tile, poolName, minItems, maxItems);
+        if (tile == null) {
+            com.levviata.lspecial.LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Wand-loot applyLoot called with null target: pool={} rolls={}..{}", poolName, minItems, maxItems);
+            return;
         }
+        com.levviata.lspecial.LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Wand-loot applyLoot hook fired: target={} pos={} pool={} rolls={}..{}", tile.getClass().getName(), tile.getPos(), poolName, minItems, maxItems);
+        LSPECIALNTMLootHandler.tagContainer(tile, poolName, minItems, maxItems);
     }
 }
