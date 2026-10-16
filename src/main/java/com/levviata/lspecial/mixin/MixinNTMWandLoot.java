@@ -19,7 +19,7 @@ public abstract class MixinNTMWandLoot {
     @Shadow private int minItems;
     @Shadow private int maxItems;
 
-    @Inject(method = "applyLoot(Lnet/minecraft/world/World;Lnet/minecraft/tileentity/TileEntity;[Lcom/hbm/handler/WeightedRandomChestContentFrom1710;)V", at = @At("HEAD"))
+    @Inject(method = "applyLoot(Lnet/minecraft/world/World;Lnet/minecraft/tileentity/TileEntity;[Lcom/hbm/handler/WeightedRandomChestContentFrom1710;)V", at = @At("HEAD"), remap = false)
     private void lspecial$tagWandLootContainer(World world, TileEntity tile, WeightedRandomChestContentFrom1710[] pool, CallbackInfo callback) {
         if (tile instanceof TileEntityCrateBase) {
             LSPECIALNTMLootHandler.tagContainer(tile, poolName, minItems, maxItems);
