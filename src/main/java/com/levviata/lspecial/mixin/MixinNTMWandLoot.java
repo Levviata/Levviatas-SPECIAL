@@ -18,10 +18,32 @@ public abstract class MixinNTMWandLoot {
     @Shadow(remap = false) private int minItems;
     @Shadow(remap = false) private int maxItems;
 
+    @Inject(method = "replace()V", at = @At("RETURN"), remap = false)
+    private void lspecial$tagReplacedContainer(CallbackInfo callback) {
+        // replace() installs the real target tile entity before scheduling its loot population.
+        TileEntity source = (TileEntity) (Object) this;
+        World world = source.getWorld();
+        if (world == null || world.isRemote || source.getPos() == null) {
+            return;
+        }
+
+        TileEntity target = world.getTileEntity(source.getPos());
+        if (target == null || target == source || target instanceof BlockWandLoot.TileEntityWandLoot) {
+            com.levviata.lspecial.LSPECIALMod.LOGGER.warn(
+                    "[LSPECIAL Loot] Wand-loot replace did not produce a target tile entity at {}: pool={} target={}",
+                    source.getPos(), poolName, target == null ? "null" : target.getClass().getName());
+            return;
+        }
+
+        com.levviata.lspecial.LSPECIALMod.LOGGER.info(
+                "[LSPECIAL Loot] Tagging replaced wand-loot target: target={} pos={} pool={} rolls={}..{}",
+                target.getClass().getName(), target.getPos(), poolName, minItems, maxItems);
+        LSPECIALNTMLootHandler.tagContainer(target, poolName, minItems, maxItems);
+    }
+
     @Inject(method = "applyLoot(Lnet/minecraft/world/World;Lnet/minecraft/tileentity/TileEntity;[Lcom/hbm/handler/WeightedRandomChestContentFrom1710;)V", at = @At("HEAD"), remap = false)
     private void lspecial$tagWandLootContainer(World world, TileEntity tile, WeightedRandomChestContentFrom1710[] pool, CallbackInfo callback) {
-        // The target can be a vanilla chest as well as an NTM crate or other loot container.
-        // applyLoot is called specifically while a wand-loot block populates its target.
+        // Keep this as a second tagging point for targets resolved by the loot-population path.
         if (tile == null) {
             com.levviata.lspecial.LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Wand-loot applyLoot called with null target: pool={} rolls={}..{}", poolName, minItems, maxItems);
             return;
