@@ -126,8 +126,6 @@ public final class LSPECIALConfig {
     public static int doubleBarrelGrappleVisualTicks = 12;
     public static double doubleBarrelGrappleRange = 20;
     public static double doubleBarrelGrappleTargetCone = 10.0;
-    public static double doubleBarrelGrappleReticleColorStart = 0.0;
-    public static double doubleBarrelGrappleReticleColorEnd = 1.0;
     public static double doubleBarrelGrapplePullSpeed = 1.35;
     public static double doubleBarrelGrappleAcceleration = 0.32;
     public static double doubleBarrelGrappleAirStrafe = 0.16;
@@ -355,8 +353,6 @@ public final class LSPECIALConfig {
         doubleBarrelGrappleVisualTicks = i(GUNS, "doubleBarrelGrappleVisualTicks", 12, 1, 100, "Duration of the double-barrel grapple chain text, in ticks");
         doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 5.0, 1.0, 128.0, "Maximum entity grapple range in blocks");
         doubleBarrelGrappleTargetCone = d(GUNS, "doubleBarrelGrappleTargetCone", 10.0, 0.1, 45.0, "Maximum angle in degrees from the crosshair for grapple target acquisition");
-        doubleBarrelGrappleReticleColorStart = d(GUNS, "doubleBarrelGrappleReticleColorStart", 0.0, 0.0, 1.0, "Cooldown color transition start position from top to bottom; 0 is top");
-        doubleBarrelGrappleReticleColorEnd = d(GUNS, "doubleBarrelGrappleReticleColorEnd", 1.0, 0.0, 1.0, "Cooldown color transition end position from top to bottom; 1 is bottom");
         doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Maximum grapple travel speed");
         doubleBarrelGrappleAcceleration = d(GUNS, "doubleBarrelGrappleAcceleration", 0.32, 0.01, 1.0, "Grapple velocity acceleration; higher values reach the configured speed faster");
         doubleBarrelGrappleAirStrafe = d(GUNS, "doubleBarrelGrappleAirStrafe", 0.16, 0.0, 1.0, "Air-strafing control while grappling; set to 1 for very strong air control");

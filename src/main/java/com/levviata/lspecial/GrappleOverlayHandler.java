@@ -29,7 +29,7 @@ import java.nio.IntBuffer;
 @SideOnly(Side.CLIENT)
 public final class GrappleOverlayHandler {
     private static final ResourceLocation RETICLE_TEXTURE =
-            new ResourceLocation("hbm", "textures/misc/shotgun_crosshair.png");
+            new ResourceLocation("lspecial", "textures/gui/shotgun_crosshair.png");
     private static final float FOLLOW_SPEED = 0.18F;
     private static final float RETICLE_HEIGHT_RATIO = 192.0F / 1080.0F;
     private static final float HOOK_TO_RETICLE_RATIO = 28.0F / 192.0F;
@@ -72,7 +72,7 @@ public final class GrappleOverlayHandler {
         float centerX = screenWidth / 2.0F;
         float centerY = screenHeight / 2.0F;
         float reticleSize = screenHeight * RETICLE_HEIGHT_RATIO * (float)LSPECIALConfig.doubleBarrelGrappleCrosshairScale;
-        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * 0.7F * (float)LSPECIALConfig.doubleBarrelGrappleHookScale;
+        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * 0.85F * (float)LSPECIALConfig.doubleBarrelGrappleHookScale;
         float defaultHookOffset = reticleSize * DEFAULT_HOOK_OFFSET_RATIO;
         float targetX = centerX;
         float targetY = centerY;
@@ -109,7 +109,7 @@ public final class GrappleOverlayHandler {
             hookX = centerX;
             hookY = defaultY;
             hookWasFollowingTarget = false;
-            float progress = Math.min(1.0F, refreshAnimationTicks / 5.0F);
+            float progress = Math.min(1.0F, refreshAnimationTicks / 16.0F);
             float eased = progress * progress * (3.0F - 2.0F * progress);
             float startSplit = reticleSize * 0.3F;
             float split = startSplit * (1.0F - eased);
@@ -218,13 +218,8 @@ public final class GrappleOverlayHandler {
             drawReticleQuad(x, y, size, 1.0F, 0.12F, 0.12F);
             // gray fills from top to bottom as the cooldown expires
             float cooldownRemaining = Math.max(0.0F, Math.min(1.0F, cooldownTicks / 60.0F));
-            double transitionStart = Math.min(LSPECIALConfig.doubleBarrelGrappleReticleColorStart, LSPECIALConfig.doubleBarrelGrappleReticleColorEnd);
-            double transitionEnd = Math.max(LSPECIALConfig.doubleBarrelGrappleReticleColorStart, LSPECIALConfig.doubleBarrelGrappleReticleColorEnd);
-            double progress = 1.0D - cooldownRemaining;
-            double transitionProgress = transitionEnd <= transitionStart
-                    ? (progress >= transitionEnd ? 1.0D : 0.0D)
-                    : Math.max(0.0D, Math.min(1.0D, (progress - transitionStart) / (transitionEnd - transitionStart)));
-            float grayHeight = (float)(size * transitionProgress);
+            float progress = 1.0F - cooldownRemaining;
+            float grayHeight = size * progress;
             if (grayHeight > 0.0F) {
                 GL11.glEnable(GL11.GL_SCISSOR_TEST);
                 int sx = Math.round((x - size / 2.0F) * scaleFactor);

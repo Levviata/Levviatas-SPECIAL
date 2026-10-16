@@ -17,7 +17,7 @@ public final class GrappleClientHandler {
     private static boolean saved;
     private static boolean jumpWasDown;
     private static int cooldownTicks;
-    private static int fangRefreshTicks = 6;
+    private static int fangRefreshTicks = 17;
     private static boolean fangClinkPending;
     private static GrappleCycleSound cycleSound;
 
@@ -36,7 +36,7 @@ public final class GrappleClientHandler {
         int previousTargetId = targetId;
         if (id >= 0) {
             cooldownTicks = 60;
-            fangRefreshTicks = 6;
+            fangRefreshTicks = 17;
             fangClinkPending = false;
         }
         Minecraft mc = Minecraft.getMinecraft();
@@ -64,12 +64,10 @@ public final class GrappleClientHandler {
         if (previousCooldownTicks > 0 && cooldownTicks == 0) {
             fangRefreshTicks = 0;
             fangClinkPending = true;
-        } else if (cooldownTicks == 0 && fangRefreshTicks < 6) {
+            playOneShot(LSPECIALSounds.GRAPPLE_RESETCLINK, 0.9F, 1.0F);
+            fangClinkPending = false;
+        } else if (cooldownTicks == 0 && fangRefreshTicks < 17) {
             fangRefreshTicks++;
-            if (fangRefreshTicks >= 6 && fangClinkPending) {
-                fangClinkPending = false;
-                playOneShot(LSPECIALSounds.GRAPPLE_RESETCLINK, 0.9F, 1.0F);
-            }
         }
 
         Minecraft mc = Minecraft.getMinecraft();
