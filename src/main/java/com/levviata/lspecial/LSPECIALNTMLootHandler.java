@@ -76,8 +76,7 @@ public final class LSPECIALNTMLootHandler {
         }
 
         // fill to the brim with the og loot pool
-        if (bonusEligible && !hasPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid)
-                && isValidPool(LSPECIALConfig.luckPerceptionLootPool)) {
+        if (bonusEligible && !hasPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid)) {
             String originalPool = data.getString(POOL_TAG);
             if (addPoolItems(inventory, originalPool, 1, random, true)) {
                 recordPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid);
