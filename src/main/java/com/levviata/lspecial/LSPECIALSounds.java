@@ -12,6 +12,11 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public final class LSPECIALSounds {
     public static SoundEvent DRAGONS_FURY_SHOOT;
     public static SoundEvent PHLOG_IGNITE;
+    public static SoundEvent GRAPPLE_START;
+    public static SoundEvent GRAPPLE_CYCLE;
+    public static SoundEvent GRAPPLE_OUT;
+    public static SoundEvent GRAPPLE_RESET;
+    public static SoundEvent GRAPPLE_RESETCLINK;
 
     private LSPECIALSounds() {
     }
@@ -20,6 +25,11 @@ public final class LSPECIALSounds {
     public static void registerSounds(RegistryEvent.Register<SoundEvent> event) {
         DRAGONS_FURY_SHOOT = register(event, "dragons_fury_shoot");
         PHLOG_IGNITE = register(event, "phlog_ignite");
+        GRAPPLE_START = register(event, "grapple_start");
+        GRAPPLE_CYCLE = register(event, "grapple_cycle");
+        GRAPPLE_OUT = register(event, "grapple_out");
+        GRAPPLE_RESET = register(event, "grapple_reset");
+        GRAPPLE_RESETCLINK = register(event, "grapple_resetclink");
     }
 
     private static SoundEvent register(RegistryEvent.Register<SoundEvent> event, String name) {
