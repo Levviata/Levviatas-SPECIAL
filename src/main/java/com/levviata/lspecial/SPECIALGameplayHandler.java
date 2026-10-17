@@ -1,5 +1,6 @@
 package com.levviata.lspecial;
 
+import com.hbm.items.armor.ArmorFSBPowered;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.Receiver;
@@ -12,27 +13,20 @@ import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.WeakHashMap;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
 /** server-side SPECIAL effects that need Forge events rather than per-frame GUI code. */
 public final class SPECIALGameplayHandler {
-    private static final String TEMP_UNBREAKABLE = "LSPECIALLuckTemporaryUnbreakable";
-    private static final Map<EntityPlayer, Map<ItemStack, Boolean>> protectedArmor = new WeakHashMap<>();
     private static final Map<EntityPlayer, LockedGun> rapidFireLocks = new WeakHashMap<>();
     private static final Map<EntityPlayer, PendingSelfKill> pendingSelfKills = new WeakHashMap<>();
     private static final Map<EntityPlayer, PendingBurst> pendingBursts = new WeakHashMap<>();
@@ -267,62 +261,36 @@ public final class SPECIALGameplayHandler {
     }
 
     @SubscribeEvent
-    public void onLivingHurt(LivingHurtEvent event) {
-        if (!(event.getEntityLiving() instanceof EntityPlayer) || event.getEntityLiving().world.isRemote) return;
-        EntityPlayer player = (EntityPlayer) event.getEntityLiving();
-        if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorDurabilityProtection) return;
-
-        int luck = inst.getLuckScore().getScorePoints();
-        if (luck <= 0) return;
-        double chance = Math.min(LSPECIALConfig.luckArmorDurabilityChanceCap,
-                Math.max(0, luck * LSPECIALConfig.luckArmorDurabilityChancePerPoint));
-        if (player.getRNG().nextDouble() >= chance) return;
-
-        Map<ItemStack, Boolean> restore = protectedArmor.computeIfAbsent(player, ignored -> new IdentityHashMap<>());
-        for (ItemStack armor : player.getArmorInventoryList()) {
-            if (armor.isEmpty() || !armor.isItemStackDamageable()) continue;
-            if (!restore.containsKey(armor)) {
-                boolean wasUnbreakable = armor.hasTagCompound() && armor.getTagCompound().getBoolean("Unbreakable");
-                restore.put(armor, wasUnbreakable);
-                if (!armor.hasTagCompound()) armor.setTagCompound(new NBTTagCompound());
-                armor.getTagCompound().setBoolean("Unbreakable", true);
-                armor.getTagCompound().setBoolean(TEMP_UNBREAKABLE, true);
-            }
-        }
-    }
-
-    @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || event.player.world.isRemote) return;
         EntityPlayer player = event.player;
         lspecial$tickPendingSelfKill(player);
         lspecial$tickPendingBurst(player);
+        lspecial$tickPoweredArmorRecovery(player);
 
-        Map<ItemStack, Boolean> restore = protectedArmor.remove(player);
-        if (restore != null) {
-            for (Map.Entry<ItemStack, Boolean> entry : restore.entrySet()) {
-                ItemStack stack = entry.getKey();
-                if (stack == null || stack.isEmpty()) continue;
-                if (stack.hasTagCompound() && stack.getTagCompound().getBoolean(TEMP_UNBREAKABLE)) {
-                    stack.getTagCompound().setBoolean("Unbreakable", entry.getValue());
-                    stack.getTagCompound().removeTag(TEMP_UNBREAKABLE);
-                    if (stack.getTagCompound().getKeySet().isEmpty()) {
-                        stack.setTagCompound(null);
-                    }
-                }
-                // at the configured fail-safe level, a nearly broken armor piece is unequipped
-                // instead of being left equipped with a single durability point.
-                if (inst.getLuckScore().getScorePoints() >= LSPECIALConfig.luckArmorFailsafeLevel
-                        && stack.isItemStackDamageable()
-                        && stack.getMaxDamage() - stack.getItemDamage() <= 1) {
-                    for (int slot = 0; slot < player.inventory.armorInventory.size(); slot++) {
-                        if (player.inventory.armorInventory.get(slot) == stack) {
-                            player.inventory.armorInventory.set(slot, ItemStack.EMPTY);
-                            if (!player.inventory.addItemStackToInventory(stack)) player.dropItem(stack, false);
-                            break;
-                        }
-                    }
-                }
+    }
+
+    /** restores equipped NTM power armor after each five-minute interval when its charge is nearly depleted. */
+    private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
+        if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe
+                || player.ticksExisted % 6000 != 0) return;
+
+        int luck = inst.getLuckScore().getScorePoints();
+        if (luck < LSPECIALConfig.luckArmorFailsafeLevel) return;
+
+        for (ItemStack stack : player.inventory.armorInventory) {
+            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered)) continue;
+
+            ArmorFSBPowered poweredArmor = (ArmorFSBPowered) stack.getItem();
+            long maxCharge = poweredArmor.getMaxCharge(stack);
+            if (maxCharge <= 0L) continue;
+
+            long charge = poweredArmor.getCharge(stack);
+            if (charge <= maxCharge * 0.01D) {
+                long restoredCharge = maxCharge / 2L;
+                poweredArmor.setCharge(stack, restoredCharge);
+                LSPECIALMod.info("[LuckArmor] POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
+                        stack.getItem().getRegistryName(), player.getName(), luck, charge, maxCharge, restoredCharge);
             }
         }
     }
