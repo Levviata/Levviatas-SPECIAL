@@ -4,6 +4,8 @@ import com.levviata.lspecial.LSPECIALConfig;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
@@ -44,13 +46,58 @@ public abstract class MixinEntityLivingNeutrality {
     private static boolean lspecial$isConfiguredNeutralMob(EntityLivingBase entity) {
         ResourceLocation key = EntityList.getKey(entity);
         if (key == null || LSPECIALConfig.charismaNeutralEntityList == null) return false;
+
         String registryId = key.toString();
-        for (String raw : LSPECIALConfig.charismaNeutralEntityList.split(",")) {
-            String id = raw.trim();
-            if (id.isEmpty()) continue;
-            if (id.indexOf(':') < 0) id = "minecraft:" + id;
-            if (id.equals(registryId)) return true;
+        if (LSPECIALConfig.charismaNeutralBlacklistMobs) {
+            if (lspecial$matchesAnyPattern(LSPECIALConfig.charismaNeutralBlacklistEntityList, registryId)) {
+                return false;
+            }
+
+            IAttributeInstance maxHealth = entity.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
+            if (maxHealth != null) {
+                double baseHealth = maxHealth.getBaseValue();
+                if (LSPECIALConfig.charismaNeutralBlacklistNonPositiveHealth
+                        && baseHealth <= LSPECIALConfig.charismaNeutralBlacklistNonPositiveHealthThreshold) {
+                    return false;
+                }
+                if (LSPECIALConfig.charismaNeutralBlacklistHighHealth
+                        && baseHealth >= LSPECIALConfig.charismaNeutralBlacklistHighHealthThreshold) {
+                    return false;
+                }
+            }
+        }
+
+        return lspecial$matchesAnyPattern(LSPECIALConfig.charismaNeutralEntityList, registryId);
+    }
+
+    @Unique
+    private static boolean lspecial$matchesAnyPattern(String configuredPatterns, String registryId) {
+        if (configuredPatterns == null || configuredPatterns.trim().isEmpty()) return false;
+
+        for (String raw : configuredPatterns.split(",")) {
+            String pattern = raw.trim();
+            if (pattern.isEmpty()) continue;
+            if (pattern.indexOf(':') < 0 && !pattern.equals("*")) {
+                pattern = "minecraft:" + pattern;
+            }
+            if (lspecial$matchesPattern(pattern, registryId)) return true;
         }
         return false;
+    }
+
+    @Unique
+    private static boolean lspecial$matchesPattern(String pattern, String value) {
+        StringBuilder regex = new StringBuilder("^");
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c == '*') {
+                regex.append(".*");
+            } else {
+                if ("\\.[]{}()+-^$|?".indexOf(c) >= 0) regex.append('\\');
+                regex.append(c);
+            }
+        }
+        regex.append('$');
+        return value.matches(regex.toString());
     }
 }
