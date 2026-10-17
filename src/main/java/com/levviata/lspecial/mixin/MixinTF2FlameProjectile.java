@@ -19,23 +19,22 @@ public abstract class MixinTF2FlameProjectile {
     @Unique private double lspecial$originY;
     @Unique private double lspecial$originZ;
     @Unique private boolean lspecial$originSet;
-    @Unique private double lspecial$lastSpeedFactor = 1.0D;
+    @Unique private double lspecial$initialSpeed = -1.0D;
 
     @Inject(method = "getGravityVelocity()F", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$removeFlameGravity(CallbackInfoReturnable<Float> callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (lspecial$isStandardFlame(config != null ? config : projectile.getBulletConfig())) callback.setReturnValue(0.0F);
+        if (lspecial$isStandardFlame(config != null ? config : projectile.getBulletConfig()) || lspecial$isStandardFlamerShot(projectile)) callback.setReturnValue(0.0F);
     }
 
     @Inject(method = "onUpdate()V", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$limitStandardFlameRange(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
         BulletConfig active = config != null ? config : projectile.getBulletConfig();
-        if (!lspecial$isStandardFlame(active)) return;
+        if (!lspecial$isStandardFlame(active) && !lspecial$isStandardFlamerShot(projectile)) return;
         if (!lspecial$originSet) {
             lspecial$originX = projectile.posX; lspecial$originY = projectile.posY; lspecial$originZ = projectile.posZ;
             lspecial$originSet = true;
-            ((EntityAccessor) projectile).lspecial$invokeSetSize(0.04F, 0.04F);
         }
         double travelled = lspecial$distance(projectile.posX, projectile.posY, projectile.posZ,
                 lspecial$originX, lspecial$originY, lspecial$originZ);
@@ -46,20 +45,36 @@ public abstract class MixinTF2FlameProjectile {
         }
         float growth = Math.min(1.0F, Math.max(0.0F, projectile.ticksExisted / 100.0F));
         float scale = 0.4F + growth * 0.8F;
-        ((EntityAccessor) projectile).lspecial$invokeSetSize(0.10F * scale, 0.10F * scale);
-        double desiredFactor = Math.max(0.10D, 1.0D - 0.90D * Math.min(1.0D, travelled / 8.0D));
-        if (lspecial$lastSpeedFactor > 1.0E-5D) {
-            double adjust = desiredFactor / lspecial$lastSpeedFactor;
-            projectile.motionX *= adjust; projectile.motionY *= adjust; projectile.motionZ *= adjust;
+        if (lspecial$initialSpeed < 0.0D) {
+            lspecial$initialSpeed = Math.sqrt(projectile.motionX * projectile.motionX
+                    + projectile.motionY * projectile.motionY + projectile.motionZ * projectile.motionZ);
         }
-        lspecial$lastSpeedFactor = desiredFactor;
+    }
+
+    @Inject(method = "onUpdate()V", at = @At("RETURN"), remap = false)
+    private void lspecial$applyStandardFlameMotion(CallbackInfo callback) {
+        EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
+        BulletConfig active = config != null ? config : projectile.getBulletConfig();
+        if ((!lspecial$isStandardFlame(active) && !lspecial$isStandardFlamerShot(projectile)) || !lspecial$originSet || projectile.isDead) return;
+        double travelled = lspecial$distance(projectile.posX, projectile.posY, projectile.posZ,
+                lspecial$originX, lspecial$originY, lspecial$originZ);
+        if (travelled >= 8.0D) { projectile.setDead(); return; }
+        double factor = Math.max(0.10D, 1.0D - 0.90D * Math.min(1.0D, travelled / 8.0D));
+        double speed = lspecial$initialSpeed < 0.0D ? Math.sqrt(projectile.motionX * projectile.motionX + projectile.motionY * projectile.motionY + projectile.motionZ * projectile.motionZ) : lspecial$initialSpeed;
+        double length = Math.sqrt(projectile.motionX * projectile.motionX + projectile.motionY * projectile.motionY + projectile.motionZ * projectile.motionZ);
+        if (length > 1.0E-5D) {
+            double targetSpeed = speed * factor;
+            projectile.motionX = projectile.motionX / length * targetSpeed;
+            projectile.motionY = projectile.motionY / length * targetSpeed;
+            projectile.motionZ = projectile.motionZ / length * targetSpeed;
+        }
     }
 
     @Inject(method = "onUpdate()V", at = @At("RETURN"), remap = false)
     private void lspecial$removeStandardFlameAtRange(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
         BulletConfig active = config != null ? config : projectile.getBulletConfig();
-        if (!lspecial$isStandardFlame(active) || !lspecial$originSet) return;
+        if ((!lspecial$isStandardFlame(active) && !lspecial$isStandardFlamerShot(projectile)) || !lspecial$originSet) return;
         if (lspecial$distance(projectile.posX, projectile.posY, projectile.posZ,
                 lspecial$originX, lspecial$originY, lspecial$originZ) >= 8.0D) projectile.setDead();
     }
@@ -68,6 +83,22 @@ public abstract class MixinTF2FlameProjectile {
     private static double lspecial$distance(double x, double y, double z, double ox, double oy, double oz) {
         double dx = x - ox, dy = y - oy, dz = z - oz;
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    @Unique
+    private static boolean lspecial$isStandardFlamerShot(EntityBulletBaseMK4 projectile) {
+        net.minecraft.entity.EntityLivingBase shooter = projectile.getThrower();
+        if (shooter == null) return false;
+        net.minecraft.item.ItemStack main = shooter.getHeldItemMainhand();
+        net.minecraft.item.ItemStack off = shooter.getHeldItemOffhand();
+        return lspecial$isStandardFlamerItem(main) || lspecial$isStandardFlamerItem(off);
+    }
+
+    @Unique
+    private static boolean lspecial$isStandardFlamerItem(net.minecraft.item.ItemStack stack) {
+        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) return false;
+        String id = stack.getItem().getRegistryName().toString();
+        return "hbm:gun_flamer".equals(id);
     }
 
     @Unique

@@ -22,7 +22,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 /** TF2-style secondary airblast for NTM's standard Sedna flamethrower. */
 public final class TF2FlamethrowerHandler {
     private static final int AIRBLAST_AMMO_COST = 20;
-    private static final double AIRBLAST_RANGE = 4.0D;
+    private static final double AIRBLAST_RANGE = 5.0D;
     private static final double AIRBLAST_CONE_DOT = 0.45D;
 
     /** Called on the server from the Sedna secondary-key hook. */
@@ -100,6 +100,18 @@ public final class TF2FlamethrowerHandler {
         lspecial$removeGroundFire(player, look, origin);
         player.world.playSound(null, player.getPosition(), net.minecraft.init.SoundEvents.ENTITY_BLAZE_SHOOT,
                 net.minecraft.util.SoundCategory.PLAYERS, 0.75F, 1.35F);
+        // render several expanding-looking rings with particles, from the nozzle out to the airblast limit
+        for (int ring = 1; ring <= 5; ring++) {
+            double radius = ring;
+            int points = ring * 12;
+            for (int i = 0; i < points; i++) {
+                double angle = (Math.PI * 2.0D * i) / points;
+                double x = origin.x + look.x * radius + Math.cos(angle) * radius * 0.45D;
+                double y = origin.y + look.y * radius + Math.sin(angle) * radius * 0.45D;
+                double z = origin.z + look.z * radius + Math.sin(angle) * radius * 0.45D;
+                player.world.spawnParticle(net.minecraft.util.EnumParticleTypes.CLOUD, x, y, z, 0.0D, 0.015D, 0.0D);
+            }
+        }
         return true;
     }
 

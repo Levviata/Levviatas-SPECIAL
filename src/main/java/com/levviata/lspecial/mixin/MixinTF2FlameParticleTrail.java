@@ -27,7 +27,7 @@ public abstract class MixinTF2FlameParticleTrail {
     private void lspecial$spawnTintedTrail(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
         BulletConfig active = config != null ? config : projectile.getBulletConfig();
-        if (!projectile.world.isRemote || !lspecial$isStandardFlame(active) || projectile.ticksExisted % 2 != 0) return;
+        if (!projectile.world.isRemote || (!lspecial$isStandardFlame(active) && !lspecial$isStandardFlamerShot(projectile)) || projectile.ticksExisted % 2 != 0) return;
         if (Float.isNaN(lspecial$intensity)) lspecial$intensity = 0.8F + projectile.world.rand.nextFloat() * 0.4F;
         if (Float.isNaN(lspecial$saturation)) lspecial$saturation = 0.8F + projectile.world.rand.nextFloat() * 0.4F;
 
@@ -58,6 +58,19 @@ public abstract class MixinTF2FlameParticleTrail {
 
     @Unique
     private static float clamp(float value) { return Math.max(0.0F, Math.min(1.0F, value)); }
+
+    @Unique
+    private static boolean lspecial$isStandardFlamerShot(EntityBulletBaseMK4 projectile) {
+        EntityLivingBase shooter = projectile.getThrower();
+        if (shooter == null) return false;
+        return lspecial$isStandardFlamerItem(shooter.getHeldItemMainhand()) || lspecial$isStandardFlamerItem(shooter.getHeldItemOffhand());
+    }
+
+    @Unique
+    private static boolean lspecial$isStandardFlamerItem(net.minecraft.item.ItemStack stack) {
+        return stack != null && !stack.isEmpty() && stack.getItem().getRegistryName() != null
+                && "hbm:gun_flamer".equals(stack.getItem().getRegistryName().toString());
+    }
 
     @Unique
     private static boolean lspecial$isStandardFlame(BulletConfig config) {
