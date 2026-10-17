@@ -22,7 +22,6 @@ import java.util.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.levviata.lspecial.LSPECIALMod.LOGGER;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 import static com.levviata.lspecial.command.CommandSetFlySpeed.getPlayerFlySpeed;
 import static com.levviata.lspecial.command.CommandSetSpeed.getPlayerSpeed;

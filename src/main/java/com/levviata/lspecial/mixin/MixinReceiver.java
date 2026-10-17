@@ -216,6 +216,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     }
 
     /** checks that the stack is the Carbine and the higher Intelligence perk is active. */
+    @Unique
     private static boolean lspecial$isCarbineHigherPerk(ItemStack stack) {
         return stack != null && !stack.isEmpty() && LSPECIALConfig.intelligence
                 && LSPECIALConfig.revolverPerk && SPECIALScoreboard.inst != null
@@ -278,6 +279,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     }
 
     /** checks the shared SPECIAL score safely because NTM can query receiver values on either side. */
+    @Unique
     private static boolean lspecial$hasIntelligence(int level) {
         return LSPECIALConfig.intelligence
                 && (level >= 15 ? LSPECIALConfig.revolverPerk : LSPECIALConfig.pepperboxPerk)
@@ -287,12 +289,14 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     }
 
     /** checks the NTM per-config secondary input state stored on the weapon stack. */
+    @Unique
     private boolean lspecial$isSecondaryHeld(ItemStack stack) {
         return stack != null && !stack.isEmpty() && (ItemGunBaseNT.getSecondary(stack, index)
                 || (stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALSecondaryMode")));
     }
 
     /** returns the namespaced item ID without depending on translated display text. */
+    @Unique
     private static String lspecial$registryId(ItemStack stack) {
         return stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null
                 ? "" : stack.getItem().getRegistryName().toString();

@@ -203,9 +203,7 @@ public abstract class MixinWeaponSecondary {
                     mode ? HBMSoundHandler.switchmode2 : HBMSoundHandler.switchmode1,
                     SoundCategory.PLAYERS, 1.0F, 1.0F);
             callback.cancel();
-            return;
         }
-
     }
 
     /** returns whether the player's current Intelligence score meets the requested perk level. */

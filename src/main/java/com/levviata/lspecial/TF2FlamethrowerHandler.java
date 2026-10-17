@@ -41,7 +41,7 @@ public final class TF2FlamethrowerHandler {
                 entity -> entity != player && !entity.isDead)) {
             Vec3d center = new Vec3d(target.posX, target.posY + target.height * 0.5D, target.posZ);
             Vec3d delta = center.subtract(origin);
-            double distance = delta.lengthVector();
+            double distance = delta.length();
             if (distance > AIRBLAST_RANGE || distance < 0.001D) continue;
             if (look.dotProduct(delta.scale(1.0D / distance)) < AIRBLAST_CONE_DOT) continue;
 
@@ -62,7 +62,7 @@ public final class TF2FlamethrowerHandler {
             if (className.contains("projectile") || className.contains("bullet")
                     || className.contains("rocket") || className.contains("grenade")
                     || className.contains("fireball") || className.contains("throwable")) {
-                double speed = Math.max(1.2D, target.getPositionVector().subtract(player.getPositionVector()).lengthVector() > 0
+                double speed = Math.max(1.2D, target.getPositionVector().subtract(player.getPositionVector()).length() > 0
                         ? Math.sqrt(target.motionX * target.motionX + target.motionY * target.motionY + target.motionZ * target.motionZ)
                         : 1.2D);
                 target.motionX = look.x * speed;

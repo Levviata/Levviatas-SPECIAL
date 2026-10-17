@@ -1,7 +1,6 @@
 package com.levviata.lspecial.mixin;
 
 import com.hbm.entity.projectile.EntityBulletBaseNT;
-import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.RocketJumpHandler;
 import com.levviata.lspecial.StingerDamageHandler;
@@ -9,7 +8,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
