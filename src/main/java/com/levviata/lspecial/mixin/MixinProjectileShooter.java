@@ -2,6 +2,7 @@ package com.levviata.lspecial.mixin;
 
 import com.hbm.entity.projectile.EntityThrowableNT;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.levviata.lspecial.StingerDamageHandler;
 
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -42,16 +43,24 @@ public abstract class MixinProjectileShooter {
         if (shooter instanceof EntityPlayer) {
             EntityPlayer player = (EntityPlayer) shooter;
             ItemStack held = player.getHeldItemMainhand();
-            if (!held.isEmpty() && held.getItem().getRegistryName() != null) {
-                data.setString("LSPECIALShooterWeapon", held.getItem().getRegistryName().toString());
-                if (held.getItem() instanceof ItemGunBaseNT) {
-                    ItemGunBaseNT gun = (ItemGunBaseNT) held.getItem();
-                    boolean secondary = false;
-                    for (int i = 0; i < gun.getConfigCount(); i++) {
-                        secondary |= ItemGunBaseNT.getSecondary(held, i);
-                    }
-                    data.setBoolean("LSPECIALShooterSecondary", secondary);
+            String rocketFamilyWeapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
+            if (rocketFamilyWeapon != null) {
+                ItemStack offhand = player.getHeldItemOffhand();
+                if (StingerDamageHandler.isStingerFamilyItem(held)) {
+                    data.setString("LSPECIALShooterWeapon", held.getItem().getRegistryName().toString());
+                } else if (StingerDamageHandler.isStingerFamilyItem(offhand)) {
+                    data.setString("LSPECIALShooterWeapon", offhand.getItem().getRegistryName().toString());
                 }
+            } else if (!held.isEmpty() && held.getItem().getRegistryName() != null) {
+                data.setString("LSPECIALShooterWeapon", held.getItem().getRegistryName().toString());
+            }
+            if (!held.isEmpty() && held.getItem() instanceof ItemGunBaseNT) {
+                ItemGunBaseNT gun = (ItemGunBaseNT) held.getItem();
+                boolean secondary = false;
+                for (int i = 0; i < gun.getConfigCount(); i++) {
+                    secondary |= ItemGunBaseNT.getSecondary(held, i);
+                }
+                data.setBoolean("LSPECIALShooterSecondary", secondary);
             }
         }
     }

@@ -75,6 +75,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 lines.add("Alternative firing modes for many guns. Toggles with Secondary Fire (keybind):");
                 lines.add("Comically Long gun, 3 bullet burst. Shift-Secondary Fire to kill yourself, can be disabled");
                 lines.add("Star-F, UZI, G3: unlock alternate ammunition modes where configured.");
+                lines.add("Stinger-family rockets: TF2-style rocket jumping replaces NTM's owner blast propulsion.");
                 lines.add("HIGHER PERK — Levels 15");
                 lines.add("All Revolvers: +1 penetration and x3 headshot multiplier");
                 lines.add("Henry Lincoln Repeater: 3 bullet burst");

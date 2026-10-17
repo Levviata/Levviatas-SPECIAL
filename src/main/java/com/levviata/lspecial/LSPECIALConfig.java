@@ -170,6 +170,10 @@ public final class LSPECIALConfig {
     public static boolean AMATRailgunProjectile = true;
 
     public static boolean stingerSelfDamageProtection = true;
+    public static boolean rocketJumpLesserPerk = true;
+    public static int rocketJumpLesserPerkLevel = 5;
+    public static double rocketJumpStrength = 1.2D;
+    public static double rocketJumpVerticalBias = 0.65D;
 
     public static boolean carbineHigherPerkCapacity = true;
     public static int carbineMagazineCapacity = 30;
@@ -398,7 +402,11 @@ public final class LSPECIALConfig {
         scopedSpreadMultiplier = d(GUNS, "scopedSpreadMultiplier", 0.5, 0.05, 1.0, "Spread multiplier while aiming");
         henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-shot sequential burst");
         AMATRailgunProjectile = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: crouch + secondary selects the deuterium plasma capsule caliber for the AMAT; its native Sedna projectile homes to Quackos");
-        stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Intelligence 15: suppress self-inflicted damage from configured Stinger-family projectiles");
+        stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Suppress self-inflicted damage from configured Stinger-family projectiles");
+        rocketJumpLesserPerk = b(GUNS, "rocketJumpLesserPerk", true, "Intelligence level 5 lesser perk. Replace the owner's native NTM rocket blast propulsion with TF2-style rocket jumping for the configured Stinger-family launchers");
+        rocketJumpLesserPerkLevel = i(GUNS, "rocketJumpLesserPerkLevel", 5, 5, 100, "Minimum Intelligence required for the TF2-style rocket-jumping lesser perk");
+        rocketJumpStrength = d(GUNS, "rocketJumpStrength", 1.2D, 0.1D, 5.0D, "Base velocity impulse applied to the rocket owner when the rocket explodes");
+        rocketJumpVerticalBias = d(GUNS, "rocketJumpVerticalBias", 0.65D, 0.0D, 2.0D, "Upward bias added to the blast direction for TF2-style rocket jumping");
         carbineHigherPerkCapacity = b(GUNS, "carbineHigherPerkCapacity", true, "Intelligence 15: increase the carbine magazine capacity");
         carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");
         carbineSemiAutoPerk = b(GUNS, "carbineSemiAutoPerk", true, "Intelligence 15: right-click fires one Carbine shot per press; left-click retains native fire behavior");
