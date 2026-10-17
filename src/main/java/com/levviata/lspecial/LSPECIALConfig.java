@@ -88,7 +88,7 @@ public final class LSPECIALConfig {
     public static double agilityFlyingSpeedMaximum = 0.25;
     public static boolean charismaNeutralMobs = true;
     public static int charismaNeutralLevel = 5;
-    public static String charismaNeutralEntityList = "*:*";
+    public static String charismaNeutralEntityList = "minecraft:zombie,minecraft:skeleton,minecraft:creeper,minecraft:spider,minecraft:cave_spider,minecraft:enderman,minecraft:witch,minecraft:slime,minecraft:ghast,minecraft:blaze,minecraft:magma_cube,minecraft:silverfish,minecraft:guardian,minecraft:shulker,minecraft:vex,minecraft:vindication_illager,minecraft:evocation_illager,minecraft:zombie_pigman,minecraft:ender_dragon,minecraft:wither";
     public static boolean charismaNeutralBlacklistMobs = true;
     public static String charismaNeutralBlacklistEntityList = "";
     public static boolean charismaNeutralBlacklistNonPositiveHealth = true;

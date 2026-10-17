@@ -17,11 +17,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Prevents configured hostile mobs from acquiring players as targets when that player has sufficient Charisma. */
-@Mixin(value = EntityLiving.class, remap = false)
+@Mixin(EntityLiving.class)
 public abstract class MixinEntityLivingNeutrality {
 
     @Inject(method = "setAttackTarget(Lnet/minecraft/entity/EntityLivingBase;)V",
-            at = @At("HEAD"), cancellable = true, remap = false)
+            at = @At("HEAD"), cancellable = true)
     private void lspecial$preventTargetingCharismaticPlayer(EntityLivingBase target, CallbackInfo ci) {
         if (!(target instanceof EntityPlayer) || !LSPECIALConfig.charisma
                 || !LSPECIALConfig.charismaNeutralMobs) {
@@ -38,6 +38,10 @@ public abstract class MixinEntityLivingNeutrality {
 
         int charisma = scoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
         if (charisma >= Math.max(5, LSPECIALConfig.charismaNeutralLevel)) {
+            // clear an existing target as well as preventing the mob from reacquiring the player
+            if (mob.getAttackTarget() == player) {
+                mob.setAttackTarget(null);
+            }
             ci.cancel();
         }
     }
