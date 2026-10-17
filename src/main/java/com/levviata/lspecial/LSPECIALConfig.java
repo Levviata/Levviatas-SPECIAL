@@ -143,17 +143,7 @@ public final class LSPECIALConfig {
     public static double doubleBarrelGrappleAcceleration = 0.32;
     public static double doubleBarrelGrappleAirStrafe = 0.16;
 
-    public static boolean phlogistinatorSustainedFirePerk = true;
-    public static int phlogistinatorSustainedFireLevel = 5;
-    public static int phlogistinatorFireDelayTicks = 1;
-    public static double phlogSecondaryRange = 5.0;
-    public static double phlogSecondaryWidth = 2.0;
 
-    public static boolean dragonsFuryDirectHitPerk = true;
-    public static int dragonsFuryDirectHitLevel = 15;
-    public static double dragonsFuryDirectHitMultiplier = 1.5;
-    public static int dragonsFuryBurstDelayTicks = 10;
-    public static double dragonsFuryBurstRange = 3.0;
 
     public static boolean tauSecondaryDamageBonus = true;
     public static double tauSecondaryDamageMultiplier = 6.0;
@@ -255,7 +245,6 @@ public final class LSPECIALConfig {
 
         config.load();
         config.getCategory(STATS).remove("strengthTooltipFormat");
-        config.getCategory(GUNS).remove("phlogSecondaryDelayTicks");
 
         // logging
         loggingInfo = b(LOGGING, "info", false, "Enable INFO-level logs from LSPECIAL");
@@ -383,16 +372,6 @@ public final class LSPECIALConfig {
         doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Maximum grapple travel speed");
         doubleBarrelGrappleAcceleration = d(GUNS, "doubleBarrelGrappleAcceleration", 0.32, 0.01, 1.0, "Grapple velocity acceleration; higher values reach the configured speed faster");
         doubleBarrelGrappleAirStrafe = d(GUNS, "doubleBarrelGrappleAirStrafe", 0.16, 0.0, 1.0, "Air-strafing control while grappling; set to 1 for very strong air control");
-        phlogistinatorSustainedFirePerk = b(GUNS, "phlogistinatorSustainedFirePerk", true, "Intelligence perk: use NTM native held-fire cadence for the Phlogistinator-style flamer");
-        phlogistinatorSustainedFireLevel = i(GUNS, "phlogistinatorSustainedFireLevel", 5, 1, 100, "Minimum Intelligence required for the Phlogistinator sustained-fire perk");
-        phlogistinatorFireDelayTicks = i(GUNS, "phlogistinatorFireDelayTicks", 1, 0, 1200, "Delay between Phlogistinator secondary-fire shots in ticks");
-        dragonsFuryDirectHitPerk = b(GUNS, "dragonsFuryDirectHitPerk", true, "Intelligence perk: increase direct-hit damage from the Topaz flamer's native flame projectiles");
-        dragonsFuryDirectHitLevel = i(GUNS, "dragonsFuryDirectHitLevel", 15, 1, 100, "Minimum Intelligence required for the Dragon's Fury direct-hit perk");
-        dragonsFuryDirectHitMultiplier = d(GUNS, "dragonsFuryDirectHitMultiplier", 1.5, 1.0, 20.0, "Direct-hit damage multiplier for Dragon's Fury secondary-fire projectiles");
-        dragonsFuryBurstDelayTicks = i(GUNS, "dragonsFuryBurstDelayTicks", 10, 1, 1200, "Delay between Dragon's Fury secondary-fire shots in ticks");
-        dragonsFuryBurstRange = d(GUNS, "dragonsFuryBurstRange", 3.0, 0.5, 64.0, "Maximum travel distance of Dragon's Fury secondary-fire projectiles in blocks");
-        phlogSecondaryRange = d(GUNS, "phlogSecondaryRange", 5.0, 0.5, 64.0, "Maximum travel distance of Phlogistinator secondary-fire projectiles in blocks");
-        phlogSecondaryWidth = d(GUNS, "phlogSecondaryWidth", 2.0, 0.25, 8.0, "Width of Phlogistinator secondary-fire projectiles in blocks");
         tauSecondaryDamageBonus = b(GUNS, "tauSecondaryDamageBonus", true, "Intelligence 5: multiply damage from the Tau's charged secondary projectile");
         tauSecondaryDamageMultiplier = d(GUNS, "tauSecondaryDamageMultiplier", 6.0, 1.0, 20.0, "Tau secondary-fire damage multiplier");
         lagSecondaryBurst = b(GUNS, "lagSecondaryBurst", true, "Intelligence 5: Lag secondary fire uses a three-projectile burst");

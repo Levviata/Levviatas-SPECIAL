@@ -83,8 +83,6 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 lines.add("Carbine: increases magazine capacity, enables semi-automatic secondary fire, and reduces recoil.");
                 lines.add("Minigun: accepts Capacitor ammo.");
                 lines.add("Double Barrel: complex grappling mechanics from Doom Eternal");
-                lines.add("Topaz (Dragon's Fury): secondary fire gains increased direct-hit damage and short-range projectiles.");
-                lines.add("Flamer (Phlogistinator): secondary projectiles gain a wider hitbox and short range.");
                 lines.add("Tau Cannon: charged secondary fire deals increased damage.");
                 lines.add("Fat Man: enables its configured higher-perk firing-delay adjustment.");
                 lines.add("Laser Pistol: applies its configured higher-perk firing-delay adjustment.");

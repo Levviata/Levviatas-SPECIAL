@@ -49,6 +49,13 @@ public abstract class MixinWeaponSecondary {
         String itemId = registryId(stack);
         if (itemId == null) return;
 
+        if ("hbm:gun_flamer_topaz".equals(itemId) && keybind.name().contains("PRIMARY")
+                && stack.hasTagCompound()
+                && stack.getTagCompound().getInteger("LSPECIALDragonFuryPressureLock") > 0) {
+            callback.cancel();
+            return;
+        }
+
         if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
                 && !player.isSneaking() && keybind.name().contains("SECONDARY") && pressed
                 && lspecial$hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
@@ -115,14 +122,21 @@ public abstract class MixinWeaponSecondary {
 
         if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
 
+        // Both flame weapons use TF2 airblast on secondary fire; Dragon's Fury shares its pressure lock.
+        if ("hbm:gun_flamer".equals(itemId) || "hbm:gun_flamer_topaz".equals(itemId)) {
+            if (pressed && !player.world.isRemote) {
+                TF2FlamethrowerHandler.airblast(player, stack);
+            }
+            callback.cancel();
+            return;
+        }
+
         boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && lspecial$hasIntelligence(player, 15);
-        boolean dragonSecondary = "hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryDirectHitPerk && lspecial$hasIntelligence(player, LSPECIALConfig.dragonsFuryDirectHitLevel);
-        boolean phlogSecondary = "hbm:gun_flamer".equals(itemId) && LSPECIALConfig.phlogistinatorSustainedFirePerk && lspecial$hasIntelligence(player, LSPECIALConfig.phlogistinatorSustainedFireLevel);
         boolean lagSecondary = "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(player, 5);
         boolean lincolnSecondary = "hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(player, 15);
         boolean tauSecondary = "hbm:gun_tau".equals(itemId) && LSPECIALConfig.tauSecondaryDamageBonus && lspecial$hasIntelligence(player, 5);
         boolean lightRevolverSecondary = "hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk && lspecial$hasIntelligence(player, 5);
-        if (carbineSecondary || dragonSecondary || phlogSecondary || lagSecondary || lincolnSecondary
+        if (carbineSecondary || lagSecondary || lincolnSecondary
                 || tauSecondary || lightRevolverSecondary) {
             // NTM reads the secondary state for the modified mode, but still needs primary input to run its firing pipeline.
             lspecial$setPrimaryForAllConfigs(stack, pressed);
@@ -493,8 +507,7 @@ public abstract class MixinWeaponSecondary {
     /** identifies weapons with implemented alternate fire that can be selected as a persistent mode. */
     @Unique
     private static boolean lspecial$supportsToggleMode(String itemId) {
-        return "hbm:gun_carbine".equals(itemId) || "hbm:gun_flamer_topaz".equals(itemId)
-                || "hbm:gun_flamer".equals(itemId) || "hbm:gun_lag".equals(itemId)
+        return "hbm:gun_carbine".equals(itemId) || "hbm:gun_lag".equals(itemId)
                 || "hbm:gun_henry_lincoln".equals(itemId) || "hbm:gun_tau".equals(itemId)
                 || "hbm:gun_light_revolver".equals(itemId);
     }

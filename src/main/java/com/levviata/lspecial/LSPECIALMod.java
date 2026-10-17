@@ -89,6 +89,8 @@ public class LSPECIALMod {
         NETWORK.registerMessage(GrappleCameraPacket.Handler.class, GrappleCameraPacket.class, 2, Side.CLIENT);
         NETWORK.registerMessage(GrappleCameraPacket.Handler.class, GrappleCameraPacket.class, 3, Side.SERVER);
         MinecraftForge.EVENT_BUS.register(new GrappleController());
+        MinecraftForge.EVENT_BUS.register(new RocketJumpPhysicsHandler());
+        MinecraftForge.EVENT_BUS.register(new TF2FlamethrowerHandler());
 
         proxy.preInit(event);
     }

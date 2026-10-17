@@ -4,15 +4,12 @@ import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactoryAccelerator;
 import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
-
 import com.levviata.lspecial.LSPECIALConfig;
-import com.levviata.lspecial.SPECIALScoreboard;
-
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.math.RayTraceResult;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -20,138 +17,99 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** applies flame range and width changes and direct-hit bonuses to NTM projectiles. */
+/**
+ * Ports the defining Dragon's Fury hit rules onto NTM's native fireball projectile:
+ * 3x impact damage against an already-burning target, brief ignition on hit, and
+ * faster pressure recovery after a successful hit. NTM still owns collision and rendering.
+ */
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)
 public abstract class MixinDragonFuryProjectile {
-
     @Shadow public BulletConfig config;
     @Shadow public float damage;
 
     @Unique private float lspecial$damageBeforeImpact;
     @Unique private boolean lspecial$boostedImpactDamage;
-    @Unique private boolean lspecial$rangeInitialized;
-    @Unique private double lspecial$startX;
-    @Unique private double lspecial$startY;
-    @Unique private double lspecial$startZ;
-    @Unique private int lspecial$projectileMode;
+    @Unique private EntityLivingBase lspecial$igniteAfterImpact;
 
-    /** limits the Dragon's Fury flame and makes the Phlogistinator flame broad and short-ranged. */
-    @Inject(method = "onUpdate", at = @At("HEAD"), cancellable = true, remap = false)
-    private void lspecial$applyFlameProjectileShape(CallbackInfo callback) {
+    @Inject(method = "onUpdate", at = @At("HEAD"), remap = false)
+    private void lspecial$renderDragonFuryTrail(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (!lspecial$rangeInitialized) {
-            lspecial$rangeInitialized = true;
-            lspecial$startX = projectile.posX;
-            lspecial$startY = projectile.posY;
-            lspecial$startZ = projectile.posZ;
-            EntityLivingBase shooter = projectile.getThrower();
-            String weaponId = "";
-            NBTTagCompound data = projectile.getEntityData();
-            if (data.hasKey("LSPECIALShooterWeapon")) {
-                weaponId = data.getString("LSPECIALShooterWeapon");
-            }
-            if (weaponId.isEmpty() && shooter instanceof EntityPlayer && !((EntityPlayer) shooter).getHeldItemMainhand().isEmpty()
-                    && ((EntityPlayer) shooter).getHeldItemMainhand().getItem().getRegistryName() != null) {
-                weaponId = ((EntityPlayer) shooter).getHeldItemMainhand().getItem().getRegistryName().toString();
-            }
-
-            boolean secondaryFire = data.getBoolean("LSPECIALShooterSecondary");
-            if (secondaryFire && "hbm:gun_flamer_topaz".equals(weaponId) && LSPECIALConfig.dragonsFuryDirectHitPerk
-                    && lspecial$hasIntelligence(LSPECIALConfig.dragonsFuryDirectHitLevel)
-                    && lspecial$isTopazFlameConfig(config)) {
-                lspecial$projectileMode = 1;
-            } else if (secondaryFire && "hbm:gun_flamer".equals(weaponId) && LSPECIALConfig.phlogistinatorSustainedFirePerk
-                    && lspecial$hasIntelligence(LSPECIALConfig.phlogistinatorSustainedFireLevel)
-                    && lspecial$isStandardFlameConfig(config)) {
-                lspecial$projectileMode = 2;
-                ((MixinEntityInvoker) (Object) projectile).lspecial$invokeSetSize((float) LSPECIALConfig.phlogSecondaryWidth, projectile.height);
-            }
-        }
-
-        if (lspecial$projectileMode == 0) {
-            return;
-        }
-
-        double range = lspecial$projectileMode == 1 ? LSPECIALConfig.dragonsFuryBurstRange : LSPECIALConfig.phlogSecondaryRange;
-        double dx = projectile.posX - lspecial$startX;
-        double dy = projectile.posY - lspecial$startY;
-        double dz = projectile.posZ - lspecial$startZ;
-        if (dx * dx + dy * dy + dz * dz > range * range) {
-            projectile.setDead();
-            callback.cancel();
+        if (!projectile.world.isRemote
+                || !"hbm:gun_flamer_topaz".equals(projectile.getEntityData().getString("LSPECIALShooterWeapon"))
+                || !lspecial$isDragonFuryFlame(config)) return;
+        for (int i = 0; i < 3; i++) {
+            double spreadX = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
+            double spreadY = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
+            double spreadZ = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
+            projectile.world.spawnParticle(EnumParticleTypes.FLAME,
+                    projectile.posX, projectile.posY, projectile.posZ,
+                    -projectile.motionX * 0.025D + spreadX,
+                    -projectile.motionY * 0.025D + spreadY,
+                    -projectile.motionZ * 0.025D + spreadZ);
         }
     }
 
-    /** boosts only direct entity impacts, leaving block impacts and NTM's projectile callbacks intact. */
     @Inject(method = "onImpact", at = @At("HEAD"), remap = false)
-    private void lspecial$boostDragonFuryDirectHit(RayTraceResult mop, CallbackInfo callback) {
+    private void lspecial$applyDragonFuryHitRules(RayTraceResult hit, CallbackInfo callback) {
         lspecial$boostedImpactDamage = false;
-        if (mop == null || mop.typeOfHit != RayTraceResult.Type.ENTITY || mop.entityHit == null
-                || ((EntityBulletBaseMK4) (Object) this).world.isRemote) {
-            return;
-        }
-
+        lspecial$igniteAfterImpact = null;
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        EntityLivingBase shooter = projectile.getThrower();
-        String weaponId = projectile.getEntityData().getString("LSPECIALShooterWeapon");
-        if (weaponId.isEmpty() && shooter instanceof EntityPlayer
-                && !((EntityPlayer) shooter).getHeldItemMainhand().isEmpty()
-                && ((EntityPlayer) shooter).getHeldItemMainhand().getItem().getRegistryName() != null) {
-            weaponId = ((EntityPlayer) shooter).getHeldItemMainhand().getItem().getRegistryName().toString();
-        }
+        if (projectile.world.isRemote || hit == null || hit.typeOfHit != RayTraceResult.Type.ENTITY
+                || !(hit.entityHit instanceof EntityLivingBase)) return;
 
-        double multiplier = 1.0D;
-        if (projectile.getEntityData().getBoolean("LSPECIALShooterSecondary")
-                && "hbm:gun_flamer_topaz".equals(weaponId) && LSPECIALConfig.dragonsFuryDirectHitPerk
-                && lspecial$isTopazFlameConfig(config)
-                && lspecial$hasIntelligence(LSPECIALConfig.dragonsFuryDirectHitLevel)) {
-            multiplier = LSPECIALConfig.dragonsFuryDirectHitMultiplier;
-        } else if (projectile.getEntityData().getBoolean("LSPECIALShooterSecondary")
-                && "hbm:gun_tau".equals(weaponId) && LSPECIALConfig.tauSecondaryDamageBonus
-                && config == XFactoryAccelerator.tau_uranium_charge && lspecial$hasIntelligence(5)) {
-            multiplier = LSPECIALConfig.tauSecondaryDamageMultiplier;
-        }
-        if (multiplier <= 1.0D){
+        EntityLivingBase target = (EntityLivingBase) hit.entityHit;
+        String weaponId = projectile.getEntityData().getString("LSPECIALShooterWeapon");
+        if ("hbm:gun_flamer_topaz".equals(weaponId) && lspecial$isDragonFuryFlame(config)) {
+            lspecial$igniteAfterImpact = target;
+            if (target.isBurning()) {
+                lspecial$damageBeforeImpact = damage;
+                damage = damage * 3.0F;
+                lspecial$boostedImpactDamage = true;
+            }
+
+            EntityLivingBase shooter = projectile.getThrower();
+            if (shooter instanceof EntityPlayer) {
+                EntityPlayer player = (EntityPlayer) shooter;
+                ItemStack held = player.getHeldItemMainhand();
+                if (!held.isEmpty() && held.getItem().getRegistryName() != null
+                        && "hbm:gun_flamer_topaz".equals(held.getItem().getRegistryName().toString())) {
+                    net.minecraft.nbt.NBTTagCompound tag = held.getTagCompound();
+                    if (tag == null) {
+                        tag = new net.minecraft.nbt.NBTTagCompound();
+                        held.setTagCompound(tag);
+                    }
+                    tag.setBoolean("LSPECIALDragonFuryNextShotFast", true);
+                }
+            }
             return;
         }
 
-        lspecial$damageBeforeImpact = damage;
-        damage = (float) (damage * multiplier);
-        lspecial$boostedImpactDamage = true;
+        // Preserve the unrelated LSPECIAL Tau charged-shot bonus.
+        if ("hbm:gun_tau".equals(weaponId) && projectile.getEntityData().getBoolean("LSPECIALShooterSecondary")
+                && LSPECIALConfig.tauSecondaryDamageBonus && config == XFactoryAccelerator.tau_uranium_charge) {
+            lspecial$damageBeforeImpact = damage;
+            damage = (float) (damage * LSPECIALConfig.tauSecondaryDamageMultiplier);
+            lspecial$boostedImpactDamage = true;
+        }
     }
 
-    /** restores the projectile's base damage after NTM finishes the impact callback. */
     @Inject(method = "onImpact", at = @At("RETURN"), remap = false)
-    private void lspecial$restoreDragonFuryDamage(RayTraceResult mop, CallbackInfo callback) {
+    private void lspecial$finishDragonFuryHitRules(RayTraceResult hit, CallbackInfo callback) {
         if (lspecial$boostedImpactDamage) {
             damage = lspecial$damageBeforeImpact;
             lspecial$boostedImpactDamage = false;
         }
+        if (lspecial$igniteAfterImpact != null && !lspecial$igniteAfterImpact.isDead) {
+            lspecial$igniteAfterImpact.setFire(3);
+            lspecial$igniteAfterImpact = null;
+        }
     }
 
-    /** checks the Topaz flamer's exact native bullet configurations instead of guessing from projectile names. */
     @Unique
-    private static boolean lspecial$isTopazFlameConfig(BulletConfig bulletConfig) {
+    private static boolean lspecial$isDragonFuryFlame(BulletConfig bulletConfig) {
         return bulletConfig != null && (bulletConfig == XFactoryFlamer.flame_topaz_diesel
                 || bulletConfig == XFactoryFlamer.flame_topaz_gas
                 || bulletConfig == XFactoryFlamer.flame_topaz_napalm
                 || bulletConfig == XFactoryFlamer.flame_topaz_balefire);
-    }
-
-    /** checks the active player's Intelligence perk before changing projectile behavior. */
-    @Unique
-    private boolean lspecial$hasIntelligence(int level) {
-        EntityLivingBase shooter = ((EntityBulletBaseMK4) (Object) this).getThrower();
-        return shooter instanceof EntityPlayer && LSPECIALConfig.intelligence
-                && (level >= 15 ? LSPECIALConfig.revolverPerk : LSPECIALConfig.pepperboxPerk)
-                && SPECIALScoreboard.inst != null && SPECIALScoreboard.inst.getIntelligenceScore() != null
-                && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= level;
-    }
-
-    @Unique
-    private static boolean lspecial$isStandardFlameConfig(BulletConfig bulletConfig) {
-        return bulletConfig != null && (bulletConfig == XFactoryFlamer.flame_diesel
-                || bulletConfig == XFactoryFlamer.flame_gas || bulletConfig == XFactoryFlamer.flame_napalm
-                || bulletConfig == XFactoryFlamer.flame_balefire);
     }
 }

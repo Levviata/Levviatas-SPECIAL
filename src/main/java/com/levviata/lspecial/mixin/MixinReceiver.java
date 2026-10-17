@@ -72,10 +72,11 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
             delay = LSPECIALConfig.fatmanHigherPerkDelayTicks;
         } else if ("hbm:gun_laser_pistol".equals(itemId) && LSPECIALConfig.laserPistolDelayBalance && LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && intelligence >= 15) {
             delay = LSPECIALConfig.laserPistolDelayTicks;
-        } else if ("hbm:gun_flamer_topaz".equals(itemId) && secondaryHeld && LSPECIALConfig.dragonsFuryDirectHitPerk && lspecial$hasIntelligence(LSPECIALConfig.dragonsFuryDirectHitLevel)) {
-            delay = LSPECIALConfig.dragonsFuryBurstDelayTicks;
-        } else if ("hbm:gun_flamer".equals(itemId) && secondaryHeld && LSPECIALConfig.phlogistinatorSustainedFirePerk && lspecial$hasIntelligence(LSPECIALConfig.phlogistinatorSustainedFireLevel)) {
-            delay = LSPECIALConfig.phlogistinatorFireDelayTicks;
+        } else if ("hbm:gun_flamer_topaz".equals(itemId)) {
+            net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+            boolean hitBonus = tag != null && tag.getBoolean("LSPECIALDragonFuryNextShotFast");
+            delay = hitBonus ? 11 : 16; // 0.8 s base pressure cycle; 50% faster repressurization after a hit.
+            if (hitBonus) tag.setBoolean("LSPECIALDragonFuryNextShotFast", false);
         } else if (secondaryHeld && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
             delay = LSPECIALConfig.lagSecondaryBurstDelay;
         } else if (secondaryHeld && "hbm:gun_henry_lincoln".equals(itemId)
@@ -164,18 +165,12 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         return "hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId);
     }
 
-    /** selects the attached custom sound for a supported secondary-fire flame mode. */
+    /** selects the custom projectile sound for the Dragon's Fury fireball. */
     @Inject(method = "getFireSound", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$useSecondaryFlamerSound(ItemStack stack, CallbackInfoReturnable<SoundEvent> callback) {
-        if (!lspecial$isSecondaryHeld(stack)) {
-            return;
-        }
-
         String itemId = lspecial$registryId(stack);
-        if ("hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryDirectHitPerk && lspecial$hasIntelligence(LSPECIALConfig.dragonsFuryDirectHitLevel)) {
+        if ("hbm:gun_flamer_topaz".equals(itemId)) {
             callback.setReturnValue(LSPECIALSounds.DRAGONS_FURY_SHOOT);
-        } else if ("hbm:gun_flamer".equals(itemId) && lspecial$isSecondaryHeld(stack) && LSPECIALConfig.phlogistinatorSustainedFirePerk && lspecial$hasIntelligence(LSPECIALConfig.phlogistinatorSustainedFireLevel)) {
-            callback.setReturnValue(LSPECIALSounds.PHLOG_IGNITE);
         }
     }
 
