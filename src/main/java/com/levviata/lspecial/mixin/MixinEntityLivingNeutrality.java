@@ -32,6 +32,12 @@ public abstract class MixinEntityLivingNeutrality {
         if (!lspecial$isConfiguredNeutralMob(mob)) return;
 
         EntityPlayer player = (EntityPlayer) target;
+
+        // allow retaliation when the player has actually hurt this mob
+        if (mob.getRevengeTarget() == player) {
+            return;
+        }
+
         Scoreboard scoreboard = player.getWorldScoreboard();
         ScoreObjective objective = scoreboard.getObjective("Charisma");
         if (objective == null || !scoreboard.entityHasObjective(player.getName(), objective)) return;
