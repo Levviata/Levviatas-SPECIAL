@@ -2,6 +2,7 @@ package com.levviata.lspecial.mixin;
 
 import com.hbm.entity.projectile.EntityBulletBaseNT;
 import com.levviata.lspecial.LSPECIALConfig;
+import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.RocketJumpHandler;
 import com.levviata.lspecial.StingerDamageHandler;
 import net.minecraft.entity.EntityLivingBase;
@@ -45,12 +46,24 @@ public abstract class MixinStingerProjectile {
 
     @Unique
     private void lspecial$recordLauncher(EntityLivingBase shooter) {
-        if (!(shooter instanceof EntityPlayer)) return;
-        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) shooter);
-        if (weapon == null) return;
         EntityBulletBaseNT projectile = (EntityBulletBaseNT) (Object) this;
+        if (!(shooter instanceof EntityPlayer)) {
+            LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT constructor shooter is not a player: projectile={} shooter={}",
+                    projectile.getEntityId(), shooter == null ? "null" : shooter.getClass().getName());
+            return;
+        }
+        EntityPlayer player = (EntityPlayer) shooter;
+        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
+        if (weapon == null) {
+            LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT launcher NOT recorded: projectile={} player={} configId={} heldMain={} heldOff={}",
+                    projectile.getEntityId(), player.getName(), projectile.getEntityData().getInteger("configId"),
+                    player.getHeldItemMainhand(), player.getHeldItemOffhand());
+            return;
+        }
         projectile.getEntityData().setUniqueId("LSPECIALShooterUUID", shooter.getUniqueID());
         projectile.getEntityData().setString("LSPECIALShooterWeapon", weapon);
+        LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT launcher RECORDED projectile={} player={} weapon={} class={}",
+                projectile.getEntityId(), player.getName(), weapon, projectile.getClass().getName());
     }
 
     /** tracks the launcher's blast while NTM applies its impact behavior and explosion knockback. */
@@ -58,13 +71,29 @@ public abstract class MixinStingerProjectile {
     private void lspecial$beginRocketJumpImpact(int x, int y, int z, int side, CallbackInfo callback) {
         EntityBulletBaseNT projectile = (EntityBulletBaseNT) (Object) this;
         EntityLivingBase shooter = projectile.getThrower();
-        if (projectile.world.isRemote || !(shooter instanceof EntityPlayer)) return;
+        if (projectile.world.isRemote) return;
+        if (!(shooter instanceof EntityPlayer)) {
+            LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT block impact ignored: projectile={} class={} shooter={} recordedWeapon={}",
+                    projectile.getEntityId(), projectile.getClass().getName(),
+                    shooter == null ? "null" : shooter.getClass().getName(),
+                    projectile.getEntityData().getString("LSPECIALShooterWeapon"));
+            return;
+        }
 
         EntityPlayer player = (EntityPlayer) shooter;
         NBTTagCompound data = projectile.getEntityData();
         String weapon = data.hasKey("LSPECIALShooterWeapon") ? data.getString("LSPECIALShooterWeapon") : null;
-        if (!StingerDamageHandler.isStingerFamilyWeapon(weapon)) return;
+        if (!StingerDamageHandler.isStingerFamilyWeapon(weapon)) {
+            LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT block impact has unrecognized/missing launcher: projectile={} class={} player={} weapon={} thrower={}",
+                    projectile.getEntityId(), projectile.getClass().getName(), player.getName(), weapon, shooter.getClass().getName());
+            return;
+        }
 
+        LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT block impact TRACKED projectile={} class={} player={} weapon={} pos=({}, {}, {}) motion=({}, {}, {}) selfProtection={} perkActive={}",
+                projectile.getEntityId(), projectile.getClass().getName(), player.getName(), weapon,
+                projectile.posX, projectile.posY, projectile.posZ,
+                projectile.motionX, projectile.motionY, projectile.motionZ,
+                LSPECIALConfig.stingerSelfDamageProtection, RocketJumpHandler.isPerkActive(player));
         lspecial$rocketJumpOwner = player;
         lspecial$previousMotionX = player.motionX;
         lspecial$previousMotionY = player.motionY;
@@ -87,16 +116,31 @@ public abstract class MixinStingerProjectile {
         EntityPlayer player = lspecial$rocketJumpOwner;
         if (player == null) return;
 
+        LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT block impact RETURN projectile={} player={} weapon={} playerMotionBeforeRestore=({}, {}, {}) explosionPos=({}, {}, {})",
+                ((EntityBulletBaseNT) (Object) this).getEntityId(), player.getName(),
+                ((EntityBulletBaseNT) (Object) this).getEntityData().getString("LSPECIALShooterWeapon"),
+                player.motionX, player.motionY, player.motionZ,
+                lspecial$explosionX, lspecial$explosionY, lspecial$explosionZ);
         if (LSPECIALConfig.stingerSelfDamageProtection) {
             StingerDamageHandler.endRocketExplosion();
         }
-        if (RocketJumpHandler.isPerkActive(player)) {
+        boolean perkActive = RocketJumpHandler.isPerkActive(player);
+        if (perkActive) {
+            LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT applying rocket jump projectile={} player={} preMotion=({}, {}, {}) fallbackProjectileMotion=({}, {}, {})",
+                    ((EntityBulletBaseNT) (Object) this).getEntityId(), player.getName(),
+                    lspecial$previousMotionX, lspecial$previousMotionY, lspecial$previousMotionZ,
+                    lspecial$fallbackMotionX, lspecial$fallbackMotionY, lspecial$fallbackMotionZ);
             RocketJumpHandler.applyBlastJump(player,
                     lspecial$explosionX, lspecial$explosionY, lspecial$explosionZ,
                     lspecial$previousMotionX, lspecial$previousMotionY, lspecial$previousMotionZ,
                     lspecial$fallbackMotionX, lspecial$fallbackMotionY, lspecial$fallbackMotionZ,
                     7.5D);
+        } else {
+            LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT rocket jump skipped: perk inactive for player={} projectile={}",
+                    player.getName(), ((EntityBulletBaseNT) (Object) this).getEntityId());
         }
+        LSPECIALMod.info("[RocketDebug] EntityBulletBaseNT post-impact player={} motion=({}, {}, {})", player.getName(),
+                player.motionX, player.motionY, player.motionZ);
         lspecial$rocketJumpOwner = null;
     }
 

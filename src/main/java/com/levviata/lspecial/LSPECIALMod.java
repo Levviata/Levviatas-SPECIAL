@@ -67,6 +67,10 @@ public class LSPECIALMod {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LSPECIALConfig.init(event.getSuggestedConfigurationFile());
+        info("[RocketDebug] rocket diagnostics initialized: infoLogging={} selfDamageProtection={} rocketJumpPerk={} intelligenceEnabled={} requiredIntelligence={}",
+                LSPECIALConfig.loggingInfo, LSPECIALConfig.stingerSelfDamageProtection,
+                LSPECIALConfig.rocketJumpLesserPerk, LSPECIALConfig.intelligence,
+                LSPECIALConfig.rocketJumpLesserPerkLevel);
         EntityRegistry.registerModEntity(new ResourceLocation(Tags.MOD_ID, "grapple_chain"),
                 EntityGrappleChain.class, "grapple_chain", 1, this,  64, 1, true);
         MinecraftForge.EVENT_BUS.register(new GrappleChainSpawnHandler());

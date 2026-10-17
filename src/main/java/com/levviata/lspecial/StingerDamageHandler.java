@@ -27,11 +27,21 @@ public final class StingerDamageHandler {
         if (owner instanceof EntityPlayer && isStingerFamilyWeapon(weaponId)) {
             ROCKET_EXPLOSION_OWNER.set((EntityPlayer) owner);
             ROCKET_EXPLOSION_WEAPON.set(weaponId);
+            LSPECIALMod.info("[RocketDebug] explosion context BEGIN owner={} weapon={}",
+                    owner.getName(), weaponId);
+        } else {
+            LSPECIALMod.info("[RocketDebug] explosion context NOT started ownerType={} weapon={} recognized={}",
+                    owner == null ? "null" : owner.getClass().getName(), weaponId,
+                    isStingerFamilyWeapon(weaponId));
         }
     }
 
     /** clears the temporary explosion context after NTM has applied explosion damage and knockback. */
     public static void endRocketExplosion() {
+        EntityPlayer owner = ROCKET_EXPLOSION_OWNER.get();
+        String weapon = ROCKET_EXPLOSION_WEAPON.get();
+        LSPECIALMod.info("[RocketDebug] explosion context END owner={} weapon={}",
+                owner == null ? "null" : owner.getName(), weapon);
         ROCKET_EXPLOSION_OWNER.remove();
         ROCKET_EXPLOSION_WEAPON.remove();
     }
@@ -81,16 +91,35 @@ public final class StingerDamageHandler {
         Entity immediate = source.getImmediateSource();
         Entity trueSource = source.getTrueSource();
 
+        boolean supportedImmediate = isSupportedProjectile(immediate);
+        Entity immediateOwner = supportedImmediate ? getProjectileOwner(immediate) : null;
+        boolean recordedLauncher = supportedImmediate && isLauncherRecorded(immediate);
+        boolean launcherHeld = isStingerFamilyHeld(player);
+
+        // Log only rocket-like candidates, not every unrelated hit the player takes.
+        if (supportedImmediate || source.isExplosion() || isTrackedRocketExplosion(player)) {
+            LSPECIALMod.info("[RocketDebug] LivingAttack player={} damageType={} explosion={} immediate={} trueSource={} immediateOwner={} recordedLauncher={} heldLauncher={} trackedContext={}",
+                    player.getName(), source.getDamageType(), source.isExplosion(),
+                    immediate == null ? "null" : immediate.getClass().getName() + "#" + immediate.getEntityId(),
+                    trueSource == null ? "null" : trueSource.getClass().getName() + "#" + trueSource.getEntityId(),
+                    immediateOwner == null ? "null" : immediateOwner.getClass().getName() + "#" + immediateOwner.getEntityId(),
+                    recordedLauncher, launcherHeld, isTrackedRocketExplosion(player));
+        }
+
         // Direct projectile hits can identify the projectile itself as the immediate source.
-        if (isSupportedProjectile(immediate) && getProjectileOwner(immediate) == player
-                && (isLauncherRecorded(immediate) || isStingerFamilyHeld(player))) {
+        if (supportedImmediate && immediateOwner == player && (recordedLauncher || launcherHeld)) {
+            LSPECIALMod.info("[RocketDebug] CANCELLING direct self-damage player={} projectile={} recordedLauncher={} heldLauncher={}",
+                    player.getName(), immediate.getClass().getName(), recordedLauncher, launcherHeld);
             event.setCanceled(true);
             return;
         }
 
-        // EntityRocket passes its shooter to World.createExplosion, losing the projectile as the damage source.
-        if (isTrackedRocketExplosion(player)
-                || (source.isExplosion() && trueSource == player && isStingerFamilyHeld(player))) {
+        // EntityRocket may attribute explosion damage directly to the firing player.
+        boolean trackedExplosion = isTrackedRocketExplosion(player);
+        boolean heldLauncherExplosion = source.isExplosion() && trueSource == player && launcherHeld;
+        if (trackedExplosion || heldLauncherExplosion) {
+            LSPECIALMod.info("[RocketDebug] CANCELLING explosion self-damage player={} trackedContext={} heldLauncherFallback={}",
+                    player.getName(), trackedExplosion, heldLauncherExplosion);
             event.setCanceled(true);
         }
     }

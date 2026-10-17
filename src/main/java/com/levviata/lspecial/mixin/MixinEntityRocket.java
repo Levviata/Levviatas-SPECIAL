@@ -3,6 +3,7 @@ package com.levviata.lspecial.mixin;
 import com.hbm.entity.projectile.EntityRocket;
 import com.hbm.explosion.ExplosionLarge;
 import com.levviata.lspecial.LSPECIALConfig;
+import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.RocketJumpHandler;
 import com.levviata.lspecial.StingerDamageHandler;
 import net.minecraft.entity.Entity;
@@ -39,12 +40,23 @@ public abstract class MixinEntityRocket {
 
     @Unique
     private void lspecial$recordLauncher(EntityLivingBase shooter) {
-        if (!(shooter instanceof EntityPlayer)) return;
-        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) shooter);
-        if (weapon == null) return;
         EntityRocket rocket = (EntityRocket) (Object) this;
+        if (!(shooter instanceof EntityPlayer)) {
+            LSPECIALMod.info("[RocketDebug] EntityRocket constructor shooter is not a player: rocket={} shooter={}",
+                    rocket.getEntityId(), shooter == null ? "null" : shooter.getClass().getName());
+            return;
+        }
+        EntityPlayer player = (EntityPlayer) shooter;
+        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
+        if (weapon == null) {
+            LSPECIALMod.info("[RocketDebug] EntityRocket launcher NOT recorded: rocket={} player={} heldMain={} heldOff={}",
+                    rocket.getEntityId(), player.getName(), player.getHeldItemMainhand(), player.getHeldItemOffhand());
+            return;
+        }
         rocket.getEntityData().setUniqueId("LSPECIALShooterUUID", shooter.getUniqueID());
         rocket.getEntityData().setString("LSPECIALShooterWeapon", weapon);
+        LSPECIALMod.info("[RocketDebug] EntityRocket launcher RECORDED rocket={} player={} weapon={} ctor={}",
+                rocket.getEntityId(), player.getName(), weapon, rocket.getClass().getName());
     }
 
     @Redirect(method = "onUpdate()V",
@@ -61,6 +73,10 @@ public abstract class MixinEntityRocket {
                 && shooter instanceof EntityPlayer;
         EntityPlayer player = familyRocket ? (EntityPlayer) shooter : null;
         boolean rocketJump = RocketJumpHandler.isPerkActive(player);
+        LSPECIALMod.info("[RocketDebug] EntityRocket explosion redirect rocket={} shooter={} weapon={} familyRocket={} selfDamageProtection={} rocketJumpPerk={} source={} pos=({}, {}, {}) size={} explosionSize={}",
+                rocket.getEntityId(), shooter == null ? "null" : shooter.getName(), weapon, familyRocket,
+                LSPECIALConfig.stingerSelfDamageProtection, rocketJump, 
+                explosionSource == null ? "null" : explosionSource.getClass().getName(), x, y, z, size, rocket.explosionSize);
 
         double previousMotionX = player == null ? 0.0D : player.motionX;
         double previousMotionY = player == null ? 0.0D : player.motionY;
@@ -77,8 +93,15 @@ public abstract class MixinEntityRocket {
             }
         }
 
-        if (!rocketJump) return;
+        if (!rocketJump) {
+            LSPECIALMod.info("[RocketDebug] EntityRocket rocket jump skipped rocket={} player={} (familyRocket={}, perkActive={})",
+                    rocket.getEntityId(), player == null ? "null" : player.getName(), familyRocket, rocketJump);
+            return;
+        }
 
+        LSPECIALMod.info("[RocketDebug] EntityRocket applying rocket jump rocket={} player={} previousMotion=({}, {}, {}) postExplosionMotion=({}, {}, {})",
+                rocket.getEntityId(), player.getName(), previousMotionX, previousMotionY, previousMotionZ,
+                player.motionX, player.motionY, player.motionZ);
         RocketJumpHandler.applyBlastJump(player, x, y, z,
                 previousMotionX, previousMotionY, previousMotionZ,
                 rocket.motionX, rocket.motionY, rocket.motionZ,
