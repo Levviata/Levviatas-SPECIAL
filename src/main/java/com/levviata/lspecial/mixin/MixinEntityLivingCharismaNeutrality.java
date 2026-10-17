@@ -13,6 +13,7 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.nbt.NBTTagCompound;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -20,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EntityLiving.class)
 public abstract class MixinEntityLivingCharismaNeutrality {
 
+    @Unique
     private static final String LSPECIAL_RETALIATION_TARGET = "LSPECIALRetaliationTarget";
 
     @Inject(method = "setAttackTarget(Lnet/minecraft/entity/EntityLivingBase;)V",
@@ -72,6 +74,7 @@ public abstract class MixinEntityLivingCharismaNeutrality {
         ci.cancel();
     }
 
+    @Unique
     private static int lspecial$getCharisma(EntityPlayer player) {
         Scoreboard scoreboard = player.getWorldScoreboard();
         ScoreObjective objective = scoreboard.getObjective("Charisma");
@@ -79,6 +82,7 @@ public abstract class MixinEntityLivingCharismaNeutrality {
         return scoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
     }
 
+    @Unique
     private static boolean lspecial$isRetaliatingAgainst(EntityLiving mob, EntityPlayer player, String mode) {
         if ("PERSISTENT".equals(mode) || "DYNAMIC".equals(mode)) {
             NBTTagCompound data = mob.getEntityData();
@@ -90,12 +94,14 @@ public abstract class MixinEntityLivingCharismaNeutrality {
         return mob.getRevengeTarget() == player;
     }
 
+    @Unique
     private static String lspecial$getStoredRetaliationTarget(EntityLiving mob) {
         NBTTagCompound data = mob.getEntityData();
         return data.hasUniqueId(LSPECIAL_RETALIATION_TARGET)
                 ? data.getUniqueId(LSPECIAL_RETALIATION_TARGET).toString() : "<none>";
     }
 
+    @Unique
     private static boolean lspecial$isConfiguredNeutralMob(EntityLiving mob, String registryId) {
         if (registryId == null || "<unregistered>".equals(registryId)
                 || LSPECIALConfig.charismaNeutralEntityList == null) return false;
@@ -122,6 +128,7 @@ public abstract class MixinEntityLivingCharismaNeutrality {
         return lspecial$matchesAnyPattern(LSPECIALConfig.charismaNeutralEntityList, registryId);
     }
 
+    @Unique
     private static boolean lspecial$matchesAnyPattern(String configuredPatterns, String registryId) {
         if (configuredPatterns == null || configuredPatterns.trim().isEmpty()) return false;
         for (String raw : configuredPatterns.split(",")) {
@@ -133,6 +140,7 @@ public abstract class MixinEntityLivingCharismaNeutrality {
         return false;
     }
 
+    @Unique
     private static boolean lspecial$matchesPattern(String pattern, String value) {
         StringBuilder regex = new StringBuilder("^");
         for (int i = 0; i < pattern.length(); i++) {

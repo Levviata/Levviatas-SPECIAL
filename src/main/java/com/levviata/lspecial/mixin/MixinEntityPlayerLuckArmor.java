@@ -8,6 +8,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.NonNullList;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
@@ -81,14 +82,16 @@ public abstract class MixinEntityPlayerLuckArmor {
         stack.damageItem(amount, entity);
     }
 
+    @Unique
     private static long lspecial$refundPoweredArmorEnergy(ArmorFSBPowered poweredArmor, ItemStack stack,
-                                                           long chargeBefore) {
+                                                          long chargeBefore) {
         long chargeAfterDamage = poweredArmor.getCharge(stack);
         long energySpent = Math.max(0L, chargeBefore - chargeAfterDamage);
         if (energySpent > 0L) poweredArmor.chargeBattery(stack, energySpent);
         return energySpent;
     }
 
+    @Unique
     private static boolean lspecial$unequipArmor(EntityPlayer player, ItemStack stack) {
         NonNullList<ItemStack> armorInventory = player.inventory.armorInventory;
         for (int slot = 0; slot < armorInventory.size(); slot++) {

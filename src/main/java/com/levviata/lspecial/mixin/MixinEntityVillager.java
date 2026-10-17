@@ -75,7 +75,7 @@ public abstract class MixinEntityVillager {
     private static void lspecial$discountCost(ItemStack cost, int charisma) {
         if (cost == null || cost.isEmpty() || cost.getCount() <= 1) return;
 
-        Map<String, Double> variables = new HashMap<String, Double>();
+        Map<String, Double> variables = new HashMap<>();
         variables.put("charisma", (double) charisma);
         double fraction = LSPECIALExpression.eval(
                 LSPECIALConfig.charismaVillagerDiscountFormula, variables, 0.0D);

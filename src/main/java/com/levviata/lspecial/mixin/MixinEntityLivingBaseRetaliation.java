@@ -12,6 +12,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -21,7 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EntityLivingBase.class)
 public abstract class MixinEntityLivingBaseRetaliation {
 
+    @Unique
     private static final String LSPECIAL_RETALIATION_TARGET = "LSPECIALRetaliationTarget";
+    @Unique
     private static final String LSPECIAL_RETALIATION_DAMAGE = "LSPECIALRetaliationDamage";
 
     @Inject(method = "setRevengeTarget(Lnet/minecraft/entity/EntityLivingBase;)V", at = @At("HEAD"))
@@ -110,11 +113,13 @@ public abstract class MixinEntityLivingBaseRetaliation {
         }
     }
 
+    @Unique
     private static String lspecial$retaliationEntityId(EntityLiving mob) {
         ResourceLocation key = EntityList.getKey(mob);
         return key == null ? "<unregistered>" : key.toString();
     }
 
+    @Unique
     private static boolean lspecial$retaliationIsConfiguredNeutralMob(EntityLiving mob) {
         ResourceLocation key = EntityList.getKey(mob);
         if (key == null || LSPECIALConfig.charismaNeutralEntityList == null) return false;
@@ -142,6 +147,7 @@ public abstract class MixinEntityLivingBaseRetaliation {
         return lspecial$retaliationMatchesAnyPattern(LSPECIALConfig.charismaNeutralEntityList, registryId);
     }
 
+    @Unique
     private static boolean lspecial$retaliationMatchesAnyPattern(String configuredPatterns, String registryId) {
         if (configuredPatterns == null || configuredPatterns.trim().isEmpty()) return false;
         for (String raw : configuredPatterns.split(",")) {
@@ -153,6 +159,7 @@ public abstract class MixinEntityLivingBaseRetaliation {
         return false;
     }
 
+    @Unique
     private static boolean lspecial$retaliationMatchesPattern(String pattern, String value) {
         StringBuilder regex = new StringBuilder("^");
         for (int i = 0; i < pattern.length(); i++) {
