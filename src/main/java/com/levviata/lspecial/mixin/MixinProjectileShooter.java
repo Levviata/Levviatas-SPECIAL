@@ -20,7 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** persists the identity of the entity and weapon that launched an NTM throwable. */
 @Mixin(value = EntityThrowableNT.class, remap = false)
 public abstract class MixinProjectileShooter {
-    @Shadow protected EntityLivingBase thrower;
 
     @Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/entity/EntityLivingBase;)V", at = @At("RETURN"), remap = false)
     private void lspecial$recordConstructorShooter(World world, EntityLivingBase shooter, CallbackInfo callback) {

@@ -1,7 +1,6 @@
 package com.levviata.lspecial;
 
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.entity.player.EntityPlayer;
 import org.lwjgl.input.Keyboard;
 import java.io.IOException;
 import java.util.ArrayList;

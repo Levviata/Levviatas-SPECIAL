@@ -11,6 +11,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.EnumHand;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -36,6 +37,7 @@ public abstract class MixinEntityRocket {
         lspecial$recordLauncher(shooter);
     }
 
+    @Unique
     private void lspecial$recordLauncher(EntityLivingBase shooter) {
         if (!(shooter instanceof EntityPlayer)) return;
         String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) shooter);
@@ -58,7 +60,7 @@ public abstract class MixinEntityRocket {
         boolean familyRocket = StingerDamageHandler.isStingerFamilyWeapon(weapon)
                 && shooter instanceof EntityPlayer;
         EntityPlayer player = familyRocket ? (EntityPlayer) shooter : null;
-        boolean rocketJump = player != null && RocketJumpHandler.isPerkActive(player);
+        boolean rocketJump = RocketJumpHandler.isPerkActive(player);
 
         double previousMotionX = player == null ? 0.0D : player.motionX;
         double previousMotionY = player == null ? 0.0D : player.motionY;

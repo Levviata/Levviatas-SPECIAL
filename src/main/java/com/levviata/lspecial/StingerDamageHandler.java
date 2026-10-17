@@ -5,7 +5,6 @@ import com.hbm.entity.projectile.EntityBulletBaseNT;
 import com.hbm.entity.projectile.EntityRocket;
 import com.hbm.entity.projectile.EntityThrowableNT;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
@@ -98,7 +97,7 @@ public final class StingerDamageHandler {
 
     /** limits direct-hit checks to NTM projectile classes that expose a shooter or thrower reference. */
     private static boolean isSupportedProjectile(Entity projectile) {
-        return projectile instanceof EntityBulletBaseNT || projectile instanceof EntityBulletBase
+        return projectile instanceof EntityBulletBase
                 || projectile instanceof EntityRocket || projectile instanceof EntityThrowableNT;
     }
 
