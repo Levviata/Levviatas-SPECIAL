@@ -25,7 +25,7 @@ public final class LSPECIALContainerOpenHandler {
 
         Container container = event.getContainer();
         if (container == null) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Server container-open event had no container for player={}", player.getName());
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Server container-open event had no container for player={}", player.getName());
             return;
         }
 
@@ -44,7 +44,7 @@ public final class LSPECIALContainerOpenHandler {
             if (!tile.getTileData().getBoolean(LSPECIALNTMLootHandler.CONTAINER_TAG)) continue;
 
             handled = true;
-            LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Server container-open event found tagged tile: player={} container={} tile={} pos={} pool={}",
+            LSPECIALMod.info("[LSPECIAL Loot] Server container-open event found tagged tile: player={} container={} tile={} pos={} pool={}",
                     player.getName(), container.getClass().getName(), tile.getClass().getName(), tile.getPos(),
                     tile.getTileData().getString(LSPECIALNTMLootHandler.POOL_TAG));
             LSPECIALNTMLootHandler.onContainerOpened(tile, player);
@@ -57,7 +57,7 @@ public final class LSPECIALContainerOpenHandler {
                 found.append(tile.getClass().getName()).append('@').append(tile.getPos())
                         .append(" tagged=").append(tile.getTileData().getBoolean(LSPECIALNTMLootHandler.CONTAINER_TAG));
             }
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Server container-open event found no tagged tile for NTM container: player={} container={} candidates=[{}]",
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Server container-open event found no tagged tile for NTM container: player={} container={} candidates=[{}]",
                     player.getName(), container.getClass().getName(), found);
         }
     }

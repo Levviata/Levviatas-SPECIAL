@@ -1,5 +1,6 @@
 package com.levviata.lspecial.mixin;
 
+import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.LSPECIALNTMLootHandler;
 import com.hbm.blocks.generic.BlockWandLoot;
 import com.hbm.handler.WeightedRandomChestContentFrom1710;
@@ -34,14 +35,14 @@ public abstract class MixinNTMWandLoot {
 
         TileEntity target = world.getTileEntity(source.getPos());
         if (target == null || target == source || target instanceof BlockWandLoot.TileEntityWandLoot) {
-            com.levviata.lspecial.LSPECIALMod.LOGGER.warn(
+            LSPECIALMod.logWarn(
                     "[LSPECIAL Loot] Wand-loot replace did not produce a target tile entity at {}: pool={} target={}",
                     source.getPos(), poolName, target == null ? "null" : target.getClass().getName());
             lspecial$queueDeferredTag(world);
             return;
         }
 
-        com.levviata.lspecial.LSPECIALMod.LOGGER.info(
+        LSPECIALMod.info(
                 "[LSPECIAL Loot] Tagging replaced wand-loot target: target={} pos={} pool={} rolls={}..{}",
                 target.getClass().getName(), target.getPos(), poolName, minItems, maxItems);
         LSPECIALNTMLootHandler.tagContainer(target, poolName, minItems, maxItems);
@@ -94,7 +95,7 @@ public abstract class MixinNTMWandLoot {
                 return;
             }
 
-            com.levviata.lspecial.LSPECIALMod.LOGGER.info(
+            LSPECIALMod.info(
                     "[LSPECIAL Loot] Deferred structure tagging: target={} pos={} pool={} rolls={}..{}",
                     target.getClass().getName(), pos, expectedPool, expectedMin, expectedMax);
             LSPECIALNTMLootHandler.tagContainer(target, expectedPool, expectedMin, expectedMax);
@@ -121,7 +122,7 @@ public abstract class MixinNTMWandLoot {
             return;
         }
 
-        com.levviata.lspecial.LSPECIALMod.LOGGER.warn(
+        LSPECIALMod.logWarn(
                 "[LSPECIAL Loot] Update fallback tagging target={} pos={} pool={} rolls={}..{}",
                 target.getClass().getName(), target.getPos(), poolName, minItems, maxItems);
         LSPECIALNTMLootHandler.tagContainer(target, poolName, minItems, maxItems);
@@ -131,10 +132,10 @@ public abstract class MixinNTMWandLoot {
     private void lspecial$tagWandLootContainer(World world, TileEntity tile, WeightedRandomChestContentFrom1710[] pool, CallbackInfo callback) {
         // Keep this as a second tagging point for targets resolved by the loot-population path.
         if (tile == null) {
-            com.levviata.lspecial.LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Wand-loot applyLoot called with null target: pool={} rolls={}..{}", poolName, minItems, maxItems);
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Wand-loot applyLoot called with null target: pool={} rolls={}..{}", poolName, minItems, maxItems);
             return;
         }
-        com.levviata.lspecial.LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Wand-loot applyLoot hook fired: target={} pos={} pool={} rolls={}..{}", tile.getClass().getName(), tile.getPos(), poolName, minItems, maxItems);
+        LSPECIALMod.info("[LSPECIAL Loot] Wand-loot applyLoot hook fired: target={} pos={} pool={} rolls={}..{}", tile.getClass().getName(), tile.getPos(), poolName, minItems, maxItems);
         LSPECIALNTMLootHandler.tagContainer(tile, poolName, minItems, maxItems);
     }
 }

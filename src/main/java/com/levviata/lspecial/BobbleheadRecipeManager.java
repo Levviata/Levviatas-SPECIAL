@@ -152,7 +152,7 @@ public class BobbleheadRecipeManager {
             try {
                 addConfiguredRecipe(event, i + 1, LSPECIALConfig.recipeIngredients[i]);
             } catch (RuntimeException exception) {
-                LSPECIALMod.LOGGER.error("Could not register configurable bobblehead recipe {}. " + "Keeping it disabled for this launch: {}", i + 1, exception.getMessage());
+                LSPECIALMod.logError("Could not register configurable bobblehead recipe {}. " + "Keeping it disabled for this launch: {}", i + 1, exception.getMessage());
             }
         }
     }

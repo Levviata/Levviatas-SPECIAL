@@ -31,6 +31,24 @@ import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED
 public class LSPECIALMod {
     public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
 
+    public static void info(String message, Object... params) {
+        if (LSPECIALConfig.loggingInfo) {
+            LOGGER.info(message, params);
+        }
+    }
+
+    public static void logWarn(String message, Object... params) {
+        if (LSPECIALConfig.loggingWarn) {
+            LOGGER.warn(message, params);
+        }
+    }
+
+    public static void logError(String message, Object... params) {
+        if (LSPECIALConfig.loggingError) {
+            LOGGER.error(message, params);
+        }
+    }
+
     public static final SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE.newSimpleChannel(Tags.MOD_ID);
 
     @SidedProxy(clientSide = "com.levviata.lspecial.proxy.ClientProxy", serverSide = "com.levviata.lspecial.proxy.ServerProxy")

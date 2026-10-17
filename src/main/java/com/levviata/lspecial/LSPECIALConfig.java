@@ -25,6 +25,10 @@ public final class LSPECIALConfig {
 
     public static Configuration config;
 
+    public static boolean loggingInfo = false;
+    public static boolean loggingWarn = true;
+    public static boolean loggingError = true;
+
     private static final String STATS = "1_special_stats";
     private static final String BOB = "2_bobbleheads_consumption";
     private static final String GUNS = "3_guns_ammo";
@@ -35,6 +39,7 @@ public final class LSPECIALConfig {
     private static final String COMMANDS = "8_commands";
     private static final String ADV = "9_advanced";
     private static final String PERKS = "10_perks_gui";
+    private static final String LOGGING = "11_logging";
 
     public static boolean strength = true;
     public static boolean perception = true;
@@ -239,6 +244,11 @@ public final class LSPECIALConfig {
         config.load();
         config.getCategory(STATS).remove("strengthTooltipFormat");
         config.getCategory(GUNS).remove("phlogSecondaryDelayTicks");
+
+        // logging
+        loggingInfo = b(LOGGING, "info", false, "Enable INFO-level logs from LSPECIAL");
+        loggingWarn = b(LOGGING, "warn", true, "Enable WARN-level logs from LSPECIAL");
+        loggingError = b(LOGGING, "error", true, "Enable ERROR-level logs from LSPECIAL");
 
         // SPECIAL stats
         strength = b(STATS, "strength", true, "Enable Strength");
@@ -446,7 +456,7 @@ public final class LSPECIALConfig {
         gunWearFormula = s(ADV, "gunWearFormula", gunWearFormula, "Variables: intelligence, originalWear; output is reduction fraction");
 
         for (String category : Arrays.asList(
-                STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV, PERKS)) {
+                STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV, PERKS, LOGGING)) {
             config.setCategoryComment(category, categoryComment(category));
         }
 
@@ -459,6 +469,8 @@ public final class LSPECIALConfig {
         switch (category) {
             case PERKS:
                 return "Client-side perk overlay settings.";
+            case LOGGING:
+                return "Enable or disable LSPECIAL log levels. INFO logging is disabled by default.";
             case ADV:
                 return "Arithmetic expressions support + - * / %, parentheses, variables, min/max/abs/sqrt/floor/ceil/round.";
             case POTIONS:
@@ -509,7 +521,7 @@ public final class LSPECIALConfig {
     public static GuiScreen gui(GuiScreen parent) {
         List<IConfigElement> elements = new ArrayList<>();
 
-        for (String categoryName : Arrays.asList(STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV, PERKS)) {
+        for (String categoryName : Arrays.asList(STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV, PERKS, LOGGING)) {
             ConfigCategory category = config.getCategory(categoryName);
             elements.add(new ConfigElement(category));
         }

@@ -34,16 +34,16 @@ public final class LSPECIALNTMLootHandler {
     /** stores the exact pool and roll range used by the NTM wand-loot block. */
     public static void tagContainer(net.minecraft.tileentity.TileEntity tile, String poolName, int minItems, int maxItems) {
         if (tile == null) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Cannot tag wand-loot target: tile entity is null (pool={})", poolName);
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Cannot tag wand-loot target: tile entity is null (pool={})", poolName);
             return;
         }
         if (tile.getWorld() == null) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Cannot tag target {}: world is null (pool={})", tile.getClass().getName(), poolName);
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Cannot tag target {}: world is null (pool={})", tile.getClass().getName(), poolName);
             return;
         }
         if (tile.getWorld().isRemote) return;
         if (poolName == null || poolName.trim().isEmpty()) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Cannot tag target {} at {}: pool name is empty", tile.getClass().getName(), tile.getPos());
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Cannot tag target {} at {}: pool name is empty", tile.getClass().getName(), tile.getPos());
             return;
         }
         NBTTagCompound data = tile.getTileData();
@@ -52,24 +52,24 @@ public final class LSPECIALNTMLootHandler {
         data.setInteger(MIN_ITEMS_TAG, Math.max(0, minItems));
         data.setInteger(MAX_ITEMS_TAG, Math.max(Math.max(0, minItems), maxItems));
         tile.markDirty();
-        LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Tagged {} at {} with pool={} rolls={}..{}", tile.getClass().getName(), tile.getPos(), poolName, data.getInteger(MIN_ITEMS_TAG), data.getInteger(MAX_ITEMS_TAG));
+        LSPECIALMod.info("[LSPECIAL Loot] Tagged {} at {} with pool={} rolls={}..{}", tile.getClass().getName(), tile.getPos(), poolName, data.getInteger(MIN_ITEMS_TAG), data.getInteger(MAX_ITEMS_TAG));
     }
 
     /** applies each eligible perk independently, preserving existing stacks and never overwriting slots. */
     public static void onContainerOpened(TileEntity tile, EntityPlayer player) {
         if (tile == null) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Container-open handler received a null tile entity");
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Container-open handler received a null tile entity");
             return;
         }
         if (player == null || player.world == null) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Container-open handler received a null player or player world for {} at {}", tile.getClass().getName(), tile.getPos());
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Container-open handler received a null player or player world for {} at {}", tile.getClass().getName(), tile.getPos());
             return;
         }
         if (player.world.isRemote || !(player.world instanceof net.minecraft.world.WorldServer)) return;
         NBTTagCompound data = tile.getTileData();
-        LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Open callback: player={} tile={} pos={} tagged={} pool={} min={} max={}", player.getName(), tile.getClass().getName(), tile.getPos(), data.getBoolean(CONTAINER_TAG), data.getString(POOL_TAG), data.getInteger(MIN_ITEMS_TAG), data.getInteger(MAX_ITEMS_TAG));
+        LSPECIALMod.info("[LSPECIAL Loot] Open callback: player={} tile={} pos={} tagged={} pool={} min={} max={}", player.getName(), tile.getClass().getName(), tile.getPos(), data.getBoolean(CONTAINER_TAG), data.getString(POOL_TAG), data.getInteger(MIN_ITEMS_TAG), data.getInteger(MAX_ITEMS_TAG));
         if (!data.getBoolean(CONTAINER_TAG)) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Ignoring untagged container at {} ({})", tile.getPos(), tile.getClass().getName());
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Ignoring untagged container at {} ({})", tile.getPos(), tile.getClass().getName());
             return;
         }
 
@@ -80,26 +80,26 @@ public final class LSPECIALNTMLootHandler {
         boolean bonusEligible = LSPECIALConfig.perception && LSPECIALConfig.luck && LSPECIALConfig.luckPerceptionLootBonus
                 && perception >= LSPECIALConfig.luckPerceptionLootBonusLevel
                 && luck >= LSPECIALConfig.luckPerceptionLootBonusLevel;
-        LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Eligibility: player={} Perception={} Luck={} perceptionEnabled={} rerollEnabled={} rerollThreshold={} duplicateEligible={} luckEnabled={} bonusEnabled={} bonusThreshold={} bonusPool={} bonusEligible={}",
+        LSPECIALMod.info("[LSPECIAL Loot] Eligibility: player={} Perception={} Luck={} perceptionEnabled={} rerollEnabled={} rerollThreshold={} duplicateEligible={} luckEnabled={} bonusEnabled={} bonusThreshold={} bonusPool={} bonusEligible={}",
                 player.getName(), perception, luck, LSPECIALConfig.perception, LSPECIALConfig.perceptionLootDuplication,
                 LSPECIALConfig.perceptionLootDuplicationLevel, duplicateEligible, LSPECIALConfig.luck,
                 LSPECIALConfig.luckPerceptionLootBonus, LSPECIALConfig.luckPerceptionLootBonusLevel,
                 LSPECIALConfig.luckPerceptionLootPool, bonusEligible);
         if (!duplicateEligible && !bonusEligible) {
-            LSPECIALMod.LOGGER.info("[LSPECIAL Loot] No loot perk qualifies for player={} at {}", player.getName(), tile.getPos());
+            LSPECIALMod.info("[LSPECIAL Loot] No loot perk qualifies for player={} at {}", player.getName(), tile.getPos());
             return;
         }
 
         IItemHandlerModifiable inventory = getInventory(tile);
         if (inventory == null) {
-            LSPECIALMod.LOGGER.error("[LSPECIAL Loot] Cannot add bonus: no supported inventory for tile={} at {}", tile.getClass().getName(), tile.getPos());
+            LSPECIALMod.logError("[LSPECIAL Loot] Cannot add bonus: no supported inventory for tile={} at {}", tile.getClass().getName(), tile.getPos());
             return;
         }
         if (inventory.getSlots() == 0) {
-            LSPECIALMod.LOGGER.error("[LSPECIAL Loot] Cannot add bonus: inventory has zero slots for tile={} at {}", tile.getClass().getName(), tile.getPos());
+            LSPECIALMod.logError("[LSPECIAL Loot] Cannot add bonus: inventory has zero slots for tile={} at {}", tile.getClass().getName(), tile.getPos());
             return;
         }
-        LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Inventory resolved: slots={} tile={} pos={}", inventory.getSlots(), tile.getClass().getName(), tile.getPos());
+        LSPECIALMod.info("[LSPECIAL Loot] Inventory resolved: slots={} tile={} pos={}", inventory.getSlots(), tile.getClass().getName(), tile.getPos());
 
         String uuid = player.getUniqueID().toString();
         Random random = player.world.rand;
@@ -107,22 +107,22 @@ public final class LSPECIALNTMLootHandler {
         // reroll again the current loot pool
         if (duplicateEligible) {
             if (hasPlayer(data, PERCEPTION_BONUS_TAG, uuid)) {
-                LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Perception reroll already claimed: player={} pos={}", player.getName(), tile.getPos());
+                LSPECIALMod.info("[LSPECIAL Loot] Perception reroll already claimed: player={} pos={}", player.getName(), tile.getPos());
             } else {
                 String originalPool = data.getString(POOL_TAG);
                 if (isValidPool(originalPool)) {
                     int min = Math.max(0, data.getInteger(MIN_ITEMS_TAG));
                     int max = Math.max(min, data.getInteger(MAX_ITEMS_TAG));
                     int rolls = max > min ? min + random.nextInt(max - min + 1) : min;
-                    LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Starting Perception reroll: pool={} rolls={} player={} pos={}", originalPool, rolls, player.getName(), tile.getPos());
+                    LSPECIALMod.info("[LSPECIAL Loot] Starting Perception reroll: pool={} rolls={} player={} pos={}", originalPool, rolls, player.getName(), tile.getPos());
                     if (addPoolItems(inventory, originalPool, rolls, random, false)) {
                         recordPlayer(data, PERCEPTION_BONUS_TAG, uuid);
-                        LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Perception reroll inserted items; recorded UUID for player={} pos={}", player.getName(), tile.getPos());
+                        LSPECIALMod.info("[LSPECIAL Loot] Perception reroll inserted items; recorded UUID for player={} pos={}", player.getName(), tile.getPos());
                     } else {
-                        LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Perception reroll inserted no items; UUID not recorded. pool={} pos={}", originalPool, tile.getPos());
+                        LSPECIALMod.logWarn("[LSPECIAL Loot] Perception reroll inserted no items; UUID not recorded. pool={} pos={}", originalPool, tile.getPos());
                     }
                 } else {
-                    LSPECIALMod.LOGGER.error("[LSPECIAL Loot] Invalid original pool '{}' on tagged container at {}", originalPool, tile.getPos());
+                    LSPECIALMod.logError("[LSPECIAL Loot] Invalid original pool '{}' on tagged container at {}", originalPool, tile.getPos());
                 }
             }
         }
@@ -130,17 +130,17 @@ public final class LSPECIALNTMLootHandler {
         // fill to the brim with the og loot pool
         if (bonusEligible) {
             if (hasPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid)) {
-                LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Luck+Perception bonus already claimed: player={} pos={}", player.getName(), tile.getPos());
+                LSPECIALMod.info("[LSPECIAL Loot] Luck+Perception bonus already claimed: player={} pos={}", player.getName(), tile.getPos());
             } else if (addPoolItems(inventory, LSPECIALConfig.luckPerceptionLootPool, 1, random, true)) {
                 recordPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid);
-                LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Luck+Perception bonus inserted items; recorded UUID for player={} pos={}", player.getName(), tile.getPos());
+                LSPECIALMod.info("[LSPECIAL Loot] Luck+Perception bonus inserted items; recorded UUID for player={} pos={}", player.getName(), tile.getPos());
             } else {
-                LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Luck+Perception bonus inserted no items; UUID not recorded. pool={} pos={}", LSPECIALConfig.luckPerceptionLootPool, tile.getPos());
+                LSPECIALMod.logWarn("[LSPECIAL Loot] Luck+Perception bonus inserted no items; UUID not recorded. pool={} pos={}", LSPECIALConfig.luckPerceptionLootPool, tile.getPos());
             }
         }
 
         tile.markDirty();
-        LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Finished open processing: player={} pos={} perceptionClaimed={} luckPerceptionClaimed={}", player.getName(), tile.getPos(), hasPlayer(data, PERCEPTION_BONUS_TAG, uuid), hasPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid));
+        LSPECIALMod.info("[LSPECIAL Loot] Finished open processing: player={} pos={} perceptionClaimed={} luckPerceptionClaimed={}", player.getName(), tile.getPos(), hasPlayer(data, PERCEPTION_BONUS_TAG, uuid), hasPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid));
     }
 
     private static boolean hasPlayer(NBTTagCompound data, String tagName, String uuid) {
@@ -277,11 +277,11 @@ public final class LSPECIALNTMLootHandler {
         Scoreboard scoreboard = player.world.getScoreboard();
         ScoreObjective objective = scoreboard.getObjective(name);
         if (objective == null) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Scoreboard objective '{}' does not exist; treating {}'s score as 0", name, player.getName());
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Scoreboard objective '{}' does not exist; treating {}'s score as 0", name, player.getName());
             return 0;
         }
         if (!scoreboard.entityHasObjective(player.getName(), objective)) {
-            LSPECIALMod.LOGGER.warn("[LSPECIAL Loot] Player {} has no scoreboard score for '{}'; treating it as 0", player.getName(), name);
+            LSPECIALMod.logWarn("[LSPECIAL Loot] Player {} has no scoreboard score for '{}'; treating it as 0", player.getName(), name);
             return 0;
         }
         return scoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
