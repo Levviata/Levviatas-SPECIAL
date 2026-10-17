@@ -1,4 +1,4 @@
-package com.levviata.lspecial.mixin.structures;
+package com.levviata.lspecial.mixin;
 
 import com.hbm.handler.WeightedRandomChestContentFrom1710;
 import com.hbm.itempool.ItemPool;
