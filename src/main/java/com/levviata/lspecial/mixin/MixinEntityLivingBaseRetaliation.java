@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Records retaliation targets and accumulates player damage for dynamic retaliation. */
-@Mixin(EntityLiving.class)
+@Mixin(EntityLivingBase.class)
 public abstract class MixinEntityLivingBaseRetaliation {
 
     private static final String LSPECIAL_RETALIATION_TARGET = "LSPECIALRetaliationTarget";
@@ -28,56 +28,61 @@ public abstract class MixinEntityLivingBaseRetaliation {
     private void lspecial$recordRetaliationTarget(EntityLivingBase target, CallbackInfo ci) {
         if (!"PERSISTENT".equalsIgnoreCase(LSPECIALConfig.charismaNeutralRetaliationMode)
                 || !LSPECIALConfig.charisma || !LSPECIALConfig.charismaNeutralMobs
-                || !(target instanceof EntityPlayer)) {
+                || !(target instanceof EntityPlayer) || !((Object) this instanceof EntityLiving)) {
             return;
         }
 
         EntityLiving mob = (EntityLiving) (Object) this;
+        if (mob.world.isRemote) return;
+
         NBTTagCompound data = mob.getEntityData();
         data.setUniqueId(LSPECIAL_RETALIATION_TARGET, target.getUniqueID());
         LSPECIALMod.info("[CharismaRetaliation] entity={} action=RECORD mode=PERSISTENT player={} playerUuid={}",
-                lspecial$getEntityId(mob), target.getName(), target.getUniqueID());
+                lspecial$retaliationEntityId(mob), target.getName(), target.getUniqueID());
     }
 
     @Inject(method = "attackEntityFrom(Lnet/minecraft/util/DamageSource;F)Z", at = @At("RETURN"))
     private void lspecial$trackPlayerDamage(DamageSource source, float amount,
                                             CallbackInfoReturnable<Boolean> cir) {
+        if (!((Object) this instanceof EntityLiving)) return;
+
+        EntityLiving mob = (EntityLiving) (Object) this;
+        if (mob.world.isRemote) return;
         if (!"DYNAMIC".equalsIgnoreCase(LSPECIALConfig.charismaNeutralRetaliationMode)
                 || !LSPECIALConfig.charisma || !LSPECIALConfig.charismaNeutralMobs) {
             return;
         }
 
-        EntityLiving mob = (EntityLiving) (Object) this;
         if (!cir.getReturnValue()) {
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=damage_not_applied",
-                    lspecial$getEntityId(mob));
+            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=damage_not_applied amount={}",
+                    lspecial$retaliationEntityId(mob), amount);
             return;
         }
-        if (!lspecial$isConfiguredNeutralMob(mob)) {
+        if (!lspecial$retaliationIsConfiguredNeutralMob(mob)) {
             LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=not_configured_neutral",
-                    lspecial$getEntityId(mob));
+                    lspecial$retaliationEntityId(mob));
             return;
         }
 
         EntityPlayer player = source.getTrueSource() instanceof EntityPlayer
                 ? (EntityPlayer) source.getTrueSource() : null;
         if (player == null || !player.isEntityAlive()) {
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=not_player_damage",
-                    lspecial$getEntityId(mob));
+            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=not_living_player_damage source={} amount={}",
+                    lspecial$retaliationEntityId(mob), source.getTrueSource(), amount);
             return;
         }
 
         IAttributeInstance maxHealthAttribute = mob.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
         if (maxHealthAttribute == null) {
             LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=no_max_health_attribute",
-                    lspecial$getEntityId(mob));
+                    lspecial$retaliationEntityId(mob));
             return;
         }
 
         double maxHealth = maxHealthAttribute.getAttributeValue();
         if (maxHealth <= 0.0D) {
             LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=invalid_max_health maxHealth={}",
-                    lspecial$getEntityId(mob), maxHealth);
+                    lspecial$retaliationEntityId(mob), maxHealth);
             return;
         }
 
@@ -86,35 +91,37 @@ public abstract class MixinEntityLivingBaseRetaliation {
                 ? entityData.getCompoundTag(LSPECIAL_RETALIATION_DAMAGE) : new NBTTagCompound();
 
         String playerKey = player.getUniqueID().toString();
-        double totalDamage = damageData.getDouble(playerKey) + Math.max(0.0F, amount);
+        double damageThisHit = Math.max(0.0F, amount);
+        double totalDamage = damageData.getDouble(playerKey) + damageThisHit;
         damageData.setDouble(playerKey, totalDamage);
         entityData.setTag(LSPECIAL_RETALIATION_DAMAGE, damageData);
 
-        LSPECIALMod.info("[CharismaRetaliation] entity={} action=TRACK_DAMAGE player={} damageThisHit={} cumulativeDamage={} threshold={} maxHealth={}",
-                lspecial$getEntityId(mob), player.getName(), amount, totalDamage, maxHealth / 3.0D, maxHealth);
+        double threshold = maxHealth / 3.0D;
+        LSPECIALMod.info("[CharismaRetaliation] entity={} action=TRACK_DAMAGE player={} playerUuid={} damageThisHit={} cumulativeDamage={} threshold={} maxHealth={}",
+                lspecial$retaliationEntityId(mob), player.getName(), player.getUniqueID(),
+                damageThisHit, totalDamage, threshold, maxHealth);
 
-        // Persist retaliation once this player's cumulative damage reaches one third of max health.
-        if (totalDamage >= maxHealth / 3.0D) {
+        if (totalDamage >= threshold) {
             entityData.setUniqueId(LSPECIAL_RETALIATION_TARGET, player.getUniqueID());
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=THRESHOLD_REACHED player={} cumulativeDamage={} threshold={}",
-                    lspecial$getEntityId(mob), player.getName(), totalDamage, maxHealth / 3.0D);
+            LSPECIALMod.info("[CharismaRetaliation] entity={} action=THRESHOLD_REACHED player={} cumulativeDamage={} threshold={} actionTarget=SET",
+                    lspecial$retaliationEntityId(mob), player.getName(), totalDamage, threshold);
             mob.setRevengeTarget(player);
             mob.setAttackTarget(player);
         }
     }
 
-    private static String lspecial$getEntityId(EntityLiving mob) {
+    private static String lspecial$retaliationEntityId(EntityLiving mob) {
         ResourceLocation key = EntityList.getKey(mob);
         return key == null ? "<unregistered>" : key.toString();
     }
 
-    private static boolean lspecial$isConfiguredNeutralMob(EntityLiving mob) {
+    private static boolean lspecial$retaliationIsConfiguredNeutralMob(EntityLiving mob) {
         ResourceLocation key = EntityList.getKey(mob);
         if (key == null || LSPECIALConfig.charismaNeutralEntityList == null) return false;
 
         String registryId = key.toString();
         if (LSPECIALConfig.charismaNeutralBlacklistMobs) {
-            if (lspecial$matchesAnyPattern(LSPECIALConfig.charismaNeutralBlacklistEntityList, registryId)) {
+            if (lspecial$retaliationMatchesAnyPattern(LSPECIALConfig.charismaNeutralBlacklistEntityList, registryId)) {
                 return false;
             }
 
@@ -132,32 +139,31 @@ public abstract class MixinEntityLivingBaseRetaliation {
             }
         }
 
-        return lspecial$matchesAnyPattern(LSPECIALConfig.charismaNeutralEntityList, registryId);
+        return lspecial$retaliationMatchesAnyPattern(LSPECIALConfig.charismaNeutralEntityList, registryId);
     }
 
-    private static boolean lspecial$matchesAnyPattern(String configuredPatterns, String registryId) {
+    private static boolean lspecial$retaliationMatchesAnyPattern(String configuredPatterns, String registryId) {
         if (configuredPatterns == null || configuredPatterns.trim().isEmpty()) return false;
         for (String raw : configuredPatterns.split(",")) {
             String pattern = raw.trim();
             if (pattern.isEmpty()) continue;
             if (pattern.indexOf(':') < 0 && !pattern.equals("*")) pattern = "minecraft:" + pattern;
-            if (lspecial$matchesPattern(pattern, registryId)) return true;
+            if (lspecial$retaliationMatchesPattern(pattern, registryId)) return true;
         }
         return false;
     }
 
-    private static boolean lspecial$matchesPattern(String pattern, String value) {
+    private static boolean lspecial$retaliationMatchesPattern(String pattern, String value) {
         StringBuilder regex = new StringBuilder("^");
         for (int i = 0; i < pattern.length(); i++) {
             char c = pattern.charAt(i);
             if (c == '*') regex.append(".*");
             else {
-                if ("\\.^$|?*+()[]{}-".indexOf(c) >= 0) regex.append('\\');
+                if ("\\.^$|?+()[]{}-".indexOf(c) >= 0) regex.append('\\');
                 regex.append(c);
             }
         }
         regex.append('$');
         return value.matches(regex.toString());
     }
-
 }
