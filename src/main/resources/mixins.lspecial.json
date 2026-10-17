@@ -11,6 +11,7 @@
     "MixinEntityBulletBaseMK4",
     "MixinEntityInvoker",
     "MixinEntityLivingBaseRetaliation",
+    "MixinEntityLivingCharismaNeutrality",
     "MixinEntityRailgunBlast",
     "MixinEntityVillager",
     "MixinLightRevolverRapidFire",
@@ -24,7 +25,7 @@
     "MixinWorldRailgunBlast",
     "MixinNTMWandLoot",
     "MixinNTMCrateLootBonus",
-    "MixinVanillaChestLootBonus",
+    "MixinVanillaChestLootBonus"
   ],
   "server": [],
   "client": [
