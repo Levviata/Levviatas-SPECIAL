@@ -2,19 +2,28 @@ package com.levviata.lspecial;
 
 import com.hbm.items.armor.ArmorFSBPowered;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.items.weapon.sedna.BulletConfig;
+import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.Receiver;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.render.anim.sedna.AnimationEnums.GunAnimation;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
@@ -22,15 +31,41 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 public final class SPECIALGameplayHandler {
     private static final Map<EntityPlayer, LockedGun> rapidFireLocks = new WeakHashMap<>();
     private static final Map<EntityPlayer, PendingSelfKill> pendingSelfKills = new WeakHashMap<>();
-    private static final Map<EntityPlayer, PendingBurst> pendingBursts = new WeakHashMap<>();
+    private static final Map<EntityPlayer, List<PendingProjectile>> pendingProjectileBursts = new WeakHashMap<>();
 
-    private static final class PendingBurst {
-        private final ItemStack stack;
+    private static final class PendingProjectile {
+        private final BulletConfig config;
+        private final float yaw;
+        private final float pitch;
+        private final double x, y, z, motionX, motionY, motionZ, velocity, previousVelocity, acceleration;
+        private final float damage;
+        private final int ricochets;
+        private final Entity lockonTarget;
+        private final NBTTagCompound entityData;
         private int ticksRemaining;
 
-        private PendingBurst(ItemStack stack, int ticksRemaining) {
-            this.stack = stack;
-            this.ticksRemaining = ticksRemaining;
+        private PendingProjectile(EntityBulletBaseMK4 bullet, int delay) {
+            config = bullet.getBulletConfig();
+            yaw = bullet.rotationYaw;
+            pitch = bullet.rotationPitch;
+            x = bullet.posX; y = bullet.posY; z = bullet.posZ;
+            motionX = bullet.motionX; motionY = bullet.motionY; motionZ = bullet.motionZ;
+            velocity = bullet.velocity; previousVelocity = bullet.prevVelocity; acceleration = bullet.accel;
+            damage = bullet.damage; ricochets = bullet.ricochets; lockonTarget = bullet.lockonTarget;
+            entityData = bullet.getEntityData().copy();
+            ticksRemaining = delay;
+        }
+
+        private EntityBulletBaseMK4 spawn(EntityPlayer shooter) {
+            EntityBulletBaseMK4 clone = new EntityBulletBaseMK4(shooter.world, shooter, config,
+                    yaw, pitch, x, y, z, motionX, motionY, motionZ);
+            clone.setPosition(x, y, z);
+            clone.motionX = motionX; clone.motionY = motionY; clone.motionZ = motionZ;
+            clone.damage = damage; clone.velocity = velocity; clone.prevVelocity = previousVelocity;
+            clone.accel = acceleration; clone.ricochets = ricochets; clone.lockonTarget = lockonTarget;
+            clone.getEntityData().merge(entityData.copy());
+            clone.getEntityData().setBoolean("LSPECIALBurstClone", true);
+            return clone;
         }
     }
 
@@ -149,37 +184,54 @@ public final class SPECIALGameplayHandler {
         }
     }
 
-    /** holds native primary input long enough for the receiver to emit three separate shots. */
-    public static void startSequentialBurst(EntityPlayer player, ItemStack stack, int delay, int requiredLevel) {
-        if (player == null || player.world.isRemote || player.isDead || stack == null || stack.isEmpty()
-                || player.getHeldItemMainhand() != stack || !LSPECIALConfig.modifyGuns
-                || !LSPECIALConfig.intelligence || inst == null || inst.getIntelligenceScore() == null
-                || inst.getIntelligenceScore().getScorePoints() < requiredLevel
-                || !(stack.getItem() instanceof ItemGunBaseNT)) {
-            return;
-        }
+    /** Snapshots native Sedna projectiles and queues two matching follow-up shots 0.4 seconds apart. */
+    @SubscribeEvent
+    public void onBurstProjectileSpawn(EntityJoinWorldEvent event) {
+        if (event.getWorld().isRemote || !(event.getEntity() instanceof EntityBulletBaseMK4)) return;
+        EntityBulletBaseMK4 bullet = (EntityBulletBaseMK4) event.getEntity();
+        if (bullet.getEntityData().getBoolean("LSPECIALBurstClone") || bullet.getBulletConfig() == null) return;
+        EntityLivingBase owner = bullet.getThrower();
+        if (!(owner instanceof EntityPlayer)) return;
+        EntityPlayer player = (EntityPlayer) owner;
+        ItemStack held = player.getHeldItemMainhand();
+        if (held.isEmpty() || held.getItem().getRegistryName() == null || !held.hasTagCompound()
+                || !held.getTagCompound().getBoolean("LSPECIALSecondaryMode")) return;
+        String id = held.getItem().getRegistryName().toString();
+        int requiredLevel;
+        boolean enabled;
+        if ("hbm:gun_lag".equals(id)) {
+            requiredLevel = 5;
+            enabled = LSPECIALConfig.lagSecondaryBurst;
+        } else if ("hbm:gun_henry_lincoln".equals(id)) {
+            requiredLevel = 15;
+            enabled = LSPECIALConfig.henryLincolnSecondaryBurst;
+        } else return;
+        if (!enabled || !LSPECIALConfig.modifyGuns || !LSPECIALConfig.intelligence || inst == null
+                || inst.getIntelligenceScore() == null
+                || inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) < requiredLevel) return;
 
-        PendingBurst previous = pendingBursts.remove(player);
-        if (previous != null) lspecial$setRapidFire(previous.stack, false);
-        pendingBursts.put(player, new PendingBurst(stack, Math.max(2, delay * 2 + 3)));
-        lspecial$setRapidFire(stack, true);
+        List<PendingProjectile> pending = pendingProjectileBursts.get(player);
+        if (pending == null) {
+            pending = new ArrayList<>();
+            pendingProjectileBursts.put(player, pending);
+        }
+        pending.add(new PendingProjectile(bullet, 8));
+        pending.add(new PendingProjectile(bullet, 16));
     }
 
-    private static void lspecial$tickPendingBurst(EntityPlayer player) {
-        PendingBurst burst = pendingBursts.get(player);
-        if (burst == null) return;
-        if (player.isDead || player.world == null || player.world.isRemote
-                || player.getHeldItemMainhand() != burst.stack || burst.stack.isEmpty()) {
-            pendingBursts.remove(player);
-            lspecial$setRapidFire(burst.stack, false);
-            return;
+    private static void lspecial$tickPendingProjectiles(EntityPlayer player) {
+        List<PendingProjectile> pending = pendingProjectileBursts.get(player);
+        if (pending == null || pending.isEmpty()) return;
+        Iterator<PendingProjectile> iterator = pending.iterator();
+        while (iterator.hasNext()) {
+            PendingProjectile shot = iterator.next();
+            if (--shot.ticksRemaining > 0) continue;
+            if (!player.isDead && player.world != null && !player.world.isRemote) {
+                player.world.spawnEntity(shot.spawn(player));
+            }
+            iterator.remove();
         }
-        if (--burst.ticksRemaining <= 0) {
-            pendingBursts.remove(player);
-            lspecial$setRapidFire(burst.stack, false);
-        } else {
-            lspecial$setRapidFire(burst.stack, true);
-        }
+        if (pending.isEmpty()) pendingProjectileBursts.remove(player);
     }
 
     /** starts the Lag self-kill countdown and plays its inspect animation. */
@@ -258,7 +310,7 @@ public final class SPECIALGameplayHandler {
         if (event.phase != TickEvent.Phase.END || event.player.world.isRemote) return;
         EntityPlayer player = event.player;
         lspecial$tickPendingSelfKill(player);
-        lspecial$tickPendingBurst(player);
+        lspecial$tickPendingProjectiles(player);
         lspecial$tickPoweredArmorRecovery(player);
 
     }

@@ -6,8 +6,10 @@
   "minVersion": "0.8.5",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "EntityAccessor",
     "MixinBeamProjectile",
     "MixinDragonFuryConfig",
+    "MixinDragonFuryProjectile",
     "MixinDragonsFuryConfig",
     "MixinDragonsFuryProjectile",
     "MixinEntityBulletBaseMK4",
@@ -29,6 +31,7 @@
     "MixinReceiver",
     "MixinRocketJumpBulletMK4",
     "MixinStingerProjectile",
+    "MixinTF2FlameProjectile",
     "MixinVanillaChestLootBonus",
     "MixinWeaponSecondary",
     "MixinWorldRailgunBlast"
@@ -36,6 +39,7 @@
   "server": [],
   "client": [
     "MixinEntityRenderer",
-    "MixinRenderItemOverlay"
+    "MixinRenderItemOverlay",
+    "MixinTF2FlameParticleTrail"
   ]
 }

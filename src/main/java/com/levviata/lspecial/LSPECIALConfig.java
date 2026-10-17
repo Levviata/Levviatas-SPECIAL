@@ -131,6 +131,15 @@ public final class LSPECIALConfig {
     public static boolean secondaryFireToggle = true;
     public static int tf2AmmoGuiOffsetX = 8;
     public static int tf2AmmoGuiOffsetY = 8;
+    public static String tf2AmmoGuiPosition = "BOTTOM_RIGHT";
+    public static double tf2AmmoGuiScale = 1.0D;
+    public static String tf2AmmoGuiWeaponList = "hbm:gun_flamer,hbm:gun_flamer_topaz,hbm:gun_chemthrower,hbm:gun_drill";
+    public static int tf2AmmoGuiBackgroundRed = 0;
+    public static int tf2AmmoGuiBackgroundGreen = 0;
+    public static int tf2AmmoGuiBackgroundBlue = 0;
+    public static int tf2AmmoGuiBackgroundAlpha = 0;
+    public static int tf2AmmoGuiShadowOffsetX = 10;
+    public static int tf2AmmoGuiShadowOffsetY = 10;
     public static int starFCapacity = 30;
 
     public static boolean doubleBarrelGrapple = true;
@@ -152,9 +161,7 @@ public final class LSPECIALConfig {
 
     public static boolean lagSecondarySelfKill = true;
     public static boolean lagSecondaryBurst = true;
-    public static int lagSecondaryBurstDelay = 16;
     public static boolean henryLincolnSecondaryBurst = true;
-    public static double burstProjectileDamageFraction = 0.3333333333333333;
 
     public static boolean scopedSecondarySpread = true;
     public static double scopedSpreadMultiplier = 0.5;
@@ -362,8 +369,17 @@ public final class LSPECIALConfig {
         g3TenGaugeDelayTicks = i(GUNS, "g3TenGaugeDelayTicks", 10, 0, 1200, "G3 10 gauge mode firing delay in ticks");
         lagSecondarySelfKill = b(GUNS, "lagSecondarySelfKill", true, "Intelligence 5: crouch + secondary with the Lag starts the delayed self-kill sequence");
         secondaryFireToggle = b(GUNS, "secondaryFireToggle", true, "Toggle supported secondary-fire modes with Secondary Fire; primary fire then fires the selected mode");
-        tf2AmmoGuiOffsetX = i(CLIENT, "tf2AmmoGuiOffsetX", 8, -2000, 2000, "Ammo GUI horizontal offset from the right edge; positive values move it inward");
-        tf2AmmoGuiOffsetY = i(CLIENT, "tf2AmmoGuiOffsetY", 8, -2000, 2000, "Ammo GUI vertical offset from the bottom edge; positive values move it upward");
+        tf2AmmoGuiOffsetX = i(CLIENT, "tf2AmmoGuiOffsetX", 8, -2000, 2000, "Ammo GUI horizontal offset from the selected preset anchor");
+        tf2AmmoGuiOffsetY = i(CLIENT, "tf2AmmoGuiOffsetY", 8, -2000, 2000, "Ammo GUI vertical offset from the selected preset anchor");
+        tf2AmmoGuiPosition = s(CLIENT, "tf2AmmoGuiPosition", "BOTTOM_RIGHT", "Ammo GUI anchor: BOTTOM_RIGHT, BOTTOM_CENTER, BOTTOM_LEFT, CENTER_LEFT, CENTER_RIGHT, TOP_LEFT, TOP_CENTER, or TOP_RIGHT");
+        tf2AmmoGuiScale = d(CLIENT, "tf2AmmoGuiScale", 1.0D, 0.25D, 3.0D, "Ammo GUI scale before screen-fit constraints");
+        tf2AmmoGuiWeaponList = s(CLIENT, "tf2AmmoGuiWeaponList", "hbm:gun_flamer,hbm:gun_flamer_topaz,hbm:gun_chemthrower,hbm:gun_drill", "Comma-separated registry IDs allowed to show the ammo GUI; no Intelligence limit is applied");
+        tf2AmmoGuiBackgroundRed = i(CLIENT, "tf2AmmoGuiBackgroundRed", 0, 0, 255, "Ammo GUI background red channel");
+        tf2AmmoGuiBackgroundGreen = i(CLIENT, "tf2AmmoGuiBackgroundGreen", 0, 0, 255, "Ammo GUI background green channel");
+        tf2AmmoGuiBackgroundBlue = i(CLIENT, "tf2AmmoGuiBackgroundBlue", 0, 0, 255, "Ammo GUI background blue channel");
+        tf2AmmoGuiBackgroundAlpha = i(CLIENT, "tf2AmmoGuiBackgroundAlpha", 0, 0, 255, "Ammo GUI background alpha; 0 is transparent and 255 is opaque");
+        tf2AmmoGuiShadowOffsetX = i(CLIENT, "tf2AmmoGuiShadowOffsetX", 10, -32, 32, "Ammo number shadow horizontal offset in texture pixels");
+        tf2AmmoGuiShadowOffsetY = i(CLIENT, "tf2AmmoGuiShadowOffsetY", 10, -32, 32, "Ammo number shadow vertical offset in texture pixels");
         starFCapacity = i(GUNS, "starFCapacity", 30, 1, 1000, "Star-F magazine capacity at Intelligence 15");
         doubleBarrelGrapple = b(GUNS, "doubleBarrelGrapple", true, "Intelligence 15: secondary fire grapples toward the targeted entity with the double barrel");
         doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render the double-barrel grapple chain and HUD");
@@ -379,8 +395,6 @@ public final class LSPECIALConfig {
         tauSecondaryDamageBonus = b(GUNS, "tauSecondaryDamageBonus", true, "Intelligence 5: multiply damage from the Tau's charged secondary projectile");
         tauSecondaryDamageMultiplier = d(GUNS, "tauSecondaryDamageMultiplier", 6.0, 1.0, 20.0, "Tau secondary-fire damage multiplier");
         lagSecondaryBurst = b(GUNS, "lagSecondaryBurst", true, "Intelligence 5: Lag secondary fire uses a three-projectile burst");
-        lagSecondaryBurstDelay = i(GUNS, "lagSecondaryBurstDelay", 16, 0, 1200, "Lag secondary burst delay in ticks");
-        burstProjectileDamageFraction = d(GUNS, "burstProjectileDamageFraction", 0.3333333333333333, 0.01, 1.0, "Damage fraction per projectile for three-projectile secondary bursts");
         scopedSecondarySpread = b(GUNS, "scopedSecondarySpread", true, "Reduce spread while aiming with configured lesser-perk weapons");
         scopedSpreadMultiplier = d(GUNS, "scopedSpreadMultiplier", 0.5, 0.05, 1.0, "Spread multiplier while aiming");
         henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-shot sequential burst");

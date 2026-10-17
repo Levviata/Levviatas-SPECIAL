@@ -78,19 +78,6 @@ public abstract class MixinWeaponSecondary {
                 && keybind.name().contains("PRIMARY")) {
             boolean mode = stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALSecondaryMode");
             lspecial$setSecondaryForAllConfigs(stack, mode);
-            if (pressed && mode && ("hbm:gun_lag".equals(itemId) || "hbm:gun_henry_lincoln".equals(itemId))) {
-                int requiredLevel = "hbm:gun_lag".equals(itemId) ? 5 : 15;
-                boolean enabled = "hbm:gun_lag".equals(itemId)
-                        ? LSPECIALConfig.lagSecondaryBurst : LSPECIALConfig.henryLincolnSecondaryBurst;
-                if (enabled && lspecial$hasIntelligence(player, requiredLevel)) {
-                    if (!player.world.isRemote) {
-                        SPECIALGameplayHandler.startSequentialBurst(player, stack,
-                                LSPECIALConfig.lagSecondaryBurstDelay, requiredLevel);
-                    }
-                    callback.cancel();
-                    return;
-                }
-            }
         }
 
         // Route the double-barrel grapple through NTM's tertiary/scope key.

@@ -2,6 +2,7 @@ package com.levviata.lspecial;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -22,6 +23,14 @@ public final class RocketJumpPhysicsHandler {
         EntityPlayer player = (EntityPlayer) event.player;
         NBTTagCompound data = player.getEntityData();
         int ticks = data.getInteger(ACTIVE_TICKS);
+        if (data.getBoolean("LSPECIALRocketJumping")) {
+            player.fallDistance = 0.0F;
+            if (player.onGround && player.motionY <= 0.0D) {
+                data.removeTag("LSPECIALRocketJumping");
+                data.removeTag(ACTIVE_TICKS);
+                return;
+            }
+        }
         if (ticks <= 0) return;
 
         if (player.onGround && player.motionY <= 0.0D) {
@@ -29,16 +38,26 @@ public final class RocketJumpPhysicsHandler {
             return;
         }
 
-        // Vanilla applies roughly 0.08 blocks/tick^2 of gravity. Add back 0.03 while
-        // blast-jumping to approximate Source's lighter airborne gravity after unit scaling.
+        // vanilla applies roughly 0.08 blocks/tick^2 of gravity; compensate only during the tracked jump.
         player.motionY += SOURCE_GRAVITY_COMPENSATION;
         player.motionX *= MOMENTUM_RETENTION;
         player.motionZ *= MOMENTUM_RETENTION;
         data.setInteger(ACTIVE_TICKS, ticks - 1);
     }
 
+    @SubscribeEvent
+    public void onRocketJumpFallDamage(LivingHurtEvent event) {
+        if (!(event.getEntityLiving() instanceof EntityPlayer) || !"fall".equals(event.getSource().damageType)) return;
+        EntityPlayer player = (EntityPlayer) event.getEntityLiving();
+        if (player.getEntityData().getBoolean("LSPECIALRocketJumping")) {
+            player.fallDistance = 0.0F;
+            event.setCanceled(true);
+        }
+    }
+
     public static void begin(EntityPlayer player) {
         if (player == null || player.world.isRemote) return;
         player.getEntityData().setInteger(ACTIVE_TICKS, MAX_TRACK_TICKS);
+        player.getEntityData().setBoolean("LSPECIALRocketJumping", true);
     }
 }

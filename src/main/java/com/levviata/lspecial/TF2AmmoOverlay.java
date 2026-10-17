@@ -21,16 +21,18 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 
-/** TF2-style loaded-ammo counter for the two Sedna flame weapons. */
+/** TF2-style loaded-ammo counter for configured NTM weapons. */
 public final class TF2AmmoOverlay {
     private static final ResourceLocation BADGE = new ResourceLocation("lspecial", "textures/gui/gui_badge.png");
-    private static final int TEXTURE_WIDTH = 512;
-    private static final int TEXTURE_HEIGHT = 192;
-    private static final int BADGE_TEXTURE_WIDTH = 1044;
-    private static final int BADGE_TEXTURE_HEIGHT = 604;
+    private static final int TEXTURE_WIDTH = 1024;
+    private static final int TEXTURE_HEIGHT = 384;
+    private static final int BADGE_TEXTURE_WIDTH = 2088;
+    private static final int BADGE_TEXTURE_HEIGHT = 1208;
 
     private Font tf2Font;
     private int lastAmmo = Integer.MIN_VALUE;
+    private int lastShadowOffsetX = Integer.MIN_VALUE;
+    private int lastShadowOffsetY = Integer.MIN_VALUE;
     private ResourceLocation ammoTexture;
 
     @SubscribeEvent
@@ -40,29 +42,71 @@ public final class TF2AmmoOverlay {
         EntityPlayer player = mc.player;
         if (player == null || mc.world == null) return;
         ItemStack held = player.getHeldItemMainhand();
-        if (!isFlameWeapon(held)) return;
+        if (!isConfiguredWeapon(held)) return;
 
         int ammo = getLoadedAmmo(held, player);
         if (ammo < 0) return;
-        if (ammo != lastAmmo || ammoTexture == null) rebuildAmmoTexture(mc, ammo);
+        if (ammo != lastAmmo || ammoTexture == null
+                || lastShadowOffsetX != LSPECIALConfig.tf2AmmoGuiShadowOffsetX
+                || lastShadowOffsetY != LSPECIALConfig.tf2AmmoGuiShadowOffsetY) rebuildAmmoTexture(mc, ammo);
 
         int screenWidth = event.getResolution().getScaledWidth();
         int screenHeight = event.getResolution().getScaledHeight();
         double uiScale = Math.min(screenWidth / 960.0D, screenHeight / 540.0D);
-        uiScale = Math.max(0.45D, Math.min(1.35D, uiScale));
+        uiScale = Math.max(0.20D, uiScale) * LSPECIALConfig.tf2AmmoGuiScale;
         int badgeWidth = Math.max(1, Math.min(screenWidth, (int) Math.round(130.0D * uiScale)));
         int badgeHeight = Math.max(1, Math.min(screenHeight, (int) Math.round(75.0D * uiScale)));
-        int marginX = (int) Math.round(LSPECIALConfig.tf2AmmoGuiOffsetX * uiScale);
-        int marginY = (int) Math.round(LSPECIALConfig.tf2AmmoGuiOffsetY * uiScale);
-        int left = clamp(screenWidth - badgeWidth - marginX, 0, Math.max(0, screenWidth - badgeWidth));
-        int top = clamp(screenHeight - badgeHeight - marginY, 0, Math.max(0, screenHeight - badgeHeight));
-        int textWidth = Math.min(badgeWidth - 8, (int) Math.round(84.0D * uiScale));
-        int textHeight = Math.min(badgeHeight - 8, (int) Math.round(42.0D * uiScale));
-        int textX = clamp(left + badgeWidth - textWidth - (int) Math.round(8.0D * uiScale), 0,
-                Math.max(0, screenWidth - textWidth));
-        int textY = clamp(top + badgeHeight - textHeight - (int) Math.round(7.0D * uiScale), 0,
-                Math.max(0, screenHeight - textHeight));
+        int left;
+        int top;
+        String position = LSPECIALConfig.tf2AmmoGuiPosition == null ? "BOTTOM_RIGHT"
+                : LSPECIALConfig.tf2AmmoGuiPosition.trim().toUpperCase(java.util.Locale.ROOT);
+        switch (position) {
+            case "BOTTOM_CENTER":
+                left = (screenWidth - badgeWidth) / 2 + LSPECIALConfig.tf2AmmoGuiOffsetX;
+                top = screenHeight - badgeHeight - LSPECIALConfig.tf2AmmoGuiOffsetY;
+                break;
+            case "BOTTOM_LEFT":
+                left = LSPECIALConfig.tf2AmmoGuiOffsetX;
+                top = screenHeight - badgeHeight - LSPECIALConfig.tf2AmmoGuiOffsetY;
+                break;
+            case "CENTER_LEFT":
+                left = LSPECIALConfig.tf2AmmoGuiOffsetX;
+                top = (screenHeight - badgeHeight) / 2 + LSPECIALConfig.tf2AmmoGuiOffsetY;
+                break;
+            case "CENTER_RIGHT":
+                left = screenWidth - badgeWidth - LSPECIALConfig.tf2AmmoGuiOffsetX;
+                top = (screenHeight - badgeHeight) / 2 + LSPECIALConfig.tf2AmmoGuiOffsetY;
+                break;
+            case "TOP_LEFT":
+                left = LSPECIALConfig.tf2AmmoGuiOffsetX;
+                top = LSPECIALConfig.tf2AmmoGuiOffsetY;
+                break;
+            case "TOP_CENTER":
+                left = (screenWidth - badgeWidth) / 2 + LSPECIALConfig.tf2AmmoGuiOffsetX;
+                top = LSPECIALConfig.tf2AmmoGuiOffsetY;
+                break;
+            case "TOP_RIGHT":
+                left = screenWidth - badgeWidth - LSPECIALConfig.tf2AmmoGuiOffsetX;
+                top = LSPECIALConfig.tf2AmmoGuiOffsetY;
+                break;
+            default:
+                left = screenWidth - badgeWidth - LSPECIALConfig.tf2AmmoGuiOffsetX;
+                top = screenHeight - badgeHeight - LSPECIALConfig.tf2AmmoGuiOffsetY;
+                break;
+        }
+        left = clamp(left, 0, Math.max(0, screenWidth - badgeWidth));
+        top = clamp(top, 0, Math.max(0, screenHeight - badgeHeight));
+        int textWidth = Math.max(1, Math.min(badgeWidth - 4, (int) Math.round(84.0D * uiScale)));
+        int textHeight = Math.max(1, Math.min(badgeHeight - 4, (int) Math.round(42.0D * uiScale)));
+        int textX = clamp(left + badgeWidth - textWidth - (int) Math.round(8.0D * uiScale), left,
+                Math.max(left, left + badgeWidth - textWidth));
+        int textY = clamp(top + badgeHeight - textHeight - (int) Math.round(7.0D * uiScale), top,
+                Math.max(top, top + badgeHeight - textHeight));
 
+        int background = (LSPECIALConfig.tf2AmmoGuiBackgroundAlpha << 24)
+                | (LSPECIALConfig.tf2AmmoGuiBackgroundRed << 16)
+                | (LSPECIALConfig.tf2AmmoGuiBackgroundGreen << 8)
+                | LSPECIALConfig.tf2AmmoGuiBackgroundBlue;
         mc.getTextureManager().bindTexture(BADGE);
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
@@ -71,6 +115,11 @@ public final class TF2AmmoOverlay {
                 BADGE_TEXTURE_WIDTH, BADGE_TEXTURE_HEIGHT);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
+        if (LSPECIALConfig.tf2AmmoGuiBackgroundAlpha > 0) {
+            Gui.drawRect(Math.max(0, textX - 2), Math.max(0, textY - 2),
+                    Math.min(screenWidth, textX + textWidth + 2),
+                    Math.min(screenHeight, textY + textHeight + 2), background);
+        }
         if (ammoTexture != null && textWidth > 0 && textHeight > 0) {
             mc.getTextureManager().bindTexture(ammoTexture);
             Gui.drawModalRectWithCustomSizedTexture(textX, textY, 0, 0,
@@ -110,32 +159,36 @@ public final class TF2AmmoOverlay {
         return -1;
     }
 
-    private static boolean isFlameWeapon(ItemStack stack) {
+    private static boolean isConfiguredWeapon(ItemStack stack) {
         if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) return false;
         String id = stack.getItem().getRegistryName().toString();
-        return "hbm:gun_flamer".equals(id) || "hbm:gun_flamer_topaz".equals(id);
+        String list = LSPECIALConfig.tf2AmmoGuiWeaponList;
+        if (list == null || list.trim().isEmpty()) return false;
+        for (String allowed : list.split(",")) {
+            if (id.equals(allowed.trim())) return true;
+        }
+        return false;
     }
 
     private void rebuildAmmoTexture(Minecraft mc, int ammo) {
         lastAmmo = ammo;
+        lastShadowOffsetX = LSPECIALConfig.tf2AmmoGuiShadowOffsetX;
+        lastShadowOffsetY = LSPECIALConfig.tf2AmmoGuiShadowOffsetY;
         BufferedImage image = new BufferedImage(TEXTURE_WIDTH, TEXTURE_HEIGHT, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         Font font = loadFont();
         if (font == null) font = new Font(Font.SANS_SERIF, Font.BOLD, 34);
-        font = font.deriveFont(Font.BOLD, 132.0F);
+        font = font.deriveFont(Font.BOLD, 264.0F);
         graphics.setFont(font);
         String value = Integer.toString(ammo);
-        int baseline = 142;
-        graphics.setColor(new Color(0, 0, 0, 220));
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dy = -2; dy <= 2; dy++) {
-                if (dx != 0 || dy != 0) graphics.drawString(value, 20 + dx * 2, baseline + dy * 2);
-            }
-        }
+        int baseline = 284;
+        graphics.setColor(new Color(0, 0, 0, 180));
+        graphics.drawString(value, 40 + LSPECIALConfig.tf2AmmoGuiShadowOffsetX * 2,
+                baseline + LSPECIALConfig.tf2AmmoGuiShadowOffsetY * 2);
         graphics.setColor(Color.WHITE);
-        graphics.drawString(value, 20, baseline);
+        graphics.drawString(value, 40, baseline);
         graphics.dispose();
 
         if (ammoTexture != null) {

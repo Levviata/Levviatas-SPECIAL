@@ -68,7 +68,6 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         }
 
         String itemId = lspecial$registryId(stack);
-        boolean secondaryHeld = lspecial$isSecondaryHeld(stack);
         if ("hbm:gun_fatman".equals(itemId) && LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && intelligence >= 15 && LSPECIALConfig.fatmanHigherPerk && LSPECIALConfig.fatmanHigherPerkDelay) {
             delay = LSPECIALConfig.fatmanHigherPerkDelayTicks;
         } else if ("hbm:gun_laser_pistol".equals(itemId) && LSPECIALConfig.laserPistolDelayBalance && LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && intelligence >= 15) {
@@ -78,11 +77,6 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
             boolean hitBonus = tag != null && tag.getBoolean("LSPECIALDragonsFuryNextShotFast");
             delay = hitBonus ? 11 : 16; // 0.8 s base pressure cycle; 50% faster repressurization after a hit.
             if (hitBonus) tag.setBoolean("LSPECIALDragonsFuryNextShotFast", false);
-        } else if (secondaryHeld && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
-            delay = LSPECIALConfig.lagSecondaryBurstDelay;
-        } else if (secondaryHeld && "hbm:gun_henry_lincoln".equals(itemId)
-                && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(15)) {
-            delay = LSPECIALConfig.lagSecondaryBurstDelay;
         } else if (LSPECIALConfig.weaponSecondaryAmmoCycling && lspecial$isTertiaryMode(stack)) {
             if (lspecial$isStarF(itemId)) {
                 delay = LSPECIALConfig.starFFiftyBmgDelayTicks;
@@ -178,15 +172,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         }
     }
 
-    /** allows the selected Lag/Lincoln secondary mode to repeat for the duration of its managed burst. */
+    /** Keeps the native Carbine semi-auto perk without changing Lag/Lincoln refire behavior. */
     @Inject(method = "getRefireOnHold", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$configureSecondaryRefire(ItemStack stack, CallbackInfoReturnable<Boolean> callback) {
-        String itemId = lspecial$registryId(stack);
-        if (lspecial$isSecondaryHeld(stack) && (("hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5))
-                || ("hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(15)))) {
-            callback.setReturnValue(true);
-            return;
-        }
         if (LSPECIALConfig.carbineSemiAutoPerk && lspecial$isCarbineHigherPerk(stack) && lspecial$isSecondaryHeld(stack)) {
             callback.setReturnValue(false);
         }
@@ -227,31 +215,6 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
                 && SPECIALScoreboard.inst.getIntelligenceScore() != null
                 && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= 15
                 && "hbm:gun_carbine".equals(lspecial$registryId(stack));
-    }
-
-    /** applies the Tau charged-secondary damage bonus and balances three-shot secondary bursts. */
-    @Inject(method = "getBaseDamage", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$adjustSecondaryDamage(ItemStack stack, CallbackInfoReturnable<Float> callback) {
-        if (!lspecial$isSecondaryHeld(stack)) return;
-        String itemId = lspecial$registryId(stack);
-        float damage = callback.getReturnValue();
-
-        if (("hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) || ("hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst
-                && lspecial$hasIntelligence(15))) {
-            callback.setReturnValue((float) (damage * LSPECIALConfig.burstProjectileDamageFraction));
-        }
-    }
-
-    /** changes native receiver burst count only while the matching secondary-fire key is held. */
-    @Inject(method = "getRoundsPerCycle", at = @At("RETURN"), cancellable = true, remap = false)
-    private void lspecial$adjustSecondaryBurst(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
-        if (!lspecial$isSecondaryHeld(stack)) return;
-        String itemId = lspecial$registryId(stack);
-        if (("hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5))
-                || ("hbm:gun_henry_lincoln".equals(itemId)
-                && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(15))) {
-            callback.setReturnValue(1);
-        }
     }
 
     /** tightens spread while the supported lesser-perk weapons are scoped. */

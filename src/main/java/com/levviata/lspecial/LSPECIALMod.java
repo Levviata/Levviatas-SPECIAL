@@ -30,7 +30,7 @@ import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED
 @Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION, guiFactory = "com.levviata.lspecial.LSPECIALGuiFactory")
 public class LSPECIALMod {
     // AI IS FREE SLAVERY
-    /* uploaded src differs from the previous archive, so this update uses the newly attached src. NTM:CE source code was not included; only the dev JAR was available for API signature checks. No build files were included, so a full project build could not be verified. TF2 particle materials and a dedicated airblast sound were not attached, so the existing flame particles and vanilla airblast sound remain. */
+    /* this update uses the newly attached src4.zip. NTM:CE source code was not included; only the dev JAR was available for API signature checks. No build files were included, so a full project build could not be verified. Rocket-jump sound files were not attached, so the requested two-sound variety is a todo placeholder. */
     public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
 
     public static void info(String message, Object... params) {
