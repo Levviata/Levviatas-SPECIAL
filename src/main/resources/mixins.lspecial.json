@@ -7,6 +7,7 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "MixinBeamProjectile",
+    "MixinDragonFuryConfig",
     "MixinDragonFuryProjectile",
     "MixinEntityBulletBaseMK4",
     "MixinEntityBulletBaseNT",

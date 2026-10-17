@@ -1,5 +1,9 @@
 package com.levviata.lspecial;
 
+import com.hbm.items.weapon.sedna.GunConfig;
+import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.items.weapon.sedna.Receiver;
+import com.hbm.items.weapon.sedna.mags.IMagazine;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
@@ -37,7 +41,7 @@ public final class TF2AmmoOverlay {
         ItemStack held = player.getHeldItemMainhand();
         if (!isFlameWeapon(held)) return;
 
-        int ammo = SednaAmmoAccess.getLoaded(held, player);
+        int ammo = getLoadedAmmo(held, player);
         if (ammo < 0) return;
         if (ammo != lastAmmo || ammoTexture == null) rebuildAmmoTexture(mc, ammo);
 
@@ -63,6 +67,33 @@ public final class TF2AmmoOverlay {
                     textWidth, textHeight, TEXTURE_WIDTH, TEXTURE_HEIGHT);
         }
         GlStateManager.disableBlend();
+    }
+
+    private static int getLoadedAmmo(ItemStack stack, EntityPlayer player) {
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT)) return -1;
+        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+            GunConfig config;
+            try {
+                config = gun.getConfig(stack, configIndex);
+            } catch (RuntimeException ignored) {
+                continue;
+            }
+            if (config == null) continue;
+            Receiver[] receivers = config.getReceivers(stack);
+            if (receivers == null) continue;
+            for (Receiver receiver : receivers) {
+                if (receiver == null) continue;
+                IMagazine<?> magazine = receiver.getMagazine(stack);
+                if (magazine == null) continue;
+                try {
+                    return Math.max(0, magazine.getAmount(stack, player == null ? null : player.inventory));
+                } catch (RuntimeException ignored) {
+                    return -1;
+                }
+            }
+        }
+        return -1;
     }
 
     private static boolean isFlameWeapon(ItemStack stack) {

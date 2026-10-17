@@ -29,6 +29,8 @@ import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED
 
 @Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION, guiFactory = "com.levviata.lspecial.LSPECIALGuiFactory")
 public class LSPECIALMod {
+    // AI IS FREE SLAVERY
+    /* NTM:CE source code was not included; only the dev JAR was available for API signature checks. */
     public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
 
     public static void info(String message, Object... params) {

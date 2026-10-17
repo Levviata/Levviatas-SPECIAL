@@ -1,5 +1,9 @@
 package com.levviata.lspecial;
 
+import com.hbm.items.weapon.sedna.GunConfig;
+import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.items.weapon.sedna.Receiver;
+import com.hbm.items.weapon.sedna.mags.IMagazine;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -22,8 +26,8 @@ public final class TF2FlamethrowerHandler {
         }
         String itemId = weapon.getItem().getRegistryName() == null ? "" : weapon.getItem().getRegistryName().toString();
         boolean dragonsFury = "hbm:gun_flamer_topaz".equals(itemId);
-        int ammoCost = dragonsFury ? 5 : AIRBLAST_AMMO_COST;
-        if (!SednaAmmoAccess.consume(weapon, player, ammoCost)) return false;
+        int ammoCost = dragonsFury ? 50 : AIRBLAST_AMMO_COST;
+        if (!consumeAmmo(weapon, player, ammoCost)) return false;
         if (dragonsFury) {
             net.minecraft.nbt.NBTTagCompound tag = weapon.getTagCompound();
             if (tag == null) {
@@ -80,6 +84,38 @@ public final class TF2FlamethrowerHandler {
         return true;
     }
 
+
+    private static boolean consumeAmmo(ItemStack stack, EntityPlayer player, int amount) {
+        if (amount <= 0) return true;
+        if (player == null || stack == null || stack.isEmpty()
+                || !(stack.getItem() instanceof ItemGunBaseNT)) return false;
+        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+            GunConfig config;
+            try {
+                config = gun.getConfig(stack, configIndex);
+            } catch (RuntimeException ignored) {
+                continue;
+            }
+            if (config == null) continue;
+            Receiver[] receivers = config.getReceivers(stack);
+            if (receivers == null) continue;
+            for (Receiver receiver : receivers) {
+                if (receiver == null) continue;
+                IMagazine<?> magazine = receiver.getMagazine(stack);
+                if (magazine == null) continue;
+                try {
+                    int loaded = magazine.getAmount(stack, player.inventory);
+                    if (loaded < amount) return false;
+                    magazine.useUpAmmo(stack, player.inventory, amount);
+                    return true;
+                } catch (RuntimeException ignored) {
+                    return false;
+                }
+            }
+        }
+        return false;
+    }
 
     @SubscribeEvent
     public void tickPressureLocks(TickEvent.PlayerTickEvent event) {

@@ -34,9 +34,7 @@ public abstract class MixinDragonFuryProjectile {
     @Inject(method = "onUpdate", at = @At("HEAD"), remap = false)
     private void lspecial$renderDragonFuryTrail(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (!projectile.world.isRemote
-                || !"hbm:gun_flamer_topaz".equals(projectile.getEntityData().getString("LSPECIALShooterWeapon"))
-                || !lspecial$isDragonFuryFlame(config)) return;
+        if (!projectile.world.isRemote || !lspecial$isDragonFuryFlame(config)) return;
         for (int i = 0; i < 3; i++) {
             double spreadX = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
             double spreadY = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
@@ -59,13 +57,22 @@ public abstract class MixinDragonFuryProjectile {
 
         EntityLivingBase target = (EntityLivingBase) hit.entityHit;
         String weaponId = projectile.getEntityData().getString("LSPECIALShooterWeapon");
-        if ("hbm:gun_flamer_topaz".equals(weaponId) && lspecial$isDragonFuryFlame(config)) {
+        // The Topaz weapon uses its own four BulletConfig instances in NTM.
+        // Identify the projectile by that native configuration, not by an LSPECIAL
+        // shooter tag that NTM does not set for ordinary Sedna flamer shots.
+        if (lspecial$isDragonFuryFlame(config)) {
             lspecial$igniteAfterImpact = target;
+            boolean airblastMiniCrit = projectile.getEntityData().getBoolean("LSPECIALAirblastMiniCrit");
             if (target.isBurning()) {
                 lspecial$damageBeforeImpact = damage;
                 damage = damage * 3.0F;
                 lspecial$boostedImpactDamage = true;
+            } else if (airblastMiniCrit) {
+                lspecial$damageBeforeImpact = damage;
+                damage = damage * 1.35F;
+                lspecial$boostedImpactDamage = true;
             }
+            if (airblastMiniCrit) projectile.getEntityData().removeTag("LSPECIALAirblastMiniCrit");
 
             EntityLivingBase shooter = projectile.getThrower();
             if (shooter instanceof EntityPlayer) {
@@ -82,6 +89,14 @@ public abstract class MixinDragonFuryProjectile {
                 }
             }
             return;
+        }
+
+        // A reflected non-Dragon's-Fury projectile receives TF2-style mini-crit damage.
+        if (projectile.getEntityData().getBoolean("LSPECIALAirblastMiniCrit")) {
+            lspecial$damageBeforeImpact = damage;
+            damage = damage * 1.35F;
+            lspecial$boostedImpactDamage = true;
+            projectile.getEntityData().removeTag("LSPECIALAirblastMiniCrit");
         }
 
         // Preserve the unrelated LSPECIAL Tau charged-shot bonus.
