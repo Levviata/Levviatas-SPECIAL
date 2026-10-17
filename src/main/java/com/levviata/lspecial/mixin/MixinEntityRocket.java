@@ -42,21 +42,22 @@ public abstract class MixinEntityRocket {
     private void lspecial$recordLauncher(EntityLivingBase shooter) {
         EntityRocket rocket = (EntityRocket) (Object) this;
         if (!(shooter instanceof EntityPlayer)) {
-            LSPECIALMod.info("[RocketDebug] EntityRocket constructor shooter is not a player: rocket={} shooter={}",
-                    rocket.getEntityId(), shooter == null ? "null" : shooter.getClass().getName());
+            LSPECIALMod.info("[RocketDebug] EntityRocket launcher-record skipped shooter={} rocketId={}",
+                    shooter == null ? "null" : shooter.getClass().getName(), rocket.getEntityId());
             return;
         }
-        EntityPlayer player = (EntityPlayer) shooter;
-        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
+        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) shooter);
         if (weapon == null) {
-            LSPECIALMod.info("[RocketDebug] EntityRocket launcher NOT recorded: rocket={} player={} heldMain={} heldOff={}",
-                    rocket.getEntityId(), player.getName(), player.getHeldItemMainhand(), player.getHeldItemOffhand());
+            LSPECIALMod.info("[RocketDebug] EntityRocket launcher-record FAILED player={} rocketId={} mainhand={} offhand={}",
+                    ((EntityPlayer) shooter).getName(), rocket.getEntityId(),
+                    ((EntityPlayer) shooter).getHeldItemMainhand().getItem().getRegistryName(),
+                    ((EntityPlayer) shooter).getHeldItemOffhand().getItem().getRegistryName());
             return;
         }
         rocket.getEntityData().setUniqueId("LSPECIALShooterUUID", shooter.getUniqueID());
         rocket.getEntityData().setString("LSPECIALShooterWeapon", weapon);
-        LSPECIALMod.info("[RocketDebug] EntityRocket launcher RECORDED rocket={} player={} weapon={} ctor={}",
-                rocket.getEntityId(), player.getName(), weapon, rocket.getClass().getName());
+        LSPECIALMod.info("[RocketDebug] EntityRocket launcher-recorded player={} weapon={} rocketId={}",
+                ((EntityPlayer) shooter).getName(), weapon, rocket.getEntityId());
     }
 
     @Redirect(method = "onUpdate()V",
@@ -73,10 +74,9 @@ public abstract class MixinEntityRocket {
                 && shooter instanceof EntityPlayer;
         EntityPlayer player = familyRocket ? (EntityPlayer) shooter : null;
         boolean rocketJump = RocketJumpHandler.isPerkActive(player);
-        LSPECIALMod.info("[RocketDebug] EntityRocket explosion redirect rocket={} shooter={} weapon={} familyRocket={} selfDamageProtection={} rocketJumpPerk={} source={} pos=({}, {}, {}) size={} explosionSize={}",
+        LSPECIALMod.info("[RocketDebug] EntityRocket explode rocketId={} owner={} weapon={} family={} selfProtection={} rocketJump={} explosion=({}, {}, {}) radius={}",
                 rocket.getEntityId(), shooter == null ? "null" : shooter.getName(), weapon, familyRocket,
-                LSPECIALConfig.stingerSelfDamageProtection, rocketJump, 
-                explosionSource == null ? "null" : explosionSource.getClass().getName(), x, y, z, size, rocket.explosionSize);
+                LSPECIALConfig.stingerSelfDamageProtection, rocketJump, x, y, z, size);
 
         double previousMotionX = player == null ? 0.0D : player.motionX;
         double previousMotionY = player == null ? 0.0D : player.motionY;
@@ -94,14 +94,11 @@ public abstract class MixinEntityRocket {
         }
 
         if (!rocketJump) {
-            LSPECIALMod.info("[RocketDebug] EntityRocket rocket jump skipped rocket={} player={} (familyRocket={}, perkActive={})",
-                    rocket.getEntityId(), player == null ? "null" : player.getName(), familyRocket, rocketJump);
+            LSPECIALMod.info("[RocketDebug] EntityRocket rocket-jump not applied rocketId={} family={} perkActive={}",
+                    rocket.getEntityId(), familyRocket, rocketJump);
             return;
         }
 
-        LSPECIALMod.info("[RocketDebug] EntityRocket applying rocket jump rocket={} player={} previousMotion=({}, {}, {}) postExplosionMotion=({}, {}, {})",
-                rocket.getEntityId(), player.getName(), previousMotionX, previousMotionY, previousMotionZ,
-                player.motionX, player.motionY, player.motionZ);
         RocketJumpHandler.applyBlastJump(player, x, y, z,
                 previousMotionX, previousMotionY, previousMotionZ,
                 rocket.motionX, rocket.motionY, rocket.motionZ,

@@ -9,6 +9,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -27,21 +28,11 @@ public final class StingerDamageHandler {
         if (owner instanceof EntityPlayer && isStingerFamilyWeapon(weaponId)) {
             ROCKET_EXPLOSION_OWNER.set((EntityPlayer) owner);
             ROCKET_EXPLOSION_WEAPON.set(weaponId);
-            LSPECIALMod.info("[RocketDebug] explosion context BEGIN owner={} weapon={}",
-                    owner.getName(), weaponId);
-        } else {
-            LSPECIALMod.info("[RocketDebug] explosion context NOT started ownerType={} weapon={} recognized={}",
-                    owner == null ? "null" : owner.getClass().getName(), weaponId,
-                    isStingerFamilyWeapon(weaponId));
         }
     }
 
     /** clears the temporary explosion context after NTM has applied explosion damage and knockback. */
     public static void endRocketExplosion() {
-        EntityPlayer owner = ROCKET_EXPLOSION_OWNER.get();
-        String weapon = ROCKET_EXPLOSION_WEAPON.get();
-        LSPECIALMod.info("[RocketDebug] explosion context END owner={} weapon={}",
-                owner == null ? "null" : owner.getName(), weapon);
         ROCKET_EXPLOSION_OWNER.remove();
         ROCKET_EXPLOSION_WEAPON.remove();
     }
@@ -90,38 +81,42 @@ public final class StingerDamageHandler {
         DamageSource source = event.getSource();
         Entity immediate = source.getImmediateSource();
         Entity trueSource = source.getTrueSource();
-
-        boolean supportedImmediate = isSupportedProjectile(immediate);
-        Entity immediateOwner = supportedImmediate ? getProjectileOwner(immediate) : null;
-        boolean recordedLauncher = supportedImmediate && isLauncherRecorded(immediate);
-        boolean launcherHeld = isStingerFamilyHeld(player);
-
-        // Log only rocket-like candidates, not every unrelated hit the player takes.
-        if (supportedImmediate || source.isExplosion() || isTrackedRocketExplosion(player)) {
-            LSPECIALMod.info("[RocketDebug] LivingAttack player={} damageType={} explosion={} immediate={} trueSource={} immediateOwner={} recordedLauncher={} heldLauncher={} trackedContext={}",
-                    player.getName(), source.getDamageType(), source.isExplosion(),
-                    immediate == null ? "null" : immediate.getClass().getName() + "#" + immediate.getEntityId(),
-                    trueSource == null ? "null" : trueSource.getClass().getName() + "#" + trueSource.getEntityId(),
-                    immediateOwner == null ? "null" : immediateOwner.getClass().getName() + "#" + immediateOwner.getEntityId(),
-                    recordedLauncher, launcherHeld, isTrackedRocketExplosion(player));
+        boolean tracked = isTrackedRocketExplosion(player);
+        boolean heldFallback = source.isExplosion() && trueSource == player && isStingerFamilyHeld(player);
+        boolean directProjectile = isSupportedProjectile(immediate) && getProjectileOwner(immediate) == player
+                && (isLauncherRecorded(immediate) || isStingerFamilyHeld(player));
+        boolean cancel = directProjectile || tracked || heldFallback;
+        if (source.isExplosion() || directProjectile || tracked) {
+            LSPECIALMod.info("[RocketDebug] LivingAttack player={} damageType={} explosion={} immediate={} trueSource={} immediateOwner={} recordedLauncher={} heldLauncher={} trackedContext={} directProjectileMatch={} cancel={}",
+                    player.getName(), source.damageType, source.isExplosion(), describeEntity(immediate),
+                    describeEntity(trueSource), describeEntity(immediate == null ? null : getProjectileOwner(immediate)),
+                    isLauncherRecorded(immediate), isStingerFamilyHeld(player), tracked, directProjectile, cancel);
         }
-
-        // Direct projectile hits can identify the projectile itself as the immediate source.
-        if (supportedImmediate && immediateOwner == player && (recordedLauncher || launcherHeld)) {
-            LSPECIALMod.info("[RocketDebug] CANCELLING direct self-damage player={} projectile={} recordedLauncher={} heldLauncher={}",
-                    player.getName(), immediate.getClass().getName(), recordedLauncher, launcherHeld);
+        if (cancel) {
             event.setCanceled(true);
-            return;
+            LSPECIALMod.info("[RocketDebug] LivingAttack CANCELLED player={} damageType={} trackedContext={} heldLauncherFallback={} directProjectile={}",
+                    player.getName(), source.damageType, tracked, heldFallback, directProjectile);
         }
+    }
 
-        // EntityRocket may attribute explosion damage directly to the firing player.
-        boolean trackedExplosion = isTrackedRocketExplosion(player);
-        boolean heldLauncherExplosion = source.isExplosion() && trueSource == player && launcherHeld;
-        if (trackedExplosion || heldLauncherExplosion) {
-            LSPECIALMod.info("[RocketDebug] CANCELLING explosion self-damage player={} trackedContext={} heldLauncherFallback={}",
-                    player.getName(), trackedExplosion, heldLauncherExplosion);
+    /** catches damage implementations that continue into the hurt stage despite an attack-stage handler. */
+    @SubscribeEvent
+    public static void onLivingHurt(LivingHurtEvent event) {
+        if (!LSPECIALConfig.stingerSelfDamageProtection || event == null
+                || !(event.getEntityLiving() instanceof EntityPlayer)) return;
+        EntityPlayer player = (EntityPlayer) event.getEntityLiving();
+        DamageSource source = event.getSource();
+        boolean tracked = isTrackedRocketExplosion(player);
+        boolean heldFallback = source.isExplosion() && source.getTrueSource() == player && isStingerFamilyHeld(player);
+        if (tracked || heldFallback) {
+            LSPECIALMod.info("[RocketDebug] LivingHurt CANCELLED player={} damageType={} amount={} trackedContext={} heldLauncherFallback={}",
+                    player.getName(), source.damageType, event.getAmount(), tracked, heldFallback);
             event.setCanceled(true);
         }
+    }
+
+    private static String describeEntity(Entity entity) {
+        return entity == null ? "null" : entity.getClass().getName() + "#" + entity.getEntityId();
     }
 
     /** limits direct-hit checks to NTM projectile classes that expose a shooter or thrower reference. */
