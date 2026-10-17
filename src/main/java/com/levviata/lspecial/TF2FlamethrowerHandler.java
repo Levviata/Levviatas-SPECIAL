@@ -100,16 +100,25 @@ public final class TF2FlamethrowerHandler {
         lspecial$removeGroundFire(player, look, origin);
         player.world.playSound(null, player.getPosition(), net.minecraft.init.SoundEvents.ENTITY_BLAZE_SHOOT,
                 net.minecraft.util.SoundCategory.PLAYERS, 0.75F, 1.35F);
-        // render several expanding-looking rings with particles, from the nozzle out to the airblast limit
-        for (int ring = 1; ring <= 5; ring++) {
-            double radius = ring;
-            int points = ring * 12;
-            for (int i = 0; i < points; i++) {
-                double angle = (Math.PI * 2.0D * i) / points;
-                double x = origin.x + look.x * radius + Math.cos(angle) * radius * 0.45D;
-                double y = origin.y + look.y * radius + Math.sin(angle) * radius * 0.45D;
-                double z = origin.z + look.z * radius + Math.sin(angle) * radius * 0.45D;
-                player.world.spawnParticle(net.minecraft.util.EnumParticleTypes.CLOUD, x, y, z, 0.0D, 0.015D, 0.0D);
+        // send a visible expanding blast plane to tracking clients; use WorldServer's packet path
+        if (player.world instanceof net.minecraft.world.WorldServer) {
+            net.minecraft.world.WorldServer serverWorld = (net.minecraft.world.WorldServer) player.world;
+            Vec3d right = look.crossProduct(new Vec3d(0.0D, 1.0D, 0.0D));
+            if (right.lengthSquared() < 0.0001D) right = new Vec3d(1.0D, 0.0D, 0.0D);
+            right = right.normalize();
+            Vec3d up = right.crossProduct(look).normalize();
+            for (int ring = 1; ring <= 5; ring++) {
+                double forward = ring * 1.35D;
+                double radius = 0.30D + ring * 0.34D;
+                int points = 18 + ring * 8;
+                for (int i = 0; i < points; i++) {
+                    double angle = (Math.PI * 2.0D * i) / points;
+                    double x = origin.x + look.x * forward + (right.x * Math.cos(angle) + up.x * Math.sin(angle)) * radius;
+                    double y = origin.y + look.y * forward + (right.y * Math.cos(angle) + up.y * Math.sin(angle)) * radius;
+                    double z = origin.z + look.z * forward + (right.z * Math.cos(angle) + up.z * Math.sin(angle)) * radius;
+                    serverWorld.spawnParticle(net.minecraft.util.EnumParticleTypes.FLAME, x, y, z, 0.0D, 0.015D, 0.0D);
+                    serverWorld.spawnParticle(net.minecraft.util.EnumParticleTypes.CLOUD, x, y, z, look.x * 0.08D, look.y * 0.08D, look.z * 0.08D);
+                }
             }
         }
         return true;

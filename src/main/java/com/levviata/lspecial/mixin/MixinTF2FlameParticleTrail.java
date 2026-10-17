@@ -6,6 +6,8 @@ import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
 import com.levviata.lspecial.client.render.TF2FlameParticle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -13,19 +15,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// ass
 // rationale: this client-only mixin adds the changing color and size trail because vanilla flame particles cannot be tinted or scaled per shot. It only adds particles and leaves NTM collision and damage intact; it may conflict with other trail-rendering mixins. Avoidable if NTM exposes a configurable projectile trail.
+@SideOnly(Side.CLIENT)
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)
 public abstract class MixinTF2FlameParticleTrail {
     @Shadow public BulletConfig config;
     @Unique private float lspecial$intensity = Float.NaN;
     @Unique private float lspecial$saturation = Float.NaN;
-    @Unique private static int lspecial$updateEntries;
     @Unique private static int lspecial$matchedProjectiles;
-    @Unique private static int lspecial$spawnedParticles;
-    @Unique private boolean lspecial$loggedMatch;
-    @Unique private static boolean lspecial$loggedParticle;
-    @Unique
-    private static int lspecial$trailUpdateCalls;
 
     @Inject(method = "onUpdate()V", at = @At("HEAD"), remap = false)
     private void lspecial$spawnTintedTrail(CallbackInfo callback) {
@@ -33,43 +31,13 @@ public abstract class MixinTF2FlameParticleTrail {
         BulletConfig active = config != null ? config : projectile.getBulletConfig();
         boolean configMatch = lspecial$isStandardFlame(active);
         boolean shooterMatch = lspecial$isStandardFlamerShot(projectile);
-
-        int call = ++lspecial$trailUpdateCalls;
-        if (call <= 20 || call % 100 == 0) {
-            com.levviata.lspecial.LSPECIALMod.logWarn(
-                    "[TF2FlameTrail-DIAG] onUpdate entry call={} entityId={} age={} remote={} dead={} configNull={} configMatch={} shooterMatch={} shooter={} mainHand={} offHand={}",
-                    call,
-                    projectile.getEntityId(),
-                    projectile.ticksExisted,
-                    projectile.world.isRemote,
-                    projectile.isDead,
-                    active == null,
-                    configMatch,
-                    shooterMatch,
-                    projectile.getThrower() == null ? "null" : projectile.getThrower().getClass().getName(),
-                    projectile.getThrower() == null ? "null" : projectile.getThrower().getHeldItemMainhand().getItem().getRegistryName(),
-                    projectile.getThrower() == null ? "null" : projectile.getThrower().getHeldItemOffhand().getItem().getRegistryName()
-            );
-        }
-
-        if (!projectile.world.isRemote || (!configMatch && !shooterMatch)) {
-            if (call <= 20 || call % 100 == 0) {
-                com.levviata.lspecial.LSPECIALMod.logWarn(
-                        "[TF2FlameTrail-DIAG] rejected call={} remote={} configMatch={} shooterMatch={}",
-                        call, projectile.world.isRemote, configMatch, shooterMatch
-                );
-            }
-            return;
-        }
-        if (!lspecial$loggedMatch) {
-            lspecial$loggedMatch = true;
+        if (!projectile.world.isRemote || (!configMatch && !shooterMatch)) return;
+        if (projectile.ticksExisted == 1) {
             int matched = ++lspecial$matchedProjectiles;
             if (matched <= 12 || matched % 100 == 0) {
-                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] matched projectile={} entityId={} age={} config={} configMatch={} shooterMatch={} shooter={} pos=({}, {}, {}) motion=({}, {}, {})",
-                        matched, projectile.getEntityId(), projectile.ticksExisted,
-                        active == null ? "null" : active.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(active)),
-                        configMatch, shooterMatch, projectile.getThrower() == null ? "null" : projectile.getThrower().getClass().getName(),
-                        projectile.posX, projectile.posY, projectile.posZ, projectile.motionX, projectile.motionY, projectile.motionZ);
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] matched projectile={} config={} configMatch={} shooterMatch={} pos=({}, {}, {}) motion=({}, {}, {})",
+                        matched, active == null ? "null" : active.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(active)),
+                        configMatch, shooterMatch, projectile.posX, projectile.posY, projectile.posZ, projectile.motionX, projectile.motionY, projectile.motionZ);
             }
         }
         if (projectile.ticksExisted % 2 != 0) return;
@@ -94,23 +62,11 @@ public abstract class MixinTF2FlameParticleTrail {
         double jitterX = (projectile.world.rand.nextDouble() - 0.5D) * 0.04D;
         double jitterY = (projectile.world.rand.nextDouble() - 0.5D) * 0.04D;
         double jitterZ = (projectile.world.rand.nextDouble() - 0.5D) * 0.04D;
-        TF2FlameParticle particle = new TF2FlameParticle(projectile.world,
+        Minecraft.getMinecraft().effectRenderer.addEffect(new TF2FlameParticle(projectile.world,
                 projectile.posX, projectile.posY, projectile.posZ,
                 -projectile.motionX * 0.02D + jitterX, -projectile.motionY * 0.02D + jitterY,
                 -projectile.motionZ * 0.02D + jitterZ, size,
-                clamp(red), clamp(green), clamp(blue));
-        Minecraft.getMinecraft().effectRenderer.addEffect(particle);
-        if (!lspecial$loggedParticle) {
-            lspecial$loggedParticle = true;
-            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] first particle added: entityId={} age={} particle={} particleLifetime={} particleScale={} rgb=({}, {}, {}) effectRenderer={}",
-                    projectile.getEntityId(), projectile.ticksExisted, particle.getClass().getName(), particle.lspecial$getLifetime(),
-                    particle.lspecial$getScale(), clamp(red), clamp(green), clamp(blue), Minecraft.getMinecraft().effectRenderer.getClass().getName());
-        }
-        int spawned = ++lspecial$spawnedParticles;
-        if (spawned == 1 || spawned % 500 == 0) {
-            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] particle count={} latestEntityId={} age={} scale={} pos=({}, {}, {})", spawned,
-                    projectile.getEntityId(), projectile.ticksExisted, size, projectile.posX, projectile.posY, projectile.posZ);
-        }
+                clamp(red), clamp(green), clamp(blue)));
     }
 
     @Unique

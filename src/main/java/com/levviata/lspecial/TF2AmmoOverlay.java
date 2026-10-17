@@ -38,8 +38,6 @@ public final class TF2AmmoOverlay {
     private static int lspecial$renderEvents;
     private static boolean lspecial$loggedOverlayReady;
     private static boolean lspecial$loggedWeapon;
-    private static boolean lspecial$loggedBadgeResource;
-    private static boolean lspecial$loggedDrawState;
 
     @SubscribeEvent
     public void render(RenderGameOverlayEvent.Post event) {
@@ -134,26 +132,12 @@ public final class TF2AmmoOverlay {
                 | (LSPECIALConfig.tf2AmmoGuiBackgroundRed << 16)
                 | (LSPECIALConfig.tf2AmmoGuiBackgroundGreen << 8)
                 | LSPECIALConfig.tf2AmmoGuiBackgroundBlue;
-        if (!lspecial$loggedBadgeResource) {
-            lspecial$loggedBadgeResource = true;
-            try {
-                mc.getResourceManager().getResource(BADGE).close();
-                LSPECIALMod.logWarn("[TF2AmmoGUI] badge resource found: path={} textureSize={}x{}", BADGE, BADGE_TEXTURE_WIDTH, BADGE_TEXTURE_HEIGHT);
-            } catch (Exception exception) {
-                LSPECIALMod.logError("[TF2AmmoGUI] badge resource missing/unreadable: path={} error={}", BADGE, exception.toString());
-            }
-        }
         mc.getTextureManager().bindTexture(BADGE);
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 0.80F);
         Gui.drawModalRectWithCustomSizedTexture(left, top, 0, 0, badgeWidth, badgeHeight,
                 BADGE_TEXTURE_WIDTH, BADGE_TEXTURE_HEIGHT);
-        if (!lspecial$loggedDrawState) {
-            lspecial$loggedDrawState = true;
-            LSPECIALMod.logWarn("[TF2AmmoGUI] badge draw issued: bounds=({}, {})-({}, {}) alpha=0.80 blend=true texture={} backgroundAlpha={} ammoTextureReady={}",
-                    left, top, left + badgeWidth, top + badgeHeight, BADGE, LSPECIALConfig.tf2AmmoGuiBackgroundAlpha, ammoTexture != null);
-        }
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
         if (LSPECIALConfig.tf2AmmoGuiBackgroundAlpha > 0) {
@@ -168,8 +152,6 @@ public final class TF2AmmoOverlay {
         }
         GlStateManager.disableBlend();
         if (lspecial$renderEvents % 200 == 1) {
-            LSPECIALMod.logWarn("[TF2AmmoGUI] draw pass complete: ammoTexture={} textBounds=({}, {})-({}, {}) textSize={}x{} blendDisabled=true",
-                    ammoTexture, textX, textY, textX + textWidth, textY + textHeight, textWidth, textHeight);
             LSPECIALMod.logWarn("[TF2AmmoGUI] rendered: ammo={}, screen={}x{}, badge={}x{} at {},{} scale={} preset={}",
                     ammo, screenWidth, screenHeight, badgeWidth, badgeHeight, left, top, uiScale, position);
         }

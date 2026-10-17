@@ -30,7 +30,7 @@ import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED
 @Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION, guiFactory = "com.levviata.lspecial.LSPECIALGuiFactory")
 public class LSPECIALMod {
     // AI IS FREE SLAVERY
-    /* NTM:CE source is now available for inspection, including EntityBulletBaseMK4 and RenderBulletMK4. Standard flamer visuals now log renderer cancellation, trail particle creation, projectile motion and GUI texture drawing to diagnose visibility issues. No build files are included in the addon src archive, so a full project build could not be verified. Rocket-jump sound files remain missing. */
+    /* NTM:CE source is available and RenderBulletMK4 delegates to BulletConfig.renderer inside a balanced push/pop matrix. Standard flamer configs had no renderer, so a client-only cached BulletConfig clone now supplies a dedicated renderer without changing the synced config ID or shared NTM config. Airblast particles now use WorldServer's synchronized particle path and a plane perpendicular to aim. Full compilation could not be verified because the addon archive has no build files. Rocket-jump sound files remain missing. */
     public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
 
     public static void info(String message, Object... params) {

@@ -5,24 +5,24 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-/** A scaled, tinted flame particle for the TF2-style flamethrower trail. */
+/** A large, gravity-free flame sprite for the dedicated NTM flamer renderer. */
 @SideOnly(Side.CLIENT)
 public final class TF2FlameParticle extends ParticleFlame {
-    public TF2FlameParticle(World world, double x, double y, double z,
-                            double motionX, double motionY, double motionZ,
-                            float scale, float red, float green, float blue) {
+    private final float lspecial$baseScale;
+
+    public TF2FlameParticle(World world, double x, double y, double z, double motionX, double motionY, double motionZ, float scale, float red, float green, float blue) {
         super(world, x, y, z, motionX, motionY, motionZ);
+        this.lspecial$baseScale = scale;
         this.particleScale = scale;
         this.particleGravity = 0.0F;
-        this.particleMaxAge = 8;
+        this.particleMaxAge = 12;
         this.setRBGColorF(red, green, blue);
     }
 
-    public float lspecial$getScale() {
-        return this.particleScale;
-    }
-
-    public int lspecial$getLifetime() {
-        return this.particleMaxAge;
+    @Override
+    public void onUpdate() {
+        super.onUpdate();
+        float life = (float)this.particleAge / (float)this.particleMaxAge;
+        this.particleScale = this.lspecial$baseScale * (1.0F - 0.45F * life);
     }
 }

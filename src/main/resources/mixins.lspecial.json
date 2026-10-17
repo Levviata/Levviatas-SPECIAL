@@ -37,7 +37,6 @@
   "client": [
     "MixinEntityRenderer",
     "MixinRenderItemOverlay",
-    "MixinTF2FlameParticleTrail",
     "MixinTF2FlameRender"
   ]
 }
