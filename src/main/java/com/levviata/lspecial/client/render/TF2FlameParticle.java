@@ -17,4 +17,12 @@ public final class TF2FlameParticle extends ParticleFlame {
         this.particleMaxAge = 8;
         this.setRBGColorF(red, green, blue);
     }
+
+    public float lspecial$getScale() {
+        return this.particleScale;
+    }
+
+    public int lspecial$getLifetime() {
+        return this.particleMaxAge;
+    }
 }

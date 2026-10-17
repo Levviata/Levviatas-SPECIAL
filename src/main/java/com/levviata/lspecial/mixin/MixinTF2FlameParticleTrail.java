@@ -23,6 +23,9 @@ public abstract class MixinTF2FlameParticleTrail {
     @Unique private float lspecial$intensity = Float.NaN;
     @Unique private float lspecial$saturation = Float.NaN;
     @Unique private static int lspecial$matchedProjectiles;
+    @Unique private static int lspecial$spawnedParticles;
+    @Unique private boolean lspecial$loggedMatch;
+    @Unique private static boolean lspecial$loggedParticle;
 
     @Inject(method = "onUpdate()V", at = @At("HEAD"), remap = false)
     private void lspecial$spawnTintedTrail(CallbackInfo callback) {
@@ -31,12 +34,15 @@ public abstract class MixinTF2FlameParticleTrail {
         boolean configMatch = lspecial$isStandardFlame(active);
         boolean shooterMatch = lspecial$isStandardFlamerShot(projectile);
         if (!projectile.world.isRemote || (!configMatch && !shooterMatch)) return;
-        if (projectile.ticksExisted == 1) {
+        if (!lspecial$loggedMatch) {
+            lspecial$loggedMatch = true;
             int matched = ++lspecial$matchedProjectiles;
             if (matched <= 12 || matched % 100 == 0) {
-                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] matched projectile={} config={} configMatch={} shooterMatch={} pos=({}, {}, {}) motion=({}, {}, {})",
-                        matched, active == null ? "null" : active.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(active)),
-                        configMatch, shooterMatch, projectile.posX, projectile.posY, projectile.posZ, projectile.motionX, projectile.motionY, projectile.motionZ);
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] matched projectile={} entityId={} age={} config={} configMatch={} shooterMatch={} shooter={} pos=({}, {}, {}) motion=({}, {}, {})",
+                        matched, projectile.getEntityId(), projectile.ticksExisted,
+                        active == null ? "null" : active.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(active)),
+                        configMatch, shooterMatch, projectile.getThrower() == null ? "null" : projectile.getThrower().getClass().getName(),
+                        projectile.posX, projectile.posY, projectile.posZ, projectile.motionX, projectile.motionY, projectile.motionZ);
             }
         }
         if (projectile.ticksExisted % 2 != 0) return;
@@ -61,11 +67,23 @@ public abstract class MixinTF2FlameParticleTrail {
         double jitterX = (projectile.world.rand.nextDouble() - 0.5D) * 0.04D;
         double jitterY = (projectile.world.rand.nextDouble() - 0.5D) * 0.04D;
         double jitterZ = (projectile.world.rand.nextDouble() - 0.5D) * 0.04D;
-        Minecraft.getMinecraft().effectRenderer.addEffect(new TF2FlameParticle(projectile.world,
+        TF2FlameParticle particle = new TF2FlameParticle(projectile.world,
                 projectile.posX, projectile.posY, projectile.posZ,
                 -projectile.motionX * 0.02D + jitterX, -projectile.motionY * 0.02D + jitterY,
                 -projectile.motionZ * 0.02D + jitterZ, size,
-                clamp(red), clamp(green), clamp(blue)));
+                clamp(red), clamp(green), clamp(blue));
+        Minecraft.getMinecraft().effectRenderer.addEffect(particle);
+        if (!lspecial$loggedParticle) {
+            lspecial$loggedParticle = true;
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] first particle added: entityId={} age={} particle={} particleLifetime={} particleScale={} rgb=({}, {}, {}) effectRenderer={}",
+                    projectile.getEntityId(), projectile.ticksExisted, particle.getClass().getName(), particle.lspecial$getLifetime(),
+                    particle.lspecial$getScale(), clamp(red), clamp(green), clamp(blue), Minecraft.getMinecraft().effectRenderer.getClass().getName());
+        }
+        int spawned = ++lspecial$spawnedParticles;
+        if (spawned == 1 || spawned % 500 == 0) {
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] particle count={} latestEntityId={} age={} scale={} pos=({}, {}, {})", spawned,
+                    projectile.getEntityId(), projectile.ticksExisted, size, projectile.posX, projectile.posY, projectile.posZ);
+        }
     }
 
     @Unique

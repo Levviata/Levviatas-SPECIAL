@@ -24,15 +24,22 @@ public abstract class MixinTF2FlameRender {
         boolean shooterMatch = lspecial$isHeldStandardFlamer(bullet);
         boolean match = configMatch || shooterMatch;
         if (call <= 8 || call % 200 == 0) {
-            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameRender] hook reached call={} entity={} config={} configMatch={} shooter={} heldFlamer={} worldRemote={}",
-                    call, bullet.getClass().getName(), config == null ? "null" : config.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(config)),
-                    configMatch, bullet.getThrower() == null ? "null" : bullet.getThrower().getClass().getName(), shooterMatch, bullet.world.isRemote);
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameRender] hook call={} entityId={} age={} entity={} config={} configMatch={} configGravity={} configRenderer={} shooter={} shooterId={} heldFlamer={} worldRemote={} pos=({}, {}, {})",
+                    call, bullet.getEntityId(), bullet.ticksExisted, bullet.getClass().getName(),
+                    config == null ? "null" : config.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(config)),
+                    configMatch, config == null ? "null" : config.gravity,
+                    config == null || config.renderer == null ? "null" : config.renderer.getClass().getName(),
+                    bullet.getThrower() == null ? "null" : bullet.getThrower().getClass().getName(),
+                    bullet.getThrower() == null ? -1 : bullet.getThrower().getEntityId(), shooterMatch, bullet.world.isRemote,
+                    bullet.posX, bullet.posY, bullet.posZ);
         }
         if (match) {
             callback.cancel();
             int cancelled = ++lspecial$cancelledRenders;
             if (cancelled <= 8 || cancelled % 200 == 0) {
-                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameRender] original NTM renderer CANCELLED count={} configMatch={} shooterMatch={}", cancelled, configMatch, shooterMatch);
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameRender] original NTM renderer CANCELLED count={} entityId={} age={} configMatch={} shooterMatch={} trailShouldMatch={} renderer={}",
+                        cancelled, bullet.getEntityId(), bullet.ticksExisted, configMatch, shooterMatch,
+                        bullet.world.isRemote && (configMatch || shooterMatch), config == null || config.renderer == null ? "null" : config.renderer.getClass().getName());
             }
         }
     }

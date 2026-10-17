@@ -21,6 +21,8 @@ public abstract class MixinTF2FlameProjectile {
     @Unique private boolean lspecial$originSet;
     @Unique private double lspecial$initialSpeed = -1.0D;
     @Unique private boolean lspecial$loggedMotion;
+    @Unique private boolean lspecial$loggedOrigin;
+    @Unique private boolean lspecial$loggedExpiry;
 
     @Inject(method = "getGravityVelocity()F", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$removeFlameGravity(CallbackInfoReturnable<Float> callback) {
@@ -36,10 +38,21 @@ public abstract class MixinTF2FlameProjectile {
         if (!lspecial$originSet) {
             lspecial$originX = projectile.posX; lspecial$originY = projectile.posY; lspecial$originZ = projectile.posZ;
             lspecial$originSet = true;
+            if (!lspecial$loggedOrigin) {
+                lspecial$loggedOrigin = true;
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] origin captured: entityId={} age={} configMatch={} shooterMatch={} pos=({}, {}, {}) motion=({}, {}, {})",
+                        projectile.getEntityId(), projectile.ticksExisted, lspecial$isStandardFlame(active), lspecial$isStandardFlamerShot(projectile),
+                        projectile.posX, projectile.posY, projectile.posZ, projectile.motionX, projectile.motionY, projectile.motionZ);
+            }
         }
         double travelled = lspecial$distance(projectile.posX, projectile.posY, projectile.posZ,
                 lspecial$originX, lspecial$originY, lspecial$originZ);
         if (travelled >= 8.0D) {
+            if (!lspecial$loggedExpiry) {
+                lspecial$loggedExpiry = true;
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] range limit reached at HEAD: entityId={} age={} distance={} pos=({}, {}, {})",
+                        projectile.getEntityId(), projectile.ticksExisted, travelled, projectile.posX, projectile.posY, projectile.posZ);
+            }
             projectile.setDead();
             callback.cancel();
             return;
@@ -65,16 +78,28 @@ public abstract class MixinTF2FlameProjectile {
         }
         double travelled = lspecial$distance(projectile.posX, projectile.posY, projectile.posZ,
                 lspecial$originX, lspecial$originY, lspecial$originZ);
-        if (travelled >= 8.0D) { projectile.setDead(); callback.cancel(); return; }
+        if (travelled >= 8.0D) {
+            if (!lspecial$loggedExpiry) {
+                lspecial$loggedExpiry = true;
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] range limit reached before movement: entityId={} age={} distance={} pos=({}, {}, {})",
+                        projectile.getEntityId(), projectile.ticksExisted, travelled, projectile.posX, projectile.posY, projectile.posZ);
+            }
+            projectile.setDead(); callback.cancel(); return;
+        }
         double factor = Math.max(0.10D, 1.0D - 0.90D * Math.min(1.0D, travelled / 8.0D));
         double speed = lspecial$initialSpeed < 0.0D ? Math.sqrt(projectile.motionX * projectile.motionX + projectile.motionY * projectile.motionY + projectile.motionZ * projectile.motionZ) : lspecial$initialSpeed;
         if (lspecial$initialSpeed < 0.0D) lspecial$initialSpeed = speed;
         double current = Math.sqrt(projectile.motionX * projectile.motionX + projectile.motionY * projectile.motionY + projectile.motionZ * projectile.motionZ);
+        double targetSpeed = speed * factor;
         if (current > 1.0E-5D) {
-            double targetSpeed = speed * factor;
             projectile.motionX = projectile.motionX / current * targetSpeed;
             projectile.motionY = projectile.motionY / current * targetSpeed;
             projectile.motionZ = projectile.motionZ / current * targetSpeed;
+        }
+        if (projectile.ticksExisted <= 3 || projectile.ticksExisted % 20 == 0) {
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] applied: entityId={} age={} travelled={} factor={} speedBefore={} speedAfter={} motion=({}, {}, {})",
+                    projectile.getEntityId(), projectile.ticksExisted, travelled, factor, current, targetSpeed,
+                    projectile.motionX, projectile.motionY, projectile.motionZ);
         }
     }
 
