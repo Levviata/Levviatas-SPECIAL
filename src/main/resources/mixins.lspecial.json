@@ -26,7 +26,7 @@
     "MixinNTMWandLoot",
     "MixinNTMCrateLootBonus",
     "MixinVanillaChestLootBonus",
-    "structures.MixinNTMItemPoolChestTag"
+    "MixinNTMItemPoolChestTag"
   ],
   "server": [],
   "client": [
