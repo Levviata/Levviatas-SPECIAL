@@ -23,6 +23,9 @@ public abstract class MixinTF2FlameProjectile {
     @Unique private boolean lspecial$loggedMotion;
     @Unique private boolean lspecial$loggedOrigin;
     @Unique private boolean lspecial$loggedExpiry;
+    @Unique private static int lspecial$updateEntries;
+    @Unique
+    private static int lspecial$projectileUpdateCalls;
 
     @Inject(method = "getGravityVelocity()F", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$removeFlameGravity(CallbackInfoReturnable<Float> callback) {
@@ -30,17 +33,56 @@ public abstract class MixinTF2FlameProjectile {
         if (lspecial$isStandardFlame(config != null ? config : projectile.getBulletConfig()) || lspecial$isStandardFlamerShot(projectile)) callback.setReturnValue(0.0F);
     }
 
+    @Inject(method = "onUpdate()V", at = @At("HEAD"), remap = false)
+    private void lspecial$diagnoseUpdateEntry(CallbackInfo callback) {
+        EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
+        BulletConfig active = config != null ? config : projectile.getBulletConfig();
+        boolean configMatch = lspecial$isStandardFlame(active);
+        boolean shooterMatch = lspecial$isStandardFlamerShot(projectile);
+
+        int call = ++lspecial$projectileUpdateCalls;
+        if (call <= 20 || call % 100 == 0) {
+            com.levviata.lspecial.LSPECIALMod.logWarn(
+                    "[TF2FlameProjectile-DIAG] onUpdate entry call={} entityId={} age={} remote={} dead={} configMatch={} shooterMatch={} configGravity={} motion=({}, {}, {})",
+                    call,
+                    projectile.getEntityId(),
+                    projectile.ticksExisted,
+                    projectile.world.isRemote,
+                    projectile.isDead,
+                    configMatch,
+                    shooterMatch,
+                    active == null ? "null" : active.gravity,
+                    projectile.motionX,
+                    projectile.motionY,
+                    projectile.motionZ
+            );
+        }
+    }
+
     @Inject(method = "onUpdate()V", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$limitStandardFlameRange(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
+        int entry = ++lspecial$updateEntries;
         BulletConfig active = config != null ? config : projectile.getBulletConfig();
-        if (!lspecial$isStandardFlame(active) && !lspecial$isStandardFlamerShot(projectile)) return;
+        boolean configMatch = lspecial$isStandardFlame(active);
+        boolean shooterMatch = lspecial$isStandardFlamerShot(projectile);
+        if (entry <= 12 || entry % 500 == 0) {
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameProjectile] onUpdate HEAD reached entry={} entityId={} age={} remote={} config={} configMatch={} shooterMatch={} dead={} pos=({}, {}, {}) motion=({}, {}, {})",
+                    entry, projectile.getEntityId(), projectile.ticksExisted, projectile.world.isRemote,
+                    active == null ? "null" : active.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(active)),
+                    configMatch, shooterMatch, projectile.isDead, projectile.posX, projectile.posY, projectile.posZ,
+                    projectile.motionX, projectile.motionY, projectile.motionZ);
+        }
+        if (!configMatch && !shooterMatch) {
+            if (entry <= 12) com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameProjectile] rejected entry={} reason=no-match", entry);
+            return;
+        }
         if (!lspecial$originSet) {
             lspecial$originX = projectile.posX; lspecial$originY = projectile.posY; lspecial$originZ = projectile.posZ;
             lspecial$originSet = true;
             if (!lspecial$loggedOrigin) {
                 lspecial$loggedOrigin = true;
-                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] origin captured: entityId={} age={} configMatch={} shooterMatch={} pos=({}, {}, {}) motion=({}, {}, {})",
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameProjectile] origin captured: entityId={} age={} configMatch={} shooterMatch={} pos=({}, {}, {}) motion=({}, {}, {})",
                         projectile.getEntityId(), projectile.ticksExisted, lspecial$isStandardFlame(active), lspecial$isStandardFlamerShot(projectile),
                         projectile.posX, projectile.posY, projectile.posZ, projectile.motionX, projectile.motionY, projectile.motionZ);
             }
@@ -50,7 +92,7 @@ public abstract class MixinTF2FlameProjectile {
         if (travelled >= 8.0D) {
             if (!lspecial$loggedExpiry) {
                 lspecial$loggedExpiry = true;
-                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] range limit reached at HEAD: entityId={} age={} distance={} pos=({}, {}, {})",
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameProjectile] range limit reached at HEAD: entityId={} age={} distance={} pos=({}, {}, {})",
                         projectile.getEntityId(), projectile.ticksExisted, travelled, projectile.posX, projectile.posY, projectile.posZ);
             }
             projectile.setDead();
@@ -74,14 +116,14 @@ public abstract class MixinTF2FlameProjectile {
         if ((!configMatch && !shooterMatch) || !lspecial$originSet || projectile.isDead) return;
         if (!lspecial$loggedMotion) {
             lspecial$loggedMotion = true;
-            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] active: configMatch={} shooterMatch={} initialMotion=({}, {}, {})", configMatch, shooterMatch, projectile.motionX, projectile.motionY, projectile.motionZ);
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameProjectile] active: configMatch={} shooterMatch={} initialMotion=({}, {}, {})", configMatch, shooterMatch, projectile.motionX, projectile.motionY, projectile.motionZ);
         }
         double travelled = lspecial$distance(projectile.posX, projectile.posY, projectile.posZ,
                 lspecial$originX, lspecial$originY, lspecial$originZ);
         if (travelled >= 8.0D) {
             if (!lspecial$loggedExpiry) {
                 lspecial$loggedExpiry = true;
-                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] range limit reached before movement: entityId={} age={} distance={} pos=({}, {}, {})",
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameProjectile] range limit reached before movement: entityId={} age={} distance={} pos=({}, {}, {})",
                         projectile.getEntityId(), projectile.ticksExisted, travelled, projectile.posX, projectile.posY, projectile.posZ);
             }
             projectile.setDead(); callback.cancel(); return;
@@ -97,7 +139,7 @@ public abstract class MixinTF2FlameProjectile {
             projectile.motionZ = projectile.motionZ / current * targetSpeed;
         }
         if (projectile.ticksExisted <= 3 || projectile.ticksExisted % 20 == 0) {
-            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] applied: entityId={} age={} travelled={} factor={} speedBefore={} speedAfter={} motion=({}, {}, {})",
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameProjectile] applied: entityId={} age={} travelled={} factor={} speedBefore={} speedAfter={} motion=({}, {}, {})",
                     projectile.getEntityId(), projectile.ticksExisted, travelled, factor, current, targetSpeed,
                     projectile.motionX, projectile.motionY, projectile.motionZ);
         }

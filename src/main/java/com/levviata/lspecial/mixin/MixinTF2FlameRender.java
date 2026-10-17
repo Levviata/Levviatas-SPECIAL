@@ -33,7 +33,7 @@ public abstract class MixinTF2FlameRender {
                     bullet.getThrower() == null ? -1 : bullet.getThrower().getEntityId(), shooterMatch, bullet.world.isRemote,
                     bullet.posX, bullet.posY, bullet.posZ);
         }
-        if (match) {
+        /*if (match) {
             callback.cancel();
             int cancelled = ++lspecial$cancelledRenders;
             if (cancelled <= 8 || cancelled % 200 == 0) {
@@ -41,6 +41,13 @@ public abstract class MixinTF2FlameRender {
                         cancelled, bullet.getEntityId(), bullet.ticksExisted, configMatch, shooterMatch,
                         bullet.world.isRemote && (configMatch || shooterMatch), config == null || config.renderer == null ? "null" : config.renderer.getClass().getName());
             }
+        }*/
+        if (match) {
+            // temporarily leave NTM rendering enabled while diagnosing the custom trail
+            com.levviata.lspecial.LSPECIALMod.logWarn(
+                    "[TF2FlameRender-DIAG] matched but not cancelling entityId={} age={} configMatch={} shooterMatch={}",
+                    bullet.getEntityId(), bullet.ticksExisted, configMatch, shooterMatch
+            );
         }
     }
 
