@@ -310,7 +310,7 @@ public class StatsLogic {
 
         Receiver[] receivers = cfg.getReceivers(heldStack);
         if (receivers == null || receivers.length == 0 || receivers[0] == null) return;
-        LOGGER.debug("Applying gun config {} at index {}", cfg, gunIndex);
+        LSPECIALMod.info("Applying gun config {} at index {}", cfg, gunIndex);
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5) {
             ItemGunBaseNT.setWear(heldStack, gunIndex, 0);

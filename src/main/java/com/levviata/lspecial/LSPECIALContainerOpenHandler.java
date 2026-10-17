@@ -84,7 +84,7 @@ public final class LSPECIALContainerOpenHandler {
                         collectTiles(nested, found, visited, depth + 1);
                     }
                 } catch (ReflectiveOperationException | RuntimeException exception) {
-                    LSPECIALMod.LOGGER.debug("[LSPECIAL Loot] Could not inspect field {}.{} while resolving an opened container: {}",
+                    LSPECIALMod.info("[LSPECIAL Loot] Could not inspect field {}.{} while resolving an opened container: {}",
                             type.getName(), field.getName(), exception.toString());
                 }
             }
