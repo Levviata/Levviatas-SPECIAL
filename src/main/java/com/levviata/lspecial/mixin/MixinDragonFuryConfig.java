@@ -3,6 +3,7 @@ package com.levviata.lspecial.mixin;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -22,6 +23,7 @@ public abstract class MixinDragonFuryConfig {
         lspecial$singleFireball(XFactoryFlamer.flame_topaz_balefire);
     }
 
+    @Unique
     private static void lspecial$singleFireball(BulletConfig config) {
         if (config != null) {
             config.setProjectiles(1);

@@ -51,7 +51,7 @@ public abstract class MixinWeaponSecondary {
 
         if ("hbm:gun_flamer_topaz".equals(itemId) && keybind.name().contains("PRIMARY")
                 && stack.hasTagCompound()
-                && stack.getTagCompound().getInteger("LSPECIALDragonFuryPressureLock") > 0) {
+                && stack.getTagCompound().getInteger("LSPECIALDragonsFuryPressureLock") > 0) {
             callback.cancel();
             return;
         }

@@ -24,7 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-/** applies Intelligence perk firing delays without permanently mutating NTM receiver data. */
+/** Applies Intelligence perk firing delays without permanently mutating NTM receiver data. */
+// rationale: NTM has no public per-shot sound selector for the Topaz flamer, so this changes Receiver#getFireSound only for that item. Other addons targeting this method may conflict; an NTM sound callback would avoid the mixin.
 @Mixin(value = Receiver.class, remap = false)
 public abstract class MixinReceiver implements ReceiverStateAccess {
 
@@ -74,9 +75,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
             delay = LSPECIALConfig.laserPistolDelayTicks;
         } else if ("hbm:gun_flamer_topaz".equals(itemId)) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
-            boolean hitBonus = tag != null && tag.getBoolean("LSPECIALDragonFuryNextShotFast");
+            boolean hitBonus = tag != null && tag.getBoolean("LSPECIALDragonsFuryNextShotFast");
             delay = hitBonus ? 11 : 16; // 0.8 s base pressure cycle; 50% faster repressurization after a hit.
-            if (hitBonus) tag.setBoolean("LSPECIALDragonFuryNextShotFast", false);
+            if (hitBonus) tag.setBoolean("LSPECIALDragonsFuryNextShotFast", false);
         } else if (secondaryHeld && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(5)) {
             delay = LSPECIALConfig.lagSecondaryBurstDelay;
         } else if (secondaryHeld && "hbm:gun_henry_lincoln".equals(itemId)
@@ -170,7 +171,10 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     private void lspecial$useSecondaryFlamerSound(ItemStack stack, CallbackInfoReturnable<SoundEvent> callback) {
         String itemId = lspecial$registryId(stack);
         if ("hbm:gun_flamer_topaz".equals(itemId)) {
-            callback.setReturnValue(LSPECIALSounds.DRAGONS_FURY_SHOOT);
+            net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+            boolean criticalShot = tag != null && tag.getInteger("LSPECIALDragonsFuryHitStreak") >= 4;
+            callback.setReturnValue(criticalShot ? LSPECIALSounds.DRAGONS_FURY_SHOOT_CRIT
+                    : LSPECIALSounds.DRAGONS_FURY_SHOOT);
         }
     }
 

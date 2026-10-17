@@ -8,7 +8,8 @@
   "mixins": [
     "MixinBeamProjectile",
     "MixinDragonFuryConfig",
-    "MixinDragonFuryProjectile",
+    "MixinDragonsFuryConfig",
+    "MixinDragonsFuryProjectile",
     "MixinEntityBulletBaseMK4",
     "MixinEntityBulletBaseNT",
     "MixinEntityInvoker",

@@ -46,5 +46,37 @@
         "stream": false
       }
     ]
+  },
+  "dragons_fury_shoot_crit": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_shoot_crit",
+        "stream": false
+      }
+    ]
+  },
+  "dragons_fury_impact": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_impact",
+        "stream": false
+      }
+    ]
+  },
+  "dragons_fury_impact_bonus_damage": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_impact_bonus_damage",
+        "stream": false
+      }
+    ]
+  },
+  "dragons_fury_impact_bonus_damage_pain": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_impact_bonus_damage_pain",
+        "stream": false
+      }
+    ]
   }
 }

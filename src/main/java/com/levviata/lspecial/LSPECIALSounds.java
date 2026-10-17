@@ -11,6 +11,10 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public final class LSPECIALSounds {
     public static SoundEvent DRAGONS_FURY_SHOOT;
+    public static SoundEvent DRAGONS_FURY_SHOOT_CRIT;
+    public static SoundEvent DRAGONS_FURY_IMPACT;
+    public static SoundEvent DRAGONS_FURY_IMPACT_MINICRIT;
+    public static SoundEvent DRAGONS_FURY_IMPACT_CRIT;
     public static SoundEvent GRAPPLE_START;
     public static SoundEvent GRAPPLE_CYCLE;
     public static SoundEvent GRAPPLE_OUT;
@@ -23,6 +27,10 @@ public final class LSPECIALSounds {
     @SubscribeEvent
     public static void registerSounds(RegistryEvent.Register<SoundEvent> event) {
         DRAGONS_FURY_SHOOT = register(event, "dragons_fury_shoot");
+        DRAGONS_FURY_SHOOT_CRIT = register(event, "dragons_fury_shoot_crit");
+        DRAGONS_FURY_IMPACT = register(event, "dragons_fury_impact");
+        DRAGONS_FURY_IMPACT_MINICRIT = register(event, "dragons_fury_impact_bonus_damage");
+        DRAGONS_FURY_IMPACT_CRIT = register(event, "dragons_fury_impact_bonus_damage_pain");
         GRAPPLE_START = register(event, "grapple_start");
         GRAPPLE_CYCLE = register(event, "grapple_cycle");
         GRAPPLE_OUT = register(event, "grapple_out");

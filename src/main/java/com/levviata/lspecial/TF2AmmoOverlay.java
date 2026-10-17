@@ -24,13 +24,14 @@ import java.io.InputStream;
 /** TF2-style loaded-ammo counter for the two Sedna flame weapons. */
 public final class TF2AmmoOverlay {
     private static final ResourceLocation BADGE = new ResourceLocation("lspecial", "textures/gui/gui_badge.png");
-    private static final int TEXTURE_WIDTH = 128;
-    private static final int TEXTURE_HEIGHT = 48;
+    private static final int TEXTURE_WIDTH = 512;
+    private static final int TEXTURE_HEIGHT = 192;
+    private static final int BADGE_TEXTURE_WIDTH = 1044;
+    private static final int BADGE_TEXTURE_HEIGHT = 604;
 
     private Font tf2Font;
     private int lastAmmo = Integer.MIN_VALUE;
     private ResourceLocation ammoTexture;
-    private int ammoTextureWidth = 0;
 
     @SubscribeEvent
     public void render(RenderGameOverlayEvent.Post event) {
@@ -45,28 +46,41 @@ public final class TF2AmmoOverlay {
         if (ammo < 0) return;
         if (ammo != lastAmmo || ammoTexture == null) rebuildAmmoTexture(mc, ammo);
 
-        int x = event.getResolution().getScaledWidth();
-        int y = event.getResolution().getScaledHeight();
-        int badgeWidth = 130;
-        int badgeHeight = 75;
-        int left = x - badgeWidth - 8;
-        int top = y - badgeHeight - 8;
+        int screenWidth = event.getResolution().getScaledWidth();
+        int screenHeight = event.getResolution().getScaledHeight();
+        double uiScale = Math.min(screenWidth / 960.0D, screenHeight / 540.0D);
+        uiScale = Math.max(0.45D, Math.min(1.35D, uiScale));
+        int badgeWidth = Math.max(1, Math.min(screenWidth, (int) Math.round(130.0D * uiScale)));
+        int badgeHeight = Math.max(1, Math.min(screenHeight, (int) Math.round(75.0D * uiScale)));
+        int marginX = (int) Math.round(LSPECIALConfig.tf2AmmoGuiOffsetX * uiScale);
+        int marginY = (int) Math.round(LSPECIALConfig.tf2AmmoGuiOffsetY * uiScale);
+        int left = clamp(screenWidth - badgeWidth - marginX, 0, Math.max(0, screenWidth - badgeWidth));
+        int top = clamp(screenHeight - badgeHeight - marginY, 0, Math.max(0, screenHeight - badgeHeight));
+        int textWidth = Math.min(badgeWidth - 8, (int) Math.round(84.0D * uiScale));
+        int textHeight = Math.min(badgeHeight - 8, (int) Math.round(42.0D * uiScale));
+        int textX = clamp(left + badgeWidth - textWidth - (int) Math.round(8.0D * uiScale), 0,
+                Math.max(0, screenWidth - textWidth));
+        int textY = clamp(top + badgeHeight - textHeight - (int) Math.round(7.0D * uiScale), 0,
+                Math.max(0, screenHeight - textHeight));
 
         mc.getTextureManager().bindTexture(BADGE);
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 0.80F);
-        Gui.drawModalRectWithCustomSizedTexture(left, top, 0, 0, badgeWidth, badgeHeight, 261.0F, 151.0F);
+        Gui.drawModalRectWithCustomSizedTexture(left, top, 0, 0, badgeWidth, badgeHeight,
+                BADGE_TEXTURE_WIDTH, BADGE_TEXTURE_HEIGHT);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
-        if (ammoTexture != null) {
-            int textWidth = TEXTURE_WIDTH;
-            int textHeight = 40;
+        if (ammoTexture != null && textWidth > 0 && textHeight > 0) {
             mc.getTextureManager().bindTexture(ammoTexture);
-            Gui.drawModalRectWithCustomSizedTexture(x - textWidth - 13, y - 51, 0, 0,
+            Gui.drawModalRectWithCustomSizedTexture(textX, textY, 0, 0,
                     textWidth, textHeight, TEXTURE_WIDTH, TEXTURE_HEIGHT);
         }
         GlStateManager.disableBlend();
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static int getLoadedAmmo(ItemStack stack, EntityPlayer player) {
@@ -110,20 +124,18 @@ public final class TF2AmmoOverlay {
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         Font font = loadFont();
         if (font == null) font = new Font(Font.SANS_SERIF, Font.BOLD, 34);
-        font = font.deriveFont(Font.BOLD, 34.0F);
+        font = font.deriveFont(Font.BOLD, 132.0F);
         graphics.setFont(font);
         String value = Integer.toString(ammo);
-        int width = graphics.getFontMetrics().stringWidth(value);
-        ammoTextureWidth = Math.min(TEXTURE_WIDTH, width + 8);
-        int baseline = 36;
+        int baseline = 142;
         graphics.setColor(new Color(0, 0, 0, 220));
         for (int dx = -2; dx <= 2; dx++) {
             for (int dy = -2; dy <= 2; dy++) {
-                if (dx != 0 || dy != 0) graphics.drawString(value, 4 + dx, baseline + dy);
+                if (dx != 0 || dy != 0) graphics.drawString(value, 20 + dx * 2, baseline + dy * 2);
             }
         }
         graphics.setColor(Color.WHITE);
-        graphics.drawString(value, 4, baseline);
+        graphics.drawString(value, 20, baseline);
         graphics.dispose();
 
         if (ammoTexture != null) {

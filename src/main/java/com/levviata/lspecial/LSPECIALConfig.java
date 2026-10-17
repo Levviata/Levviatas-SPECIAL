@@ -129,6 +129,8 @@ public final class LSPECIALConfig {
     public static int g3TenGaugeDelayTicks = 10;
 
     public static boolean secondaryFireToggle = true;
+    public static int tf2AmmoGuiOffsetX = 8;
+    public static int tf2AmmoGuiOffsetY = 8;
     public static int starFCapacity = 30;
 
     public static boolean doubleBarrelGrapple = true;
@@ -360,6 +362,8 @@ public final class LSPECIALConfig {
         g3TenGaugeDelayTicks = i(GUNS, "g3TenGaugeDelayTicks", 10, 0, 1200, "G3 10 gauge mode firing delay in ticks");
         lagSecondarySelfKill = b(GUNS, "lagSecondarySelfKill", true, "Intelligence 5: crouch + secondary with the Lag starts the delayed self-kill sequence");
         secondaryFireToggle = b(GUNS, "secondaryFireToggle", true, "Toggle supported secondary-fire modes with Secondary Fire; primary fire then fires the selected mode");
+        tf2AmmoGuiOffsetX = i(CLIENT, "tf2AmmoGuiOffsetX", 8, -2000, 2000, "Ammo GUI horizontal offset from the right edge; positive values move it inward");
+        tf2AmmoGuiOffsetY = i(CLIENT, "tf2AmmoGuiOffsetY", 8, -2000, 2000, "Ammo GUI vertical offset from the bottom edge; positive values move it upward");
         starFCapacity = i(GUNS, "starFCapacity", 30, 1, 1000, "Star-F magazine capacity at Intelligence 15");
         doubleBarrelGrapple = b(GUNS, "doubleBarrelGrapple", true, "Intelligence 15: secondary fire grapples toward the targeted entity with the double barrel");
         doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render the double-barrel grapple chain and HUD");
