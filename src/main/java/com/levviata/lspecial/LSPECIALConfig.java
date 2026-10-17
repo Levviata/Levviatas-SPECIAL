@@ -88,7 +88,7 @@ public final class LSPECIALConfig {
     public static double agilityFlyingSpeedMaximum = 0.25;
     public static boolean charismaNeutralMobs = true;
     public static int charismaNeutralLevel = 5;
-    public static boolean charismaNeutralPersistentRetaliation = false;
+    public static String charismaNeutralRetaliationMode = "DYNAMIC";
     public static String charismaNeutralEntityList = "minecraft:zombie,minecraft:skeleton,minecraft:creeper,minecraft:spider,minecraft:cave_spider,minecraft:enderman,minecraft:witch,minecraft:slime,minecraft:ghast,minecraft:blaze,minecraft:magma_cube,minecraft:silverfish,minecraft:guardian,minecraft:shulker,minecraft:vex,minecraft:vindication_illager,minecraft:evocation_illager,minecraft:zombie_pigman,minecraft:ender_dragon,minecraft:wither";
     public static boolean charismaNeutralBlacklistMobs = true;
     public static String charismaNeutralBlacklistEntityList = "";
@@ -325,7 +325,7 @@ public final class LSPECIALConfig {
         agilityFlyingSpeedMaximum = d(STATS, "agilityFlyingSpeedMaximum", 0.25, 0.01, 1.0, "Maximum flying speed");
         charismaNeutralMobs = b(STATS, "charismaNeutralMobs", true, "Charisma can stop configured mobs targeting the player");
         charismaNeutralLevel = i(STATS, "charismaNeutralLevel", 5, 1, 100, "Minimum Charisma level for mob neutrality");
-        charismaNeutralPersistentRetaliation = b(STATS, "charismaNeutralPersistentRetaliation", false, "If enabled, mobs that retaliate keep targeting the player until that player dies. If disabled, uses normal Minecraft revenge-target behavior.");
+        charismaNeutralRetaliationMode = s(STATS, "charismaNeutralRetaliationMode", "DYNAMIC", "Retaliation mode: NORMAL uses vanilla revenge-target behavior; PERSISTENT keeps retaliation until the player dies; DYNAMIC switches to persistent retaliation after the player has dealt at least one third of the entity maximum health as cumulative damage.");
         charismaNeutralEntityList = s(STATS, "charismaNeutralEntityList", charismaNeutralEntityList, "Comma-separated entity registry ID patterns affected by Charisma. Supports wildcards in mod IDs and entity IDs, for example hbm:* or *:zombie");
         charismaNeutralBlacklistMobs = b(STATS, "charismaNeutralBlacklistMobs", true, "Enable the entity blacklist for Charisma neutrality");
         charismaNeutralBlacklistEntityList = s(STATS, "charismaNeutralBlacklistEntityList", "", "Comma-separated entity registry ID patterns excluded from Charisma neutrality. Supports wildcards, for example minecraft:*, hbm:boss_* or *:ender_dragon");

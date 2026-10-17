@@ -10,7 +10,6 @@
     "MixinDragonFuryProjectile",
     "MixinEntityBulletBaseMK4",
     "MixinEntityInvoker",
-    "MixinEntityLivingNeutrality",
     "MixinEntityLivingBaseRetaliation",
     "MixinEntityRailgunBlast",
     "MixinEntityVillager",
@@ -26,7 +25,6 @@
     "MixinNTMWandLoot",
     "MixinNTMCrateLootBonus",
     "MixinVanillaChestLootBonus",
-    "MixinNTMItemPoolChestTag"
   ],
   "server": [],
   "client": [
