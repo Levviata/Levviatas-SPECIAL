@@ -51,22 +51,23 @@ public abstract class MixinTF2FlameProjectile {
         }
     }
 
-    @Inject(method = "onUpdate()V", at = @At("RETURN"), remap = false)
-    private void lspecial$applyStandardFlameMotion(CallbackInfo callback) {
+    @Inject(method = "onUpdate()V", at = @At("HEAD"), remap = false)
+    private void lspecial$applyStandardFlameMotionBeforeMove(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
         BulletConfig active = config != null ? config : projectile.getBulletConfig();
         if ((!lspecial$isStandardFlame(active) && !lspecial$isStandardFlamerShot(projectile)) || !lspecial$originSet || projectile.isDead) return;
         double travelled = lspecial$distance(projectile.posX, projectile.posY, projectile.posZ,
                 lspecial$originX, lspecial$originY, lspecial$originZ);
-        if (travelled >= 8.0D) { projectile.setDead(); return; }
+        if (travelled >= 8.0D) { projectile.setDead(); callback.cancel(); return; }
         double factor = Math.max(0.10D, 1.0D - 0.90D * Math.min(1.0D, travelled / 8.0D));
         double speed = lspecial$initialSpeed < 0.0D ? Math.sqrt(projectile.motionX * projectile.motionX + projectile.motionY * projectile.motionY + projectile.motionZ * projectile.motionZ) : lspecial$initialSpeed;
-        double length = Math.sqrt(projectile.motionX * projectile.motionX + projectile.motionY * projectile.motionY + projectile.motionZ * projectile.motionZ);
-        if (length > 1.0E-5D) {
+        if (lspecial$initialSpeed < 0.0D) lspecial$initialSpeed = speed;
+        double current = Math.sqrt(projectile.motionX * projectile.motionX + projectile.motionY * projectile.motionY + projectile.motionZ * projectile.motionZ);
+        if (current > 1.0E-5D) {
             double targetSpeed = speed * factor;
-            projectile.motionX = projectile.motionX / length * targetSpeed;
-            projectile.motionY = projectile.motionY / length * targetSpeed;
-            projectile.motionZ = projectile.motionZ / length * targetSpeed;
+            projectile.motionX = projectile.motionX / current * targetSpeed;
+            projectile.motionY = projectile.motionY / current * targetSpeed;
+            projectile.motionZ = projectile.motionZ / current * targetSpeed;
         }
     }
 

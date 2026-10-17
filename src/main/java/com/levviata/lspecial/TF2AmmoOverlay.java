@@ -5,6 +5,7 @@ import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -50,10 +51,12 @@ public final class TF2AmmoOverlay {
                 || lastShadowOffsetX != LSPECIALConfig.tf2AmmoGuiShadowOffsetX
                 || lastShadowOffsetY != LSPECIALConfig.tf2AmmoGuiShadowOffsetY) rebuildAmmoTexture(mc, ammo);
 
-        int screenWidth = event.getResolution().getScaledWidth();
-        int screenHeight = event.getResolution().getScaledHeight();
-        double uiScale = Math.min(screenWidth / 960.0D, screenHeight / 540.0D);
-        uiScale = Math.max(0.20D, uiScale) * LSPECIALConfig.tf2AmmoGuiScale;
+        ScaledResolution resolution = new ScaledResolution(mc);
+        int screenWidth = resolution.getScaledWidth();
+        int screenHeight = resolution.getScaledHeight();
+        double requestedScale = Math.max(0.10D, LSPECIALConfig.tf2AmmoGuiScale);
+        double fitScale = Math.min(1.0D, Math.min(screenWidth / 130.0D, screenHeight / 75.0D));
+        double uiScale = Math.max(0.10D, Math.min(requestedScale, fitScale));
         int badgeWidth = Math.max(1, Math.min(screenWidth, (int) Math.round(130.0D * uiScale)));
         int badgeHeight = Math.max(1, Math.min(screenHeight, (int) Math.round(75.0D * uiScale)));
         int left;
@@ -96,8 +99,8 @@ public final class TF2AmmoOverlay {
         }
         left = clamp(left, 0, Math.max(0, screenWidth - badgeWidth));
         top = clamp(top, 0, Math.max(0, screenHeight - badgeHeight));
-        int textWidth = Math.max(1, Math.min(badgeWidth - 4, (int) Math.round(84.0D * uiScale)));
-        int textHeight = Math.max(1, Math.min(badgeHeight - 4, (int) Math.round(42.0D * uiScale)));
+        int textWidth = Math.max(1, Math.min(Math.max(1, badgeWidth - 4), (int) Math.round(84.0D * uiScale)));
+        int textHeight = Math.max(1, Math.min(Math.max(1, badgeHeight - 4), (int) Math.round(42.0D * uiScale)));
         int textX = clamp(left + badgeWidth - textWidth - (int) Math.round(8.0D * uiScale), left,
                 Math.max(left, left + badgeWidth - textWidth));
         int textY = clamp(top + badgeHeight - textHeight - (int) Math.round(7.0D * uiScale), top,

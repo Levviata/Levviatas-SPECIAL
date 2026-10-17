@@ -6,10 +6,7 @@
   "minVersion": "0.8.5",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "EntityAccessor",
     "MixinBeamProjectile",
-    "MixinDragonFuryConfig",
-    "MixinDragonFuryProjectile",
     "MixinDragonsFuryConfig",
     "MixinDragonsFuryProjectile",
     "MixinEntityBulletBaseMK4",
@@ -40,6 +37,7 @@
   "client": [
     "MixinEntityRenderer",
     "MixinRenderItemOverlay",
-    "MixinTF2FlameParticleTrail"
+    "MixinTF2FlameParticleTrail",
+    "MixinTF2FlameRender"
   ]
 }

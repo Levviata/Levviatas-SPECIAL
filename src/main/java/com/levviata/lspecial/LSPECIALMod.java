@@ -30,7 +30,7 @@ import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED
 @Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION, guiFactory = "com.levviata.lspecial.LSPECIALGuiFactory")
 public class LSPECIALMod {
     // AI IS FREE SLAVERY
-    /* this update uses the same src4 source as the previous patch. NTM:CE source code was not included; only the dev JAR was available for API signature checks. No build files were included, so a full project build could not be verified. Rocket-jump sound files remain missing. Standard flame hooks now also identify shots by the shooter holding hbm:gun_flamer because the NTM config check alone was too narrow. */
+    /* NTM:CE source is now available for inspection, including EntityBulletBaseMK4 and RenderBulletMK4. Standard flamer visuals now cancel NTM's original bullet renderer and use the custom trail; projectile slowing is applied before NTM movement. No build files are included in the addon src archive, so a full project build could not be verified. Rocket-jump sound files remain missing. */
     public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
 
     public static void info(String message, Object... params) {
