@@ -11,6 +11,7 @@
     "MixinEntityBulletBaseMK4",
     "MixinEntityInvoker",
     "MixinEntityLivingNeutrality",
+    "MixinEntityLivingBaseRetaliation",
     "MixinEntityRailgunBlast",
     "MixinEntityVillager",
     "MixinLightRevolverRapidFire",
