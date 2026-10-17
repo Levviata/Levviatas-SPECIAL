@@ -22,12 +22,24 @@ public abstract class MixinTF2FlameParticleTrail {
     @Shadow public BulletConfig config;
     @Unique private float lspecial$intensity = Float.NaN;
     @Unique private float lspecial$saturation = Float.NaN;
+    @Unique private static int lspecial$matchedProjectiles;
 
     @Inject(method = "onUpdate()V", at = @At("HEAD"), remap = false)
     private void lspecial$spawnTintedTrail(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
         BulletConfig active = config != null ? config : projectile.getBulletConfig();
-        if (!projectile.world.isRemote || (!lspecial$isStandardFlame(active) && !lspecial$isStandardFlamerShot(projectile)) || projectile.ticksExisted % 2 != 0) return;
+        boolean configMatch = lspecial$isStandardFlame(active);
+        boolean shooterMatch = lspecial$isStandardFlamerShot(projectile);
+        if (!projectile.world.isRemote || (!configMatch && !shooterMatch)) return;
+        if (projectile.ticksExisted == 1) {
+            int matched = ++lspecial$matchedProjectiles;
+            if (matched <= 12 || matched % 100 == 0) {
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameTrail] matched projectile={} config={} configMatch={} shooterMatch={} pos=({}, {}, {}) motion=({}, {}, {})",
+                        matched, active == null ? "null" : active.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(active)),
+                        configMatch, shooterMatch, projectile.posX, projectile.posY, projectile.posZ, projectile.motionX, projectile.motionY, projectile.motionZ);
+            }
+        }
+        if (projectile.ticksExisted % 2 != 0) return;
         if (Float.isNaN(lspecial$intensity)) lspecial$intensity = 0.8F + projectile.world.rand.nextFloat() * 0.4F;
         if (Float.isNaN(lspecial$saturation)) lspecial$saturation = 0.8F + projectile.world.rand.nextFloat() * 0.4F;
 

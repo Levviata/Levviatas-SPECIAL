@@ -20,6 +20,7 @@ public abstract class MixinTF2FlameProjectile {
     @Unique private double lspecial$originZ;
     @Unique private boolean lspecial$originSet;
     @Unique private double lspecial$initialSpeed = -1.0D;
+    @Unique private boolean lspecial$loggedMotion;
 
     @Inject(method = "getGravityVelocity()F", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$removeFlameGravity(CallbackInfoReturnable<Float> callback) {
@@ -55,7 +56,13 @@ public abstract class MixinTF2FlameProjectile {
     private void lspecial$applyStandardFlameMotionBeforeMove(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
         BulletConfig active = config != null ? config : projectile.getBulletConfig();
-        if ((!lspecial$isStandardFlame(active) && !lspecial$isStandardFlamerShot(projectile)) || !lspecial$originSet || projectile.isDead) return;
+        boolean configMatch = lspecial$isStandardFlame(active);
+        boolean shooterMatch = lspecial$isStandardFlamerShot(projectile);
+        if ((!configMatch && !shooterMatch) || !lspecial$originSet || projectile.isDead) return;
+        if (!lspecial$loggedMotion) {
+            lspecial$loggedMotion = true;
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameMotion] active: configMatch={} shooterMatch={} initialMotion=({}, {}, {})", configMatch, shooterMatch, projectile.motionX, projectile.motionY, projectile.motionZ);
+        }
         double travelled = lspecial$distance(projectile.posX, projectile.posY, projectile.posZ,
                 lspecial$originX, lspecial$originY, lspecial$originZ);
         if (travelled >= 8.0D) { projectile.setDead(); callback.cancel(); return; }

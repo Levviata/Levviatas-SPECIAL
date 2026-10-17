@@ -14,10 +14,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 // rationale: NTM renders MK4 bullets through each BulletConfig.renderer, so adding tinted particles alone leaves the original projectile renderer visible. Cancel only the standard flamer render and let the client-side TF2 trail represent it; this can conflict with other render mixins, and is avoidable if NTM adds a configurable renderer toggle.
 @Mixin(value = RenderBulletMK4.class, remap = false)
 public abstract class MixinTF2FlameRender {
+    @org.spongepowered.asm.mixin.Unique private static int lspecial$renderCalls;
+    @org.spongepowered.asm.mixin.Unique private static int lspecial$cancelledRenders;
     @Inject(method = "doRender(Lcom/hbm/entity/projectile/EntityBulletBaseMK4;DDDFF)V", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$replaceStandardFlamerRender(EntityBulletBaseMK4 bullet, double x, double y, double z, float yaw, float partialTicks, CallbackInfo callback) {
+        int call = ++lspecial$renderCalls;
         BulletConfig config = bullet.config != null ? bullet.config : bullet.getBulletConfig();
-        if (lspecial$isStandardFlame(config) || lspecial$isHeldStandardFlamer(bullet)) callback.cancel();
+        boolean configMatch = lspecial$isStandardFlame(config);
+        boolean shooterMatch = lspecial$isHeldStandardFlamer(bullet);
+        boolean match = configMatch || shooterMatch;
+        if (call <= 8 || call % 200 == 0) {
+            com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameRender] hook reached call={} entity={} config={} configMatch={} shooter={} heldFlamer={} worldRemote={}",
+                    call, bullet.getClass().getName(), config == null ? "null" : config.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(config)),
+                    configMatch, bullet.getThrower() == null ? "null" : bullet.getThrower().getClass().getName(), shooterMatch, bullet.world.isRemote);
+        }
+        if (match) {
+            callback.cancel();
+            int cancelled = ++lspecial$cancelledRenders;
+            if (cancelled <= 8 || cancelled % 200 == 0) {
+                com.levviata.lspecial.LSPECIALMod.logWarn("[TF2FlameRender] original NTM renderer CANCELLED count={} configMatch={} shooterMatch={}", cancelled, configMatch, shooterMatch);
+            }
+        }
     }
 
     private static boolean lspecial$isHeldStandardFlamer(EntityBulletBaseMK4 bullet) {
