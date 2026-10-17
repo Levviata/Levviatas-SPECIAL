@@ -440,28 +440,6 @@ public class StatsLogic {
         }
     }
 
-    private boolean isBuckshotAmmo(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return false;
-        }
-
-        for (String raw : LSPECIALConfig.buckshotGaugeList.split(",")) {
-            String token = raw.trim();
-            try {
-                if (token.matches("\\d+") && stack.getItem() == ModItems.ammo_standard && stack.getMetadata() == Integer.parseInt(token)) {
-                    return true;
-                }
-
-                String[] p = token.split(":");
-
-                if (p.length == 3 && p[0].equals("hbm") && p[1].equals("ammo_secret") && stack.getItem() == ModItems.ammo_secret && stack.getMetadata() == Integer.parseInt(p[2])) {
-                    return true;
-                }
-            } catch (NumberFormatException ignored) { }
-        }
-        return false;
-    }
-
     private void applyGunWearPolicy(ItemStack stack) {
         String mode = LSPECIALConfig.gunWearMode;
 

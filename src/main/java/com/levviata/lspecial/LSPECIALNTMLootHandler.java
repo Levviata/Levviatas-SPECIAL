@@ -16,6 +16,7 @@ import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.CapabilityItemHandler;
 
+import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -187,6 +188,7 @@ public final class LSPECIALNTMLootHandler {
         }
 
         @Override
+        @Nonnull
         public ItemStack getStackInSlot(int slot) {
             if (slot < 0 || slot >= getSlots()) return ItemStack.EMPTY;
             ItemStack stack = inventory.getStackInSlot(slot);
@@ -194,8 +196,9 @@ public final class LSPECIALNTMLootHandler {
         }
 
         @Override
-        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-            if (stack == null || stack.isEmpty()) return ItemStack.EMPTY;
+        @Nonnull
+        public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+            if (stack.isEmpty()) return ItemStack.EMPTY;
             if (slot < 0 || slot >= getSlots() || !inventory.isItemValidForSlot(slot, stack)) return stack;
 
             ItemStack existing = getStackInSlot(slot);
@@ -233,6 +236,7 @@ public final class LSPECIALNTMLootHandler {
         }
 
         @Override
+        @Nonnull
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
             if (slot < 0 || slot >= getSlots() || amount <= 0) return ItemStack.EMPTY;
             ItemStack existing = getStackInSlot(slot);
@@ -259,9 +263,9 @@ public final class LSPECIALNTMLootHandler {
         }
 
         @Override
-        public void setStackInSlot(int slot, ItemStack stack) {
+        public void setStackInSlot(int slot, @Nonnull ItemStack stack) {
             if (slot < 0 || slot >= getSlots()) throw new IndexOutOfBoundsException("slot " + slot);
-            if (stack == null || stack.isEmpty()) {
+            if (stack.isEmpty()) {
                 inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
             } else {
                 ItemStack result = stack.copy();

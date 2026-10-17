@@ -15,6 +15,11 @@ public abstract class MixinVanillaChestLootBonus {
     @Inject(method = "openInventory(Lnet/minecraft/entity/player/EntityPlayer;)V", at = @At("RETURN"))
     private void lspecial$applyLootBonus(EntityPlayer player, CallbackInfo callback) {
         LSPECIALMod.info("[LSPECIAL Loot] vanilla chest openInventory RETURN mixin fired for player={}", player == null ? "<null>" : player.getName());
-        LSPECIALNTMLootHandler.onContainerOpened((TileEntityChest) (Object) this, player);
+        try {
+            LSPECIALNTMLootHandler.onContainerOpened((TileEntityChest) (Object) this, player);
+        } catch (ClassCastException e) {
+            LSPECIALMod.logError("Couldn't cast TileEntityChest when calling onContainerOpened() as it is null");
+        }
+
     }
 }

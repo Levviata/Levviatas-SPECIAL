@@ -29,8 +29,8 @@ public final class LSPECIALContainerOpenHandler {
             return;
         }
 
-        Set<TileEntity> candidates = Collections.newSetFromMap(new IdentityHashMap<TileEntity, Boolean>());
-        Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+        Set<TileEntity> candidates = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<Object> visited = Collections.newSetFromMap(new IdentityHashMap<>());
         collectTiles(container, candidates, visited, 0);
 
         // Slot inventories catch vanilla chest inventories and inventory wrappers such as double chests.
