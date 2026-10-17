@@ -131,8 +131,6 @@ public final class LSPECIALNTMLootHandler {
         if (bonusEligible) {
             if (hasPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid)) {
                 LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Luck+Perception bonus already claimed: player={} pos={}", player.getName(), tile.getPos());
-            } else if (!hasPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid)) {
-                LSPECIALMod.LOGGER.info("[LSPECIAL Loot] didnt claim it: player={} pos={}", player.getName(), tile.getPos());
             } else if (addPoolItems(inventory, LSPECIALConfig.luckPerceptionLootPool, 1, random, true)) {
                 recordPlayer(data, LUCK_PERCEPTION_BONUS_TAG, uuid);
                 LSPECIALMod.LOGGER.info("[LSPECIAL Loot] Luck+Perception bonus inserted items; recorded UUID for player={} pos={}", player.getName(), tile.getPos());
