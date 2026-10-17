@@ -167,7 +167,11 @@ public class StatsLogic {
         // endurance
         IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
         int enduranceScore = inst.getEnduranceScore().getScorePoints();
-        if (enduranceScore != previousEndurance || previousEnduranceEnabled != LSPECIALConfig.endurance || Float.isNaN(previousMaxHealth) || Math.abs(player.getMaxHealth() - previousMaxHealth) > 0.001F) {
+        boolean hasEnduranceModifier = maxHealth.getModifier(MAX_HEALTH_UUID) != null;
+        if (enduranceScore != previousEndurance || previousEnduranceEnabled != LSPECIALConfig.endurance
+                || Float.isNaN(previousMaxHealth) || Math.abs(player.getMaxHealth() - previousMaxHealth) > 0.001F
+                || (LSPECIALConfig.endurance && !hasEnduranceModifier)
+                || (!LSPECIALConfig.endurance && hasEnduranceModifier)) {
             previousEndurance = enduranceScore;
             maxHealth.removeModifier(MAX_HEALTH_UUID);
             if (LSPECIALConfig.endurance) {
@@ -181,24 +185,33 @@ public class StatsLogic {
         // charisma
         IAttributeInstance armor = player.getEntityAttribute(SharedMonsterAttributes.ARMOR);
         IAttributeInstance armorToughness = player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS);
-        if (inst.getCharismaScore().getScorePoints() != previousCharisma || previousCharismaEnabled != LSPECIALConfig.charisma) {
+        boolean charismaBonusEnabled = LSPECIALConfig.charisma && LSPECIALConfig.charismaBonus;
+        boolean hasArmorModifier = armor.getModifier(ARMOR_UUID) != null;
+        boolean hasArmorToughnessModifier = armorToughness.getModifier(ARMOR_TOUGHNESS_UUID) != null;
+        if (inst.getCharismaScore().getScorePoints() != previousCharisma || previousCharismaEnabled != LSPECIALConfig.charisma
+                || (charismaBonusEnabled && (!hasArmorModifier || !hasArmorToughnessModifier))
+                || (!charismaBonusEnabled && (hasArmorModifier || hasArmorToughnessModifier))) {
             previousCharisma = inst.getCharismaScore().getScorePoints();
             previousCharismaEnabled = LSPECIALConfig.charisma;
 
             armor.removeModifier(ARMOR_UUID);
             armorToughness.removeModifier(ARMOR_TOUGHNESS_UUID);
 
-            if (LSPECIALConfig.charisma && LSPECIALConfig.charismaBonus) {
+            if (charismaBonusEnabled) {
                 armor.applyModifier(new AttributeModifier(ARMOR_UUID, nameIn, expression(LSPECIALConfig.armorFormula, "charisma", inst.getCharismaScore().getScorePoints()), 0));
             }
-            if (LSPECIALConfig.charisma && LSPECIALConfig.charismaBonus) {
+            if (charismaBonusEnabled) {
                 armorToughness.applyModifier(new AttributeModifier(ARMOR_TOUGHNESS_UUID, nameIn, expression(LSPECIALConfig.armorToughnessFormula, "charisma", inst.getCharismaScore().getScorePoints()), 0));
             }
         }
 
         // agility
         IAttributeInstance movementSpeed = player.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED);
-        if (inst.getAgilityScore().getScorePoints() != previousAgility || previousAgilityEnabled != LSPECIALConfig.agility || getPlayerSpeed(player) != -1 && inst.getAgilityScore().getScorePoints() != getPlayerSpeed(player)) {
+        boolean hasMovementSpeedModifier = movementSpeed.getModifier(MOVEMENT_SPEED_UUID) != null;
+        if (inst.getAgilityScore().getScorePoints() != previousAgility || previousAgilityEnabled != LSPECIALConfig.agility
+                || (getPlayerSpeed(player) != -1 && inst.getAgilityScore().getScorePoints() != getPlayerSpeed(player))
+                || (LSPECIALConfig.agility && !hasMovementSpeedModifier)
+                || (!LSPECIALConfig.agility && hasMovementSpeedModifier)) {
             previousAgilityEnabled = LSPECIALConfig.agility;
             if (getPlayerSpeed(player) > -1) {
                 previousAgility = getPlayerSpeed(player);

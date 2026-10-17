@@ -1,9 +1,8 @@
 package com.levviata.lspecial;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.scoreboard.Score;
-import net.minecraft.scoreboard.ScoreObjective;
-import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -38,13 +37,9 @@ public final class PlayerModelScaleHandler {
         }
     }
 
-    /** reads the client cache first, then falls back to the synchronized scoreboard objective. */
-    private static int lspecial$getEndurance(net.minecraft.entity.player.EntityPlayer player) {
-        if (inst != null && inst.getClientEndurance() >= 5) return inst.getClientEndurance();
-        Scoreboard scoreboard = player.getEntityWorld().getScoreboard();
-        ScoreObjective objective = scoreboard.getObjective("Endurance");
-        if (objective == null) return 0;
-        Score score = scoreboard.getOrCreateScore(player.getName(), objective);
-        return score.getScorePoints();
+    /** uses the client cache for the local player and the player's scoreboard for everyone else. */
+    private static int lspecial$getEndurance(EntityPlayer player) {
+        if (player == Minecraft.getMinecraft().player && inst != null) return inst.getClientEndurance();
+        return inst == null ? 0 : inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);
     }
 }

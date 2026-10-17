@@ -2,11 +2,10 @@ package com.levviata.lspecial.mixin;
 
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.LSPECIALExpression;
+import com.levviata.lspecial.SPECIALScoreboard;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.scoreboard.ScoreObjective;
-import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraft.village.MerchantRecipeList;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,7 +33,7 @@ public abstract class MixinEntityVillager {
         if (player == null || !LSPECIALConfig.charisma
                 || !LSPECIALConfig.charismaVillagerDiscount) return;
 
-        int charisma = lspecial$getScore(player, "Charisma");
+        int charisma = SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.CHARISMA_BOARD);
         if (charisma < LSPECIALConfig.charismaVillagerDiscountLevel) return;
 
         MerchantRecipeList originalRecipes = callback.getReturnValue();
@@ -70,14 +69,6 @@ public abstract class MixinEntityVillager {
                 return;
             }
         }
-    }
-
-    @Unique
-    private static int lspecial$getScore(EntityPlayer player, String objectiveName) {
-        Scoreboard scoreboard = player.world.getScoreboard();
-        ScoreObjective objective = scoreboard.getObjective(objectiveName);
-        if (objective == null || !scoreboard.entityHasObjective(player.getName(), objective)) return 0;
-        return scoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
     }
 
     @Unique

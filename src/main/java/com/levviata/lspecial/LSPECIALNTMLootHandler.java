@@ -8,8 +8,6 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.scoreboard.ScoreObjective;
-import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.WeightedRandom;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -74,8 +72,8 @@ public final class LSPECIALNTMLootHandler {
             return;
         }
 
-        int perception = getScore(player, "Perception");
-        int luck = getScore(player, "Luck");
+        int perception = SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.PERCEPTION_BOARD);
+        int luck = SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.LUCK_BOARD);
         boolean duplicateEligible = LSPECIALConfig.perception && LSPECIALConfig.perceptionLootDuplication
                 && perception >= LSPECIALConfig.perceptionLootDuplicationLevel;
         boolean bonusEligible = LSPECIALConfig.perception && LSPECIALConfig.luck && LSPECIALConfig.luckPerceptionLootBonus
@@ -274,21 +272,6 @@ public final class LSPECIALNTMLootHandler {
             }
             inventory.markDirty();
         }
-    }
-
-    /** reads the player's stat score without creating missing scoreboard objectives. */
-    private static int getScore(EntityPlayer player, String name) {
-        Scoreboard scoreboard = player.world.getScoreboard();
-        ScoreObjective objective = scoreboard.getObjective(name);
-        if (objective == null) {
-            LSPECIALMod.logWarn("[LSPECIAL Loot] Scoreboard objective '{}' does not exist; treating {}'s score as 0", name, player.getName());
-            return 0;
-        }
-        if (!scoreboard.entityHasObjective(player.getName(), objective)) {
-            LSPECIALMod.logWarn("[LSPECIAL Loot] Player {} has no scoreboard score for '{}'; treating it as 0", player.getName(), name);
-            return 0;
-        }
-        return scoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
     }
 
     /** avoids ItemPool.getPool's fallback pool when a configured pool name is invalid. */

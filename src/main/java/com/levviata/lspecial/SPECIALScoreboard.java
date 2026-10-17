@@ -105,6 +105,17 @@ public class SPECIALScoreboard {
         }
     }
 
+    /** reads a score for the supplied player without relying on the singleton's cached player. */
+    public int getPlayerScorePoints(EntityPlayer player, String objectiveName) {
+        if (player == null || player.getEntityWorld() == null || objectiveName == null) return 0;
+
+        Scoreboard playerScoreboard = player.getEntityWorld().getScoreboard();
+        ScoreObjective objective = playerScoreboard.getObjective(objectiveName);
+        if (objective == null || !playerScoreboard.entityHasObjective(player.getName(), objective)) return 0;
+
+        return playerScoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
+    }
+
     public void setClientScores(int strength, int perception, int endurance, int enduranceBonus, int charisma, int charismaBonus, int intelligence, int agility, int luck, int limit) {
         clientStrength = strength;
         clientPerception = perception;
