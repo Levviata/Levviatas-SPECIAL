@@ -1,5 +1,6 @@
 package com.levviata.lspecial;
 
+import com.github.bsideup.jabel.Desugar;
 import com.levviata.lspecial.network.RequestSPECIALStatsPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
@@ -336,6 +337,7 @@ public class GuiSPECIAL extends GuiScreen {
         drawClippedString(hint, hintX, footerY + 2, Math.max(1, panelLeft + panelWidth - hintX - 4), AMBER);
     }
 
+    @Desugar
     private record StatRow(String name, int value, boolean enabled, String description) {
     }
 

@@ -1,5 +1,6 @@
 package com.levviata.lspecial;
 
+import com.github.bsideup.jabel.Desugar;
 import com.hbm.inventory.RecipesCommon;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.*;
@@ -417,6 +418,7 @@ public class StatsLogic {
         private ItemStack loggedSednaGun = ItemStack.EMPTY;
     }
 
+    @Desugar
     private record GunState(int index,
                             Receiver receiver,
                             BulletConfig bulletConfig,

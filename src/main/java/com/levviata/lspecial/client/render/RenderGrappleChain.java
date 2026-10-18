@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class RenderGrappleChain extends Render<EntityGrappleChain> {
     private static final ResourceLocation TEXTURE = new ResourceLocation("hbm", "textures/models/misc/universaldark.png");
-    private static final ResourceLocation MODEL = new ResourceLocation("lspecial", "models/n45_chain.obj"); // same as in hbm for now
+    private static final ResourceLocation MODEL = new ResourceLocation("lspecial", "models/n45_chain.obj"); // same model as hbm for now
     private static final List<Vec3d> VERTICES = new ArrayList<>();
     private static final List<float[]> UVS = new ArrayList<>();
     private static final List<int[]> FACES = new ArrayList<>();
