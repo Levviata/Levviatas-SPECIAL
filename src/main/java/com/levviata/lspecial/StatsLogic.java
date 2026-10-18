@@ -8,6 +8,7 @@ import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
@@ -17,6 +18,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
@@ -92,7 +94,6 @@ public class StatsLogic {
             return;
         }
 
-        // per player states to fix previous astronomical architecture fail
         PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), id -> new PlayerState());
 
         ItemStack heldStack = player.getHeldItemMainhand();
@@ -123,114 +124,9 @@ public class StatsLogic {
             state.previousObservedWear = Float.NaN;
         }
 
-        // strength
-        IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
-        Collection<AttributeModifier> damageCollection = heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
-
-        // the player's attack attribute already has its vanilla base value of 1.0.
-        // this UUID replaces the held-item modifier, so only the item's modifier amount belongs here.
-        double baseHeldDamage = 0.0;
-        if (damageCollection != null && !damageCollection.isEmpty()) {
-            baseHeldDamage = damageCollection.iterator().next().getAmount();
-        }
-        strength.removeModifier(ATTACK_DAMAGE_UUID);
-        double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD)) : 0.0;
-        strength.applyModifier(new AttributeModifier(ATTACK_DAMAGE_UUID, nameIn, baseHeldDamage + strengthBonus, 0));
-
-        // endurance
-        IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
-        int enduranceScore = inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);
-        boolean hasEnduranceModifier = maxHealth.getModifier(MAX_HEALTH_UUID) != null;
-        if (enduranceScore != state.previousEndurance || state.previousEnduranceEnabled != LSPECIALConfig.endurance
-                || Float.isNaN(state.previousMaxHealth) || Math.abs(player.getMaxHealth() - state.previousMaxHealth) > 0.001F
-                || (LSPECIALConfig.endurance && !hasEnduranceModifier)
-                || (!LSPECIALConfig.endurance && hasEnduranceModifier)) {
-            state.previousEndurance = enduranceScore;
-            maxHealth.removeModifier(MAX_HEALTH_UUID);
-            if (LSPECIALConfig.endurance) {
-                maxHealth.applyModifier(new AttributeModifier(MAX_HEALTH_UUID, nameIn,
-                        expression(LSPECIALConfig.enduranceFormula, "endurance", enduranceScore * 2), 0));
-            }
-            state.previousMaxHealth = player.getMaxHealth();
-            state.previousEnduranceEnabled = LSPECIALConfig.endurance;
-        }
-
-        // charisma
-        IAttributeInstance armor = player.getEntityAttribute(SharedMonsterAttributes.ARMOR);
-        IAttributeInstance armorToughness = player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS);
-        boolean charisma = LSPECIALConfig.charisma;
-        boolean hasArmorModifier = armor.getModifier(ARMOR_UUID) != null;
-        boolean hasArmorToughnessModifier = armorToughness.getModifier(ARMOR_TOUGHNESS_UUID) != null;
-        if (inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD) != state.previousCharisma || state.previousCharismaEnabled != LSPECIALConfig.charisma
-                || (charisma && (!hasArmorModifier || !hasArmorToughnessModifier))
-                || (!charisma && (hasArmorModifier || hasArmorToughnessModifier))) {
-            state.previousCharisma = inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD);
-            state.previousCharismaEnabled = LSPECIALConfig.charisma;
-
-            armor.removeModifier(ARMOR_UUID);
-            armorToughness.removeModifier(ARMOR_TOUGHNESS_UUID);
-
-            if (charisma) {
-                armor.applyModifier(new AttributeModifier(ARMOR_UUID, nameIn, expression(LSPECIALConfig.armorFormula, "charisma", inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD)), 0));
-            }
-            if (charisma) {
-                armorToughness.applyModifier(new AttributeModifier(ARMOR_TOUGHNESS_UUID, nameIn, expression(LSPECIALConfig.armorToughnessFormula, "charisma", inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD)), 0));
-            }
-        }
-
-        // agility
-        IAttributeInstance movementSpeed = player.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED);
-        boolean hasMovementSpeedModifier = movementSpeed.getModifier(MOVEMENT_SPEED_UUID) != null;
-        if (inst.getPlayerScorePoints(player, inst.AGILITY_BOARD) != state.previousAgility || state.previousAgilityEnabled != LSPECIALConfig.agility
-                || (getPlayerSpeed(player) != -1 && inst.getPlayerScorePoints(player, inst.AGILITY_BOARD) != getPlayerSpeed(player))
-                || (LSPECIALConfig.agility && !hasMovementSpeedModifier)
-                || (!LSPECIALConfig.agility && hasMovementSpeedModifier)) {
-            state.previousAgilityEnabled = LSPECIALConfig.agility;
-            if (getPlayerSpeed(player) > -1) {
-                state.previousAgility = getPlayerSpeed(player);
-            } else {
-                state.previousAgility = inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
-            }
-
-            movementSpeed.removeModifier(MOVEMENT_SPEED_UUID);
-
-            // operationIn: multiplicative
-            // 7.5% increase per point up to 75%
-            if (LSPECIALConfig.agility) {
-                double agilityValue = getPlayerSpeed(player) > -1 ? getPlayerSpeed(player) : inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
-                movementSpeed.applyModifier(new AttributeModifier(MOVEMENT_SPEED_UUID, nameIn, expression(LSPECIALConfig.agilityFormula, "agility", agilityValue), 1));
-            }
-
-        }
-
-        // flying speed is based on vanilla's 0.05 capability speed and is recalculated, never compounded.
-        float baseFlySpeed = 0.05F;
-        float flySpeed = baseFlySpeed;
-        if (LSPECIALConfig.agility && LSPECIALConfig.agilityFlyingSpeed) {
-            int configuredFlySpeed = getPlayerFlySpeed(player);
-            double agilityValue = configuredFlySpeed >= 0 ? configuredFlySpeed : inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
-            double multiplierBonus = expression(LSPECIALConfig.agilityFlyingSpeedFormula, "agility", agilityValue);
-            double minimum = Math.min(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
-            double maximum = Math.max(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
-            flySpeed = (float)Math.max(minimum, Math.min(maximum, baseFlySpeed * (1.0 + multiplierBonus)));
-        }
-        if (Float.isNaN(state.previousFlySpeed) || Math.abs(player.capabilities.getFlySpeed() - flySpeed) > 0.0001F) {
-            player.capabilities.setFlySpeed(flySpeed);
-            state.previousFlySpeed = flySpeed;
-            if (player instanceof net.minecraft.entity.player.EntityPlayerMP) {
-                player.sendPlayerAbilities();
-            }
-        }
+        updatePlayerAttributes(player, heldStack, state);
 
         // perception, intelligence, and luck
-
-        if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode)
-                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
-            ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
-            for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
-                ItemGunBaseNT.setWear(heldStack, configIndex, 0);
-            }
-        }
 
         if (heldStack.getItem() instanceof ItemGunBaseSedna) {
             // to my knowledge, no guns inherit this class
@@ -278,7 +174,7 @@ public class StatsLogic {
     }
 
     private void modifyGuns(ItemStack heldStack, EntityPlayer player, GunConfig cfg, PlayerState state) {
-        if (heldStack.getItem().equals(ModItems.gun_chemthrower)) {
+        if (heldStack.getItem().equals(ModItems.gun_chemthrower) || heldStack.getItem().equals(ModItems.gun_flamer) || heldStack.getItem().equals(ModItems.gun_flamer_topaz) || heldStack.getItem().equals(ModItems.gun_drill)) {
             return;
         }
 
@@ -430,7 +326,16 @@ public class StatsLogic {
     private void applyGunWearPolicy(EntityPlayer player, ItemStack heldStack, PlayerState state) {
         String mode = LSPECIALConfig.gunWearMode;
 
-        if ("INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(mode) || !LSPECIALConfig.intelligence) {
+        if (!LSPECIALConfig.intelligence) {
+            return;
+        }
+
+        if ("INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode)
+                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
+            ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
+            for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+                ItemGunBaseNT.setWear(heldStack, configIndex, 0);
+            }
             return;
         }
 
@@ -485,6 +390,8 @@ public class StatsLogic {
         private float previousMaxHealth = Float.NaN;
         private int previousCharisma = -1;
         private int previousAgility = -1;
+        private double previouStrengthDamage = Double.NaN;
+        private ItemStack previouStrengthStack = ItemStack.EMPTY;
         private boolean previousEnduranceEnabled = true;
         private boolean previousCharismaEnabled = true;
         private boolean previousAgilityEnabled = true;
@@ -542,6 +449,202 @@ public class StatsLogic {
             this.wear = wear;
             this.armorPiercing = armorPiercing;
             this.armorThresholdNegation = armorThresholdNegation;
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        EntityPlayer player = event.player;
+
+        if (player.world == null || player.world.isRemote) {
+            return;
+        }
+
+        synchronizePlayer(player);
+    }
+
+    @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        EntityPlayer player = event.player;
+
+        if (player.world == null || player.world.isRemote) {
+            return;
+        }
+
+        synchronizePlayer(player);
+    }
+
+    @SubscribeEvent
+    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        EntityPlayer player = event.player;
+
+        if (player.world == null || player.world.isRemote) {
+            return;
+        }
+
+        synchronizePlayer(player);
+    }
+
+    private void synchronizePlayer(EntityPlayer player) {
+        PlayerState state = playerStates.computeIfAbsent(
+                player.getUniqueID(),
+                id -> new PlayerState()
+        );
+
+        ItemStack heldStack = player.getHeldItemMainhand();
+
+        // Send the player's SPECIAL data to their client.
+        LSPECIALMod.syncStats((EntityPlayerMP) player);
+
+        // Apply the player's attributes immediately.
+        updatePlayerAttributes(player, heldStack, state);
+    }
+
+    /** Update a player's:<br>
+     * - Strength (held item's damage),<br>
+     * - Endurance (max health),<br>
+     * - Charisma (armor and armor toughness),<br>
+     * - and Agility (speed and fly speed)<br>
+     * if it has changed compared to last player tick.*/
+    private void updatePlayerAttributes(EntityPlayer player, ItemStack heldStack, PlayerState state) {
+        // strength
+        IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
+
+        Collection<AttributeModifier> damageCollection = heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
+
+        double baseHeldDamage = 0.0;
+
+        if (damageCollection != null && !damageCollection.isEmpty()) {
+            baseHeldDamage = damageCollection.iterator().next().getAmount();
+        }
+
+        double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD)) : 0.0;
+
+        double newDamage = baseHeldDamage + strengthBonus;
+
+        if (Double.isNaN(state.previouStrengthDamage)
+                || Math.abs(newDamage - state.previouStrengthDamage) > 0.000001D
+                || !ItemStack.areItemStacksEqual(heldStack, state.previouStrengthStack)) {
+
+            strength.removeModifier(ATTACK_DAMAGE_UUID);
+            strength.applyModifier(new AttributeModifier(ATTACK_DAMAGE_UUID, nameIn, newDamage, 0));
+
+            state.previouStrengthDamage = newDamage;
+            state.previouStrengthStack = heldStack.copy();
+        }
+
+        // endurance
+        IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
+
+        int enduranceScore = inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);
+
+        boolean hasEnduranceModifier = maxHealth.getModifier(MAX_HEALTH_UUID) != null;
+
+        if (enduranceScore != state.previousEndurance
+                || state.previousEnduranceEnabled != LSPECIALConfig.endurance
+                || Float.isNaN(state.previousMaxHealth)
+                || Math.abs(player.getMaxHealth() - state.previousMaxHealth) > 0.001F
+                || (LSPECIALConfig.endurance && !hasEnduranceModifier)
+                || (!LSPECIALConfig.endurance && hasEnduranceModifier)) {
+
+            state.previousEndurance = enduranceScore;
+
+            maxHealth.removeModifier(MAX_HEALTH_UUID);
+
+            if (LSPECIALConfig.endurance) {
+                maxHealth.applyModifier(new AttributeModifier(MAX_HEALTH_UUID, nameIn, expression(LSPECIALConfig.enduranceFormula, "endurance", enduranceScore * 2), 0));
+            }
+
+            state.previousMaxHealth = player.getMaxHealth();
+            state.previousEnduranceEnabled = LSPECIALConfig.endurance;
+        }
+
+        // charisma
+        IAttributeInstance armor = player.getEntityAttribute(SharedMonsterAttributes.ARMOR);
+        IAttributeInstance armorToughness = player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS);
+
+        boolean charisma = LSPECIALConfig.charisma;
+
+        int charismaScore = inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD);
+
+        boolean hasArmorModifier = armor.getModifier(ARMOR_UUID) != null;
+        boolean hasArmorToughnessModifier = armorToughness.getModifier(ARMOR_TOUGHNESS_UUID) != null;
+
+        if (charismaScore != state.previousCharisma
+                || state.previousCharismaEnabled != LSPECIALConfig.charisma
+                || (charisma && (!hasArmorModifier || !hasArmorToughnessModifier))
+                || (!charisma && (hasArmorModifier || hasArmorToughnessModifier))) {
+
+            state.previousCharisma = charismaScore;
+            state.previousCharismaEnabled = LSPECIALConfig.charisma;
+
+            armor.removeModifier(ARMOR_UUID);
+            armorToughness.removeModifier(ARMOR_TOUGHNESS_UUID);
+
+            if (charisma) {
+                armor.applyModifier(new AttributeModifier(ARMOR_UUID, nameIn, expression(LSPECIALConfig.armorFormula, "charisma", charismaScore), 0));
+                armorToughness.applyModifier(new AttributeModifier(ARMOR_TOUGHNESS_UUID, nameIn, expression(LSPECIALConfig.armorToughnessFormula, "charisma", charismaScore), 0));
+            }
+        }
+
+        // agility
+        IAttributeInstance movementSpeed = player.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED);
+
+        int agilityScore = inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
+
+        int configuredPlayerSpeed = getPlayerSpeed(player);
+
+        boolean hasMovementSpeedModifier = movementSpeed.getModifier(MOVEMENT_SPEED_UUID) != null;
+
+        if (agilityScore != state.previousAgility
+                || state.previousAgilityEnabled != LSPECIALConfig.agility
+                || (configuredPlayerSpeed != -1 && agilityScore != configuredPlayerSpeed)
+                || (LSPECIALConfig.agility && !hasMovementSpeedModifier)
+                || (!LSPECIALConfig.agility && hasMovementSpeedModifier)) {
+
+            state.previousAgilityEnabled = LSPECIALConfig.agility;
+
+            if (configuredPlayerSpeed > -1) {
+                state.previousAgility = configuredPlayerSpeed;
+            } else {
+                state.previousAgility = agilityScore;
+            }
+
+            movementSpeed.removeModifier(MOVEMENT_SPEED_UUID);
+
+            if (LSPECIALConfig.agility) {
+                double agilityValue = configuredPlayerSpeed > -1 ? configuredPlayerSpeed : agilityScore;
+
+                movementSpeed.applyModifier(new AttributeModifier(MOVEMENT_SPEED_UUID, nameIn, expression(LSPECIALConfig.agilityFormula, "agility", agilityValue), 1));
+            }
+        }
+
+        // fly speed
+        float baseFlySpeed = 0.05F;
+        float flySpeed = baseFlySpeed;
+
+        if (LSPECIALConfig.agility && LSPECIALConfig.agilityFlyingSpeed) {
+            int configuredFlySpeed = getPlayerFlySpeed(player);
+
+            double agilityValue = configuredFlySpeed >= 0 ? configuredFlySpeed : agilityScore;
+
+            double multiplierBonus = expression(LSPECIALConfig.agilityFlyingSpeedFormula, "agility", agilityValue);
+
+            double minimum = Math.min(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
+            double maximum = Math.max(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
+
+            flySpeed = (float) Math.max(minimum, Math.min(maximum, baseFlySpeed * (1.0 + multiplierBonus)));
+        }
+
+        if (Float.isNaN(state.previousFlySpeed)
+                || Math.abs(player.capabilities.getFlySpeed() - flySpeed) > 0.0001F) {
+
+            player.capabilities.setFlySpeed(flySpeed);
+            state.previousFlySpeed = flySpeed;
+
+            if (player instanceof EntityPlayerMP) {
+                player.sendPlayerAbilities();
+            }
         }
     }
 
