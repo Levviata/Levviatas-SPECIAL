@@ -8,6 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
@@ -18,22 +19,25 @@ public class CommandSetFlySpeed extends CommandBase {
     public static final Map<UUID, Integer> playerSpeeds = new HashMap<>();
 
     @Override
+    @Nonnull
     public String getName() {
         return "setflyspeed";
     }
 
     @Override
-    public String getUsage(ICommandSender sender) {
+    @Nonnull
+    public String getUsage(@Nonnull ICommandSender sender) {
         return "/setflyspeed <speed>. Proportional to your Agility stat. -1 to reset";
     }
 
     @Override
+    @Nonnull
     public List<String> getAliases() {
         return Collections.emptyList();
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+    public void execute(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender, @Nonnull String[] args) throws CommandException {
 
         // players only
         if (!(sender instanceof EntityPlayer)) {
@@ -107,7 +111,7 @@ public class CommandSetFlySpeed extends CommandBase {
     }
 
     @Override
-    public boolean checkPermission(MinecraftServer server, ICommandSender sender) {
+    public boolean checkPermission(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender) {
         return sender instanceof EntityPlayer;
     }
 

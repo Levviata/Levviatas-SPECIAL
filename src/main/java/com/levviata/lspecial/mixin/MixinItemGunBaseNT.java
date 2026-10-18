@@ -15,8 +15,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Bridges ItemGunBaseNT's player/LambdaContext into ItemStack-only NTM methods.
- *
+ * Bridges ItemGunBaseNT's player/LambdaContext into ItemStack-only NTM methods.<br>
+ *<br>
  * ItemGunBaseNT creates LambdaContext from this exact entity/inventory before
  * executing the gun callbacks. Receiver and magazine methods such as
  * getDelayAfterFire/getCapacity only receive an ItemStack, so they cannot

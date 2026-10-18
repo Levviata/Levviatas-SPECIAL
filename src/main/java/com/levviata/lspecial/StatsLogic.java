@@ -45,8 +45,8 @@ public class StatsLogic {
 
     private final Map<UUID, PlayerState> playerStates = new HashMap<>();
 
-    private static List<Item> g = new ArrayList<>();
-    private static List<String> r = new ArrayList<>();
+    private static final List<Item> g = new ArrayList<>();
+    private static final List<String> r = new ArrayList<>();
     private static final List<UUID> uuids = new ArrayList<>();
 
     public static void init() {
@@ -277,7 +277,7 @@ public class StatsLogic {
         givePotions(player);
     }
 
-    public void modifyGuns(ItemStack heldStack, EntityPlayer player, GunConfig cfg, PlayerState state) {
+    private void modifyGuns(ItemStack heldStack, EntityPlayer player, GunConfig cfg, PlayerState state) {
         if (heldStack.getItem().equals(ModItems.gun_chemthrower)) {
             return;
         }
@@ -347,7 +347,7 @@ public class StatsLogic {
         }
     }
 
-    public void cleanGun(ItemStack heldStack, PlayerState state) {
+    private void cleanGun(ItemStack heldStack, PlayerState state) {
         if (heldStack == null || (!heldStack.isEmpty() && heldStack.getItem().equals(ModItems.gun_chemthrower))) {
             if (state.gunStates.isEmpty()) resetGunTracking(state);
             return;
@@ -384,7 +384,7 @@ public class StatsLogic {
         state.modified = false;
     }
 
-    public void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack, PlayerState state) {
+    private void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack, PlayerState state) {
         state.originalWear = ItemGunBaseNT.getWear(heldStack, state.gunIndex);
         state.originalMagazine = rIn.getMagazine(heldStack);
         state.originalAmmoPiercing = bCIn.armorPiercingPercent;
@@ -398,7 +398,7 @@ public class StatsLogic {
                 state.originalWear, state.originalAmmoPiercing, state.originalArmorThresholdNegation));
     }
 
-    public void givePotions(EntityPlayer player) {
+    private void givePotions(EntityPlayer player) {
         if (LSPECIALConfig.amplifiedRegeneration && LSPECIALConfig.enduranceBonus && inst.getPlayerScorePoints(player, inst.ENDURANCE_BONUS_BOARD) == 1) {
             String p = Tags.MOD_ID + ":" + AMPLIFIED_REGENERATION_NAME;
             if (Potion.getPotionFromResourceLocation("regeneration") != null && Potion.getPotionFromResourceLocation(p) != null) {
@@ -480,20 +480,34 @@ public class StatsLogic {
         return LSPECIALExpression.eval(formula, vars, value);
     }
 
-    public static List<UUID> getUUIDs() {
-        if (uuids.isEmpty()) {
-            uuids.add(ATTACK_DAMAGE_UUID);
-            //uuids.add(ATTACK_SPEED_UUID);
-            uuids.add(MAX_HEALTH_UUID);
-            //uuids.add(FOLLOW_RANGE_UUID);
-            //uuids.add(KNOCKBACK_RESISTANCE_UUID);
-            uuids.add(MOVEMENT_SPEED_UUID);
-            //uuids.add(FLYING_SPEED_UUID);
-            uuids.add(ARMOR_UUID);
-            uuids.add(ARMOR_TOUGHNESS_UUID);
-           // uuids.add(LUCK_UUID);
-        }
-        return uuids;
+    private static class PlayerState {
+        private int previousEndurance = -1;
+        private float previousMaxHealth = Float.NaN;
+        private int previousCharisma = -1;
+        private int previousAgility = -1;
+        private boolean previousEnduranceEnabled = true;
+        private boolean previousCharismaEnabled = true;
+        private boolean previousAgilityEnabled = true;
+
+        private ItemStack modifiedStackRef = ItemStack.EMPTY;
+        private Receiver modifiedReceiver;
+        private boolean modified;
+        private boolean installedMagazine;
+        private float originalDamage;
+        private int originalProjectileAmount;
+        private float originalAmmoPiercing;
+        private float originalArmorThresholdNegation;
+        private float previousFlySpeed = Float.NaN;
+        private float originalWear;
+        private IMagazine originalMagazine;
+        private final List<GunState> gunStates = new ArrayList<>();
+
+        private ItemStack wearTrackedStack;
+        private float previousObservedWear = Float.NaN;
+
+        private int gunIndex = -1;
+
+        private ItemStack loggedSednaGun = ItemStack.EMPTY;
     }
 
     private static final class GunState {
@@ -531,33 +545,19 @@ public class StatsLogic {
         }
     }
 
-    private static class PlayerState {
-        private int previousEndurance = -1;
-        private float previousMaxHealth = Float.NaN;
-        private int previousCharisma = -1;
-        private int previousAgility = -1;
-        private boolean previousEnduranceEnabled = true;
-        private boolean previousCharismaEnabled = true;
-        private boolean previousAgilityEnabled = true;
-
-        private ItemStack modifiedStackRef = ItemStack.EMPTY;
-        private Receiver modifiedReceiver;
-        private boolean modified;
-        private boolean installedMagazine;
-        private float originalDamage;
-        private int originalProjectileAmount;
-        private float originalAmmoPiercing;
-        private float originalArmorThresholdNegation;
-        private float previousFlySpeed = Float.NaN;
-        private float originalWear;
-        private IMagazine originalMagazine;
-        private final List<GunState> gunStates = new ArrayList<>();
-
-        private ItemStack wearTrackedStack;
-        private float previousObservedWear = Float.NaN;
-
-        private int gunIndex = -1;
-
-        private ItemStack loggedSednaGun = ItemStack.EMPTY;
+    public static List<UUID> getUUIDs() {
+        if (uuids.isEmpty()) {
+            uuids.add(ATTACK_DAMAGE_UUID);
+            //uuids.add(ATTACK_SPEED_UUID);
+            uuids.add(MAX_HEALTH_UUID);
+            //uuids.add(FOLLOW_RANGE_UUID);
+            //uuids.add(KNOCKBACK_RESISTANCE_UUID);
+            uuids.add(MOVEMENT_SPEED_UUID);
+            //uuids.add(FLYING_SPEED_UUID);
+            uuids.add(ARMOR_UUID);
+            uuids.add(ARMOR_TOUGHNESS_UUID);
+            // uuids.add(LUCK_UUID);
+        }
+        return uuids;
     }
 }

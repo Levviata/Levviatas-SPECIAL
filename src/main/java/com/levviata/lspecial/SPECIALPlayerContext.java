@@ -3,8 +3,8 @@ package com.levviata.lspecial;
 import net.minecraft.entity.player.EntityPlayer;
 
 /**
- * Holds the player associated with the currently executing NTM gun operation.
- *
+ * Holds the player associated with the currently executing NTM gun operation.<br>
+ * <br>
  * ItemGunBaseNT creates LambdaContext with the actual player before invoking
  * the gun callbacks. The ItemStack-only Receiver/Magazine methods do not carry
  * that context in their method signature, so MixinItemGunBaseNT bridges the

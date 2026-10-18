@@ -213,11 +213,7 @@ public final class SPECIALGameplayHandler {
                 || inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD) == null
                 || inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) < requiredLevel) return;
 
-        List<PendingProjectile> pending = pendingProjectileBursts.get(player);
-        if (pending == null) {
-            pending = new ArrayList<>();
-            pendingProjectileBursts.put(player, pending);
-        }
+        List<PendingProjectile> pending = pendingProjectileBursts.computeIfAbsent(player, k -> new ArrayList<>());
         pending.add(new PendingProjectile(bullet, 5));
         pending.add(new PendingProjectile(bullet, 10));
     }

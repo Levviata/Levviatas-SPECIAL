@@ -1,7 +1,6 @@
 package com.levviata.lspecial.network;
 
 import com.levviata.lspecial.LSPECIALMod;
-import com.levviata.lspecial.SPECIALScoreboard;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -21,9 +20,7 @@ public class RequestSPECIALStatsPacket implements IMessage {
         @Override
         public IMessage onMessage(RequestSPECIALStatsPacket message, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().player;
-            player.getServerWorld().addScheduledTask(() -> {
-                LSPECIALMod.syncStats(player);
-            });
+            player.getServerWorld().addScheduledTask(() -> LSPECIALMod.syncStats(player));
             return null;
         }
     }

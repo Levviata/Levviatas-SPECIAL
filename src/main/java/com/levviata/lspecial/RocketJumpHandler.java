@@ -131,8 +131,7 @@ public final class RocketJumpHandler {
     /** consumes the previous jump's one-shot reward on this jump, then arms the next reward. */
     private static void refundRocketOnSuccessfulJump(EntityPlayer player) {
         NBTTagCompound data = player.getEntityData();
-        int lastTick = LAST_REWARD_TICK.containsKey(player.getUniqueID())
-                ? LAST_REWARD_TICK.get(player.getUniqueID()) : Integer.MIN_VALUE / 2;
+        int lastTick = LAST_REWARD_TICK.getOrDefault(player.getUniqueID(), Integer.MIN_VALUE / 2);
         if (player.ticksExisted - lastTick < 10) return;
 
         boolean rewardPending = data.getBoolean(REWARD_PENDING);
