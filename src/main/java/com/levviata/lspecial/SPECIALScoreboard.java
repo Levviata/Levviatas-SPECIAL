@@ -82,6 +82,32 @@ public class SPECIALScoreboard {
         return playerScoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
     }
 
+    public Score getPlayerScore(EntityPlayer player, String boardName) {
+        // todo add logging in each null check
+        if (player == null || player.getEntityWorld() == null || boardName == null) {
+            return null;
+        }
+
+        // 1. get player's current scoreboard
+        Scoreboard playerScoreboard = player.getEntityWorld().getScoreboard();
+
+        // 2. start player's board if null
+        if (playerScoreboard.getObjective(boardName) == null) {
+            playerScoreboard.addScoreObjective(boardName, IScoreCriteria.DUMMY);
+        }
+
+        // 3. get the player's objective off the board
+        ScoreObjective objective = playerScoreboard.getObjective(boardName);
+
+        // 4. check if he has the objective or not
+        if (objective == null) {
+            return null;
+        }
+
+        // 5. get or create the score for the player
+        return playerScoreboard.getOrCreateScore(player.getName(), objective);
+    }
+
     public void setClientScores(int strength, int perception, int endurance, int enduranceBonus, int charisma, int charismaBonus, int intelligence, int agility, int luck, int limit) {
         clientStrength = strength;
         clientPerception = perception;
