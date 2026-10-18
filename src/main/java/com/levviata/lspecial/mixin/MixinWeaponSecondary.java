@@ -40,13 +40,13 @@ public abstract class MixinWeaponSecondary {
 
     /** handles crouch-secondary ammo cycling, the Lag's self-kill action, and double-barrel grappling. */
     @Inject(method = "handleKeybind(Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/inventory/IInventory;Lnet/minecraft/item/ItemStack;Lcom/hbm/handler/HbmKeybinds$EnumKeybind;Z)V", at = @At("HEAD"), cancellable = true, remap = false)
-    private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory, ItemStack stack, HbmKeybinds.EnumKeybind keybind, boolean pressed, CallbackInfo callback) {
+    private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory, ItemStack stack, HbmKeybinds.EnumKeybind keybind, boolean newState, CallbackInfo callback) {
         if (!(entity instanceof EntityPlayer) || stack == null || stack.isEmpty() || keybind == null) {
             return;
         }
 
         EntityPlayer player = (EntityPlayer) entity;
-        String itemId = registryId(stack);
+        String itemId = lspecial$registryId(stack);
         if (itemId == null) return;
 
         if ("hbm:gun_flamer_topaz".equals(itemId) && keybind.name().contains("PRIMARY")
@@ -57,7 +57,7 @@ public abstract class MixinWeaponSecondary {
         }
 
         if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
-                && !player.isSneaking() && keybind.name().contains("SECONDARY") && pressed
+                && !player.isSneaking() && keybind.name().contains("SECONDARY") && newState
                 && lspecial$hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
             if (tag == null) {
@@ -83,7 +83,7 @@ public abstract class MixinWeaponSecondary {
         // Route the double-barrel grapple through NTM's tertiary/scope key.
         // Cancel the native tertiary action for this weapon so it cannot scope.
         if (keybind.name().contains("TERTIARY") && "hbm:gun_double_barrel".equals(itemId)
-                && LSPECIALConfig.doubleBarrelGrapple && pressed
+                && LSPECIALConfig.doubleBarrelGrapple && newState
                 && lspecial$hasIntelligence(player, 15)) {
             if (player.world.isRemote) {
                 if (LSPECIALConfig.doubleBarrelGrappleVisuals) {
@@ -96,10 +96,10 @@ public abstract class MixinWeaponSecondary {
                 }
             } else {
                 if (player.isSneaking()) {
-                    pullTargetTowardPlayer(player, LSPECIALConfig.doubleBarrelGrappleRange,
+                    lspecial$pullTargetTowardPlayer(player, LSPECIALConfig.doubleBarrelGrappleRange,
                             LSPECIALConfig.doubleBarrelGrapplePullSpeed);
                 } else {
-                    pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
+                    lspecial$pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
                             LSPECIALConfig.doubleBarrelGrapplePullSpeed);
                 }
             }
@@ -112,7 +112,7 @@ public abstract class MixinWeaponSecondary {
         // Both flame weapons use TF2 airblast on secondary fire; Dragon's Fury shares its pressure lock.
         if (("hbm:gun_flamer".equals(itemId) && LSPECIALConfig.flamethrowerPerk)
                 || ("hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryPerk)) {
-            if (pressed && !player.world.isRemote) {
+            if (newState && !player.world.isRemote) {
                 TF2FlamethrowerHandler.airblast(player, stack);
             }
             callback.cancel();
@@ -127,10 +127,10 @@ public abstract class MixinWeaponSecondary {
         if (carbineSecondary || lagSecondary || lincolnSecondary
                 || tauSecondary || lightRevolverSecondary) {
             // NTM reads the secondary state for the modified mode, but still needs primary input to run its firing pipeline.
-            lspecial$setPrimaryForAllConfigs(stack, pressed);
+            lspecial$setPrimaryForAllConfigs(stack, newState);
         }
 
-        if (!pressed) return;
+        if (!newState) return;
 
         if (player.world.isRemote) {
             boolean lightRevolverTrigger = "hbm:gun_light_revolver".equals(itemId)
@@ -143,7 +143,7 @@ public abstract class MixinWeaponSecondary {
             boolean isSpecialAction = (player.isSneaking() && "hbm:gun_lag".equals(itemId)
                     && LSPECIALConfig.lagSecondarySelfKill && lspecial$hasIntelligence(player, 5))
                     || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
-                    && lspecial$hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
+                    && lspecial$hasIntelligence(player, 5) && lspecial$supportsAmmoCycling(itemId)
                     && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATRailgunProjectile && lspecial$hasIntelligence(player, 15))))
                     || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
                     && LSPECIALConfig.doubleBarrelGrapple && lspecial$hasIntelligence(player, 15));
@@ -177,9 +177,9 @@ public abstract class MixinWeaponSecondary {
         }
 
         if (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
-                && lspecial$hasIntelligence(player, 5) && supportsAmmoCycling(itemId)
+                && lspecial$hasIntelligence(player, 5) && lspecial$supportsAmmoCycling(itemId)
                 && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATRailgunProjectile && lspecial$hasIntelligence(player, 15)))
-                && cycleSupportedAmmo(player, stack, inventory, itemId)) {
+                && lspecial$cycleSupportedAmmo(player, stack, inventory, itemId)) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
             if (tag == null) {
                 tag = new net.minecraft.nbt.NBTTagCompound();
@@ -206,41 +206,41 @@ public abstract class MixinWeaponSecondary {
 
     /** returns the registry identifier used to match a weapon without relying on its display name. */
     @Unique
-    private static String registryId(ItemStack stack) {
+    private static String lspecial$registryId(ItemStack stack) {
         return stack.getItem().getRegistryName() == null ? null : stack.getItem().getRegistryName().toString();
     }
 
     /** identifies the guns with a defined alternate caliber or energy-projectile mode. */
     @Unique
-    private static boolean supportsAmmoCycling(String itemId) {
-        return "hbm:gun_pepperbox".equals(itemId) || isStarF(itemId) || isUzi(itemId)
-                || isG3(itemId) || "hbm:gun_amat".equals(itemId);
+    private static boolean lspecial$supportsAmmoCycling(String itemId) {
+        return "hbm:gun_pepperbox".equals(itemId) || lspecial$isStarF(itemId) || lspecial$isUzi(itemId)
+                || lspecial$isG3(itemId) || "hbm:gun_amat".equals(itemId);
     }
 
 
     @Unique
-    private static boolean isStarF(String itemId) {
+    private static boolean lspecial$isStarF(String itemId) {
         return "hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId);
     }
 
     @Unique
-    private static boolean isUzi(String itemId) {
+    private static boolean lspecial$isUzi(String itemId) {
         return "hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId);
     }
 
     @Unique
-    private static boolean isG3(String itemId) {
+    private static boolean lspecial$isG3(String itemId) {
         return "hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId);
     }
 
     @Unique
-    private static boolean isMinigun(String itemId) {
+    private static boolean lspecial$isMinigun(String itemId) {
         return "hbm:gun_minigun".equals(itemId) || "hbm:gun_minigun_dual".equals(itemId);
     }
 
     /** identifies weapons that should copy the Heretic's secondary-fire aiming behavior. */
     @Unique
-    private static boolean isHereticScopeCopyWeapon(String itemId) {
+    private static boolean lspecial$isHereticScopeCopyWeapon(String itemId) {
         return "hbm:gun_maresleg".equals(itemId) || "hbm:gun_liberator".equals(itemId)
                 || "hbm:gun_autoshotgun".equals(itemId) || "hbm:gun_autoshotgun_heretic".equals(itemId)
                 || "hbm:gun_autoshotgun_sexy".equals(itemId) || "hbm:gun_congolake".equals(itemId)
@@ -249,18 +249,25 @@ public abstract class MixinWeaponSecondary {
 
     /** returns every native NTM bullet configuration in the alternate caliber family. */
     @Unique
-    private static List<BulletConfig> getAlternateCalibers(String itemId) {
+    private static List<BulletConfig> lspecial$getAlternateCalibers(String itemId) {
         if ("hbm:gun_amat".equals(itemId)) {
             return java.util.Collections.singletonList(AMATRailgun.getBulletConfig());
         }
         String prefix;
         Class<?> factory;
         if ("hbm:gun_pepperbox".equals(itemId)) { factory = XFactory44.class; prefix = "m44_"; }
-        else if (isStarF(itemId)) { factory = XFactory50.class; prefix = "bmg50_"; }
-        else if (isUzi(itemId)) { factory = XFactory556mm.class; prefix = "r556_"; }
-        else if (isG3(itemId)) { factory = XFactory10ga.class; prefix = "g10"; }
+        else if (lspecial$isStarF(itemId)) { factory = XFactory50.class; prefix = "bmg50_"; }
+        else if (lspecial$isUzi(itemId)) { factory = XFactory556mm.class; prefix = "r556_"; }
+        else if (lspecial$isG3(itemId)) { factory = XFactory10ga.class; prefix = "g10"; }
         else return java.util.Collections.emptyList();
 
+        List<BulletConfig> result = lspecial$getBulletConfigs(factory, prefix);
+        result.sort(Comparator.comparingInt(config -> config.id));
+        return result;
+    }
+
+    @Unique
+    private static List<BulletConfig> lspecial$getBulletConfigs(Class<?> factory, String prefix) {
         List<BulletConfig> result = new java.util.ArrayList<>();
         try {
             for (java.lang.reflect.Field field : factory.getFields()) {
@@ -271,17 +278,16 @@ public abstract class MixinWeaponSecondary {
         } catch (IllegalAccessException ignored) {
             // Public factory fields are expected; an inaccessible field simply isn't a usable caliber.
         }
-        result.sort(Comparator.comparingInt(config -> config.id));
         return result;
     }
 
     /** swaps each distinct magazine on single and akimbo weapons without changing NTM's firing pipeline. */
     @Unique
-    private static boolean cycleSupportedAmmo(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
+    private static boolean lspecial$cycleSupportedAmmo(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
         if (!(stack.getItem() instanceof ItemGunBaseNT)) return false;
         ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
-        List<BulletConfig> alternateCalibers = getAlternateCalibers(itemId);
-        if (isMinigun(itemId)) {
+        List<BulletConfig> alternateCalibers = lspecial$getAlternateCalibers(itemId);
+        if (lspecial$isMinigun(itemId)) {
             for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
                 GunConfig config = gun.getConfig(stack, configIndex);
                 if (config == null) continue;
@@ -313,9 +319,9 @@ public abstract class MixinWeaponSecondary {
                 if (receiver == null) continue;
                 IMagazine magazine = receiver.getMagazine(stack);
                 if (magazine == null) continue;
-                String magazineKey = getMagazineKey(magazine);
+                String magazineKey = lspecial$getMagazineKey(magazine);
                 if (magazineKey == null || !visitedMagazineKeys.add(magazineKey)) continue;
-                changed |= cycleOneMagazine(player, stack, inventory, magazine, alternateCalibers);
+                changed |= lspecial$cycleOneMagazine(player, stack, inventory, magazine, alternateCalibers);
             }
         }
 
@@ -327,7 +333,7 @@ public abstract class MixinWeaponSecondary {
 
     /** unwraps the Luck wrapper so magazine-specific mode and capacity logic sees the native magazine type. */
     @Unique
-    private static IMagazine unwrapMagazine(IMagazine magazine) {
+    private static IMagazine lspecial$unwrapMagazine(IMagazine magazine) {
         while (magazine instanceof RefundMagazine) {
             magazine = ((RefundMagazine) magazine).getOriginalMagazine();
         }
@@ -336,8 +342,8 @@ public abstract class MixinWeaponSecondary {
 
     /** creates a stable key so shared magazines are switched once even on multi-receiver guns. */
     @Unique
-    private static String getMagazineKey(IMagazine magazine) {
-        IMagazine original = unwrapMagazine(magazine);
+    private static String lspecial$getMagazineKey(IMagazine magazine) {
+        IMagazine original = lspecial$unwrapMagazine(magazine);
         if (original instanceof MagazineSingleTypeBase) {
             return "single:" + ((MagazineSingleTypeBase) original).index;
         }
@@ -347,9 +353,9 @@ public abstract class MixinWeaponSecondary {
 
     /** changes one magazine's selected caliber and refunds only ammunition physically loaded into that magazine. */
     @Unique
-    private static boolean cycleOneMagazine(EntityPlayer player, ItemStack stack, IInventory inventory,
-                                            IMagazine magazine, List<BulletConfig> alternateCalibers) {
-        IMagazine original = unwrapMagazine(magazine);
+    private static boolean lspecial$cycleOneMagazine(EntityPlayer player, ItemStack stack, IInventory inventory,
+                                                     IMagazine magazine, List<BulletConfig> alternateCalibers) {
+        IMagazine original = lspecial$unwrapMagazine(magazine);
         if (original instanceof MagazineBelt) return false;
         if (!(original instanceof MagazineSingleTypeBase)) return false;
 
@@ -371,7 +377,7 @@ public abstract class MixinWeaponSecondary {
         if (alternateOptions.isEmpty()) return false;
         int currentAlternate = alternateOptions.indexOf(current);
         BulletConfig target;
-        if (isStarF(registryId(stack))) {
+        if (lspecial$isStarF(lspecial$registryId(stack))) {
             // Star F switches between the original .22 group and the BMG group,
             // rather than cycling every individual BMG projectile configuration.
             target = currentAlternate < 0 ? alternateOptions.get(0) : defaultAmmo;
@@ -390,7 +396,7 @@ public abstract class MixinWeaponSecondary {
             int roundsPerAmmoItem = Math.max(1, current.ammoReloadCount);
             if (loadedAmount % roundsPerAmmoItem != 0) return false;
             int refundCount = loadedAmount / roundsPerAmmoItem;
-            if (!refundAmmoToPlayer(player, current, refundCount)) return false;
+            if (!lspecial$refundAmmoToPlayer(player, current, refundCount)) return false;
             single.setAmount(stack, 0);
         }
 
@@ -469,7 +475,7 @@ public abstract class MixinWeaponSecondary {
 
     /** returns old-caliber ammunition to inventory, dropping every leftover stack beside the player. */
     @Unique
-    private static boolean refundAmmoToPlayer(EntityPlayer player, BulletConfig oldConfig, int count) {
+    private static boolean lspecial$refundAmmoToPlayer(EntityPlayer player, BulletConfig oldConfig, int count) {
         if (count <= 0) return true;
         if (oldConfig.ammo == null) return false;
         ItemStack template = oldConfig.ammo.getStack();
@@ -527,14 +533,14 @@ public abstract class MixinWeaponSecondary {
 
     /** finds the nearest entity in the player's look direction and applies a bounded pull velocity. */
     @Unique
-    private static void pullPlayerTowardTarget(EntityPlayer player, double range, double pullSpeed) {
+    private static void lspecial$pullPlayerTowardTarget(EntityPlayer player, double range, double pullSpeed) {
         if (player.world.isRemote || !(player instanceof net.minecraft.entity.player.EntityPlayerMP)) return;
         Entity target = lspecial$findGrappleTarget(player, range);
         if (target != null) GrappleController.start((net.minecraft.entity.player.EntityPlayerMP) player, target, false, pullSpeed);
     }
 
     @Unique
-    private static void pullTargetTowardPlayer(EntityPlayer player, double range, double pullSpeed) {
+    private static void lspecial$pullTargetTowardPlayer(EntityPlayer player, double range, double pullSpeed) {
         if (player.world.isRemote || !(player instanceof net.minecraft.entity.player.EntityPlayerMP)) return;
         Entity target = lspecial$findGrappleTarget(player, range);
         if (target != null) GrappleController.start((net.minecraft.entity.player.EntityPlayerMP) player, target, true, pullSpeed);
