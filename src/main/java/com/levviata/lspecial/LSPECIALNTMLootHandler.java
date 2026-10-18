@@ -1,5 +1,6 @@
 package com.levviata.lspecial;
 
+import com.github.bsideup.jabel.Desugar;
 import com.hbm.handler.WeightedRandomChestContentFrom1710;
 import com.hbm.itempool.ItemPool;
 import net.minecraft.entity.player.EntityPlayer;
@@ -181,54 +182,39 @@ public final class LSPECIALNTMLootHandler {
     }
 
     /**
-         * Bridges vanilla inventories to the item-handler API used by the loot insertion code.
-         */
-        private record VanillaInventoryAdapter(IInventory inventory) implements IItemHandlerModifiable {
+     * Bridges vanilla inventories to the item-handler API used by the loot insertion code.
+     */
+    @Desugar
+    private record VanillaInventoryAdapter(IInventory inventory) implements IItemHandlerModifiable {
+
+    @Override
+        public int getSlots() {
+            return inventory.getSizeInventory();
+        }
 
         @Override
-            public int getSlots() {
-                return inventory.getSizeInventory();
-            }
+        @Nonnull
+        public ItemStack getStackInSlot(int slot) {
+            if (slot < 0 || slot >= getSlots()) return ItemStack.EMPTY;
+            ItemStack stack = inventory.getStackInSlot(slot);
+            return stack == null ? ItemStack.EMPTY : stack;
+        }
 
-            @Override
-            @Nonnull
-            public ItemStack getStackInSlot(int slot) {
-                if (slot < 0 || slot >= getSlots()) return ItemStack.EMPTY;
-                ItemStack stack = inventory.getStackInSlot(slot);
-                return stack == null ? ItemStack.EMPTY : stack;
-            }
+        @Override
+        @Nonnull
+        public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+            if (stack.isEmpty()) return ItemStack.EMPTY;
+            if (slot < 0 || slot >= getSlots() || !inventory.isItemValidForSlot(slot, stack)) return stack;
 
-            @Override
-            @Nonnull
-            public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-                if (stack.isEmpty()) return ItemStack.EMPTY;
-                if (slot < 0 || slot >= getSlots() || !inventory.isItemValidForSlot(slot, stack)) return stack;
+            ItemStack existing = getStackInSlot(slot);
+            int limit = Math.min(stack.getMaxStackSize(), getSlotLimit(slot));
+            if (limit <= 0) return stack;
 
-                ItemStack existing = getStackInSlot(slot);
-                int limit = Math.min(stack.getMaxStackSize(), getSlotLimit(slot));
-                if (limit <= 0) return stack;
-
-                if (existing.isEmpty()) {
-                    int inserted = Math.min(stack.getCount(), limit);
-                    if (!simulate) {
-                        ItemStack result = stack.copy();
-                        result.setCount(inserted);
-                        inventory.setInventorySlotContents(slot, result);
-                        inventory.markDirty();
-                    }
-                    if (inserted >= stack.getCount()) return ItemStack.EMPTY;
-                    ItemStack remainder = stack.copy();
-                    remainder.shrink(inserted);
-                    return remainder;
-                }
-
-                if (!ItemHandlerHelper.canItemStacksStack(existing, stack)) return stack;
-                int space = limit - existing.getCount();
-                if (space <= 0) return stack;
-                int inserted = Math.min(space, stack.getCount());
+            if (existing.isEmpty()) {
+                int inserted = Math.min(stack.getCount(), limit);
                 if (!simulate) {
-                    ItemStack result = existing.copy();
-                    result.grow(inserted);
+                    ItemStack result = stack.copy();
+                    result.setCount(inserted);
                     inventory.setInventorySlotContents(slot, result);
                     inventory.markDirty();
                 }
@@ -238,46 +224,62 @@ public final class LSPECIALNTMLootHandler {
                 return remainder;
             }
 
-            @Override
-            @Nonnull
-            public ItemStack extractItem(int slot, int amount, boolean simulate) {
-                if (slot < 0 || slot >= getSlots() || amount <= 0) return ItemStack.EMPTY;
-                ItemStack existing = getStackInSlot(slot);
-                if (existing.isEmpty()) return ItemStack.EMPTY;
-                int extracted = Math.min(amount, existing.getCount());
+            if (!ItemHandlerHelper.canItemStacksStack(existing, stack)) return stack;
+            int space = limit - existing.getCount();
+            if (space <= 0) return stack;
+            int inserted = Math.min(space, stack.getCount());
+            if (!simulate) {
                 ItemStack result = existing.copy();
-                result.setCount(extracted);
-                if (!simulate) {
-                    if (extracted >= existing.getCount()) {
-                        inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
-                    } else {
-                        ItemStack remainder = existing.copy();
-                        remainder.shrink(extracted);
-                        inventory.setInventorySlotContents(slot, remainder);
-                    }
-                    inventory.markDirty();
-                }
-                return result;
+                result.grow(inserted);
+                inventory.setInventorySlotContents(slot, result);
+                inventory.markDirty();
             }
+            if (inserted >= stack.getCount()) return ItemStack.EMPTY;
+            ItemStack remainder = stack.copy();
+            remainder.shrink(inserted);
+            return remainder;
+        }
 
-            @Override
-            public int getSlotLimit(int slot) {
-                return slot < 0 || slot >= getSlots() ? 0 : inventory.getInventoryStackLimit();
-            }
-
-            @Override
-            public void setStackInSlot(int slot, @Nonnull ItemStack stack) {
-                if (slot < 0 || slot >= getSlots()) throw new IndexOutOfBoundsException("slot " + slot);
-                if (stack.isEmpty()) {
+        @Override
+        @Nonnull
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot < 0 || slot >= getSlots() || amount <= 0) return ItemStack.EMPTY;
+            ItemStack existing = getStackInSlot(slot);
+            if (existing.isEmpty()) return ItemStack.EMPTY;
+            int extracted = Math.min(amount, existing.getCount());
+            ItemStack result = existing.copy();
+            result.setCount(extracted);
+            if (!simulate) {
+                if (extracted >= existing.getCount()) {
                     inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
                 } else {
-                    ItemStack result = stack.copy();
-                    result.setCount(Math.min(result.getCount(), getSlotLimit(slot)));
-                    inventory.setInventorySlotContents(slot, result);
+                    ItemStack remainder = existing.copy();
+                    remainder.shrink(extracted);
+                    inventory.setInventorySlotContents(slot, remainder);
                 }
                 inventory.markDirty();
             }
+            return result;
         }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return slot < 0 || slot >= getSlots() ? 0 : inventory.getInventoryStackLimit();
+        }
+
+        @Override
+        public void setStackInSlot(int slot, @Nonnull ItemStack stack) {
+            if (slot < 0 || slot >= getSlots()) throw new IndexOutOfBoundsException("slot " + slot);
+            if (stack.isEmpty()) {
+                inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
+            } else {
+                ItemStack result = stack.copy();
+                result.setCount(Math.min(result.getCount(), getSlotLimit(slot)));
+                inventory.setInventorySlotContents(slot, result);
+            }
+            inventory.markDirty();
+        }
+    }
 
     /**
      * Avoids ItemPool.getPool's fallback pool when a configured pool name is invalid.
