@@ -1,6 +1,12 @@
 missing:
 
-light revolver rapid fire
+light revolver rapid fire -> scratch this. On alt shoot, make all revolvers only deal damage on headshot, if that damage passes the entitie's current health by maxhealth * 20%, make it explode and deal damage to nearby enemies, those enemies can explode too based on the same formula
 heretic scoping
 
+issues:
+rocket jump rewards are not proper
+burst is still ass
+
+maybe later:
 make item hud text scale in proportion to health to avoid clipping
+make a limb system for mobs and players, each limb can take X damage until it dies. Limb death could be dynamic and if it takes far more damage than it's current health make it would explode. this goes in hand with the revolver mechanic idea
