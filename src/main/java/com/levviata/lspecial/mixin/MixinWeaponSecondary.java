@@ -395,7 +395,7 @@ public abstract class MixinWeaponSecondary {
 
         Object currentObject = single.getType(stack, null);
         if (!(currentObject instanceof BulletConfig current)) return false;
-        BulletConfig defaultAmmo = accepted.getFirst();
+        BulletConfig defaultAmmo = accepted.get(0);
         List<BulletConfig> alternateOptions = new java.util.ArrayList<>();
         for (BulletConfig config : alternateCalibers) {
             if (config != null && config != defaultAmmo && !alternateOptions.contains(config))
@@ -407,9 +407,9 @@ public abstract class MixinWeaponSecondary {
         if (lspecial$isStarF(lspecial$registryId(stack))) {
             // Star F switches between the original .22 group and the BMG group,
             // rather than cycling every individual BMG projectile configuration.
-            target = currentAlternate < 0 ? alternateOptions.getFirst() : defaultAmmo;
+            target = currentAlternate < 0 ? alternateOptions.get(0) : defaultAmmo;
         } else if (currentAlternate < 0) {
-            target = alternateOptions.getFirst();
+            target = alternateOptions.get(0);
         } else if (currentAlternate + 1 < alternateOptions.size()) {
             target = alternateOptions.get(currentAlternate + 1);
         } else {
@@ -446,17 +446,17 @@ public abstract class MixinWeaponSecondary {
 
         net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
         int currentId = tag != null && tag.hasKey("LSPECIALSelectedBeltCaliber")
-                ? tag.getInteger("LSPECIALSelectedBeltCaliber") : accepted.getFirst().id;
+                ? tag.getInteger("LSPECIALSelectedBeltCaliber") : accepted.get(0).id;
         BulletConfig current = lspecial$findBulletConfig(currentId);
         List<BulletConfig> modes = lspecial$getEnergyCapacitors();
         int currentIndex = modes.indexOf(current);
         BulletConfig target;
         if (currentIndex < 0) {
-            target = modes.getFirst();
+            target = modes.get(0);
         } else if (currentIndex + 1 < modes.size()) {
             target = modes.get(currentIndex + 1);
         } else {
-            target = accepted.getFirst();
+            target = accepted.get(0);
         }
 
         if (target == null || target == current) {
@@ -469,7 +469,7 @@ public abstract class MixinWeaponSecondary {
         if (!stack.hasTagCompound()) {
             stack.setTagCompound(new net.minecraft.nbt.NBTTagCompound());
         }
-        if (target == accepted.getFirst()) {
+        if (target == accepted.get(0)) {
             stack.getTagCompound().removeTag("LSPECIALSelectedBeltCaliber");
         } else {
             stack.getTagCompound().setInteger("LSPECIALSelectedBeltCaliber", target.id);
