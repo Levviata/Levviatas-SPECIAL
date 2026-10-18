@@ -43,6 +43,8 @@ public class StatsLogic {
     //private static final UUID LUCK_UUID = UUID.fromString("18b4f6d0-8ec1-4cba-a57e-52d6f83a7808");
     private static final String nameIn = "Lev Attribute Modifier";
 
+    private final Map<UUID, PlayerState> playerStates = new HashMap<>();
+
     private int previousEndurance = -1;
     private float previousMaxHealth = Float.NaN;
     private int previousCharisma = -1;
@@ -118,16 +120,17 @@ public class StatsLogic {
             return;
         }
 
+        PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), id -> new PlayerState());
+
         inst.scoreboard = player.getEntityWorld().getScoreboard();
 
-        // WARNING if the scores or scoreboards don't start, the mod is useless
+        // WARNING if the scoreboards don't start, the mod is useless
         inst.startBoards();
-        inst.startScores(player);
 
         ItemStack heldStack = player.getHeldItemMainhand();
         if (!heldStack.isEmpty() && heldStack.isItemStackDamageable()) {
             boolean perkActive = LSPECIALConfig.infiniteItemDurability && LSPECIALConfig.intelligence
-                    && inst.getIntelligenceScore().getScorePoints() >= 5
+                    && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5
                     && !(heldStack.getItem() instanceof ItemArmor);
             if (perkActive) {
                 if (!heldStack.hasTagCompound()) heldStack.setTagCompound(new NBTTagCompound());
@@ -146,7 +149,7 @@ public class StatsLogic {
         }
 
         if (heldStack.getItem() instanceof ItemGunBaseNT) {
-            applyGunWearPolicy(heldStack);
+            applyGunWearPolicy(player, heldStack);
         } else {
             wearTrackedStack = null;
             previousObservedWear = Float.NaN;
@@ -163,12 +166,12 @@ public class StatsLogic {
             baseHeldDamage = damageCollection.iterator().next().getAmount();
         }
         strength.removeModifier(ATTACK_DAMAGE_UUID);
-        double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getStrengthScore().getScorePoints()) : 0.0;
+        double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD)) : 0.0;
         strength.applyModifier(new AttributeModifier(ATTACK_DAMAGE_UUID, nameIn, baseHeldDamage + strengthBonus, 0));
 
         // endurance
         IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
-        int enduranceScore = inst.getEnduranceScore().getScorePoints();
+        int enduranceScore = inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);
         boolean hasEnduranceModifier = maxHealth.getModifier(MAX_HEALTH_UUID) != null;
         if (enduranceScore != previousEndurance || previousEnduranceEnabled != LSPECIALConfig.endurance
                 || Float.isNaN(previousMaxHealth) || Math.abs(player.getMaxHealth() - previousMaxHealth) > 0.001F
@@ -187,38 +190,38 @@ public class StatsLogic {
         // charisma
         IAttributeInstance armor = player.getEntityAttribute(SharedMonsterAttributes.ARMOR);
         IAttributeInstance armorToughness = player.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS);
-        boolean charismaBonusEnabled = LSPECIALConfig.charisma && LSPECIALConfig.charismaBonus;
+        boolean charisma = LSPECIALConfig.charisma;
         boolean hasArmorModifier = armor.getModifier(ARMOR_UUID) != null;
         boolean hasArmorToughnessModifier = armorToughness.getModifier(ARMOR_TOUGHNESS_UUID) != null;
-        if (inst.getCharismaScore().getScorePoints() != previousCharisma || previousCharismaEnabled != LSPECIALConfig.charisma
-                || (charismaBonusEnabled && (!hasArmorModifier || !hasArmorToughnessModifier))
-                || (!charismaBonusEnabled && (hasArmorModifier || hasArmorToughnessModifier))) {
-            previousCharisma = inst.getCharismaScore().getScorePoints();
+        if (inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD) != previousCharisma || previousCharismaEnabled != LSPECIALConfig.charisma
+                || (charisma && (!hasArmorModifier || !hasArmorToughnessModifier))
+                || (!charisma && (hasArmorModifier || hasArmorToughnessModifier))) {
+            previousCharisma = inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD);
             previousCharismaEnabled = LSPECIALConfig.charisma;
 
             armor.removeModifier(ARMOR_UUID);
             armorToughness.removeModifier(ARMOR_TOUGHNESS_UUID);
 
-            if (charismaBonusEnabled) {
-                armor.applyModifier(new AttributeModifier(ARMOR_UUID, nameIn, expression(LSPECIALConfig.armorFormula, "charisma", inst.getCharismaScore().getScorePoints()), 0));
+            if (charisma) {
+                armor.applyModifier(new AttributeModifier(ARMOR_UUID, nameIn, expression(LSPECIALConfig.armorFormula, "charisma", inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD)), 0));
             }
-            if (charismaBonusEnabled) {
-                armorToughness.applyModifier(new AttributeModifier(ARMOR_TOUGHNESS_UUID, nameIn, expression(LSPECIALConfig.armorToughnessFormula, "charisma", inst.getCharismaScore().getScorePoints()), 0));
+            if (charisma) {
+                armorToughness.applyModifier(new AttributeModifier(ARMOR_TOUGHNESS_UUID, nameIn, expression(LSPECIALConfig.armorToughnessFormula, "charisma", inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD)), 0));
             }
         }
 
         // agility
         IAttributeInstance movementSpeed = player.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED);
         boolean hasMovementSpeedModifier = movementSpeed.getModifier(MOVEMENT_SPEED_UUID) != null;
-        if (inst.getAgilityScore().getScorePoints() != previousAgility || previousAgilityEnabled != LSPECIALConfig.agility
-                || (getPlayerSpeed(player) != -1 && inst.getAgilityScore().getScorePoints() != getPlayerSpeed(player))
+        if (inst.getPlayerScorePoints(player, inst.AGILITY_BOARD) != previousAgility || previousAgilityEnabled != LSPECIALConfig.agility
+                || (getPlayerSpeed(player) != -1 && inst.getPlayerScorePoints(player, inst.AGILITY_BOARD) != getPlayerSpeed(player))
                 || (LSPECIALConfig.agility && !hasMovementSpeedModifier)
                 || (!LSPECIALConfig.agility && hasMovementSpeedModifier)) {
             previousAgilityEnabled = LSPECIALConfig.agility;
             if (getPlayerSpeed(player) > -1) {
                 previousAgility = getPlayerSpeed(player);
             } else {
-                previousAgility = inst.getAgilityScore().getScorePoints();
+                previousAgility = inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
             }
 
             movementSpeed.removeModifier(MOVEMENT_SPEED_UUID);
@@ -226,7 +229,7 @@ public class StatsLogic {
             // operationIn: multiplicative
             // 7.5% increase per point up to 75%
             if (LSPECIALConfig.agility) {
-                double agilityValue = getPlayerSpeed(player) > -1 ? getPlayerSpeed(player) : inst.getAgilityScore().getScorePoints();
+                double agilityValue = getPlayerSpeed(player) > -1 ? getPlayerSpeed(player) : inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
                 movementSpeed.applyModifier(new AttributeModifier(MOVEMENT_SPEED_UUID, nameIn, expression(LSPECIALConfig.agilityFormula, "agility", agilityValue), 1));
             }
 
@@ -237,7 +240,7 @@ public class StatsLogic {
         float flySpeed = baseFlySpeed;
         if (LSPECIALConfig.agility && LSPECIALConfig.agilityFlyingSpeed) {
             int configuredFlySpeed = getPlayerFlySpeed(player);
-            double agilityValue = configuredFlySpeed >= 0 ? configuredFlySpeed : inst.getAgilityScore().getScorePoints();
+            double agilityValue = configuredFlySpeed >= 0 ? configuredFlySpeed : inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
             double multiplierBonus = expression(LSPECIALConfig.agilityFlyingSpeedFormula, "agility", agilityValue);
             double minimum = Math.min(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
             double maximum = Math.max(LSPECIALConfig.agilityFlyingSpeedMinimum, LSPECIALConfig.agilityFlyingSpeedMaximum);
@@ -254,7 +257,7 @@ public class StatsLogic {
         // perception, intelligence, and luck
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode)
-                && inst.getIntelligenceScore().getScorePoints() >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
+                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
             ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
             for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
                 ItemGunBaseNT.setWear(heldStack, configIndex, 0);
@@ -314,7 +317,7 @@ public class StatsLogic {
         if (receivers == null || receivers.length == 0 || receivers[0] == null) return;
         LSPECIALMod.info("Applying gun config {} at index {}", cfg, gunIndex);
 
-        if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getIntelligenceScore().getScorePoints() >= 5) {
+        if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5) {
             ItemGunBaseNT.setWear(heldStack, gunIndex, 0);
         }
 
@@ -328,7 +331,7 @@ public class StatsLogic {
         setOriginalValues(bConfig, modifiedReceiver, heldStack);
 
         if (!installedMagazine) {
-            if (LSPECIALConfig.refundMagazines && LSPECIALConfig.luck && inst.getLuckScore().getScorePoints() > 0) { // if i have luck, install a magazine that can refund bullets
+            if (LSPECIALConfig.refundMagazines && LSPECIALConfig.luck && inst.getPlayerScorePoints(player, inst.LUCK_BOARD) > 0) { // if i have luck, install a magazine that can refund bullets
                 modifiedReceiver.mag(new RefundMagazine(originalMagazine));
 
                 installedMagazine = true;
@@ -339,7 +342,7 @@ public class StatsLogic {
     }
 
     private void processReceiver(Receiver recIn, float ogDmg, ItemStack heldStack, EntityPlayer player) {
-        recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPerceptionScore().getScorePoints(), "originalDamage", (double)ogDmg) : 0)));
+        recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD), "originalDamage", (double)ogDmg) : 0)));
 
         if (recIn.getMagazine(heldStack) == null) {
             return;
@@ -351,18 +354,18 @@ public class StatsLogic {
         }
 
         BulletConfig bC = (BulletConfig) ammoType;
-        if (LSPECIALConfig.perception && LSPECIALConfig.perceptionArmorThresholdNegation && inst.getPerceptionScore().getScorePoints() > LSPECIALConfig.perceptionArmorThresholdNegationLevel) {
-            double addedNegation = (inst.getPerceptionScore().getScorePoints() - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
+        if (LSPECIALConfig.perception && LSPECIALConfig.perceptionArmorThresholdNegation && inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD) > LSPECIALConfig.perceptionArmorThresholdNegationLevel) {
+            double addedNegation = (inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD) - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
             bC.armorThresholdNegation = (float)Math.min(1.0, originalArmorThresholdNegation + addedNegation);
         }
-        if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getIntelligenceScore().getScorePoints() >= 5 && !heldStack.isEmpty()) {
+        if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5 && !heldStack.isEmpty()) {
             String itemID = String.valueOf(heldStack.getItem().getRegistryName());
             if (LSPECIALConfig.pepperboxSixShotPerk && "hbm:gun_pepperbox".equals(itemID)) {
                 recIn.rounds(6);
             }
         }
 
-        if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && inst.getIntelligenceScore().getScorePoints() >= 15 && !heldStack.isEmpty()) {
+        if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 15 && !heldStack.isEmpty()) {
             String itemID = String.valueOf(heldStack.getItem().getRegistryName());
             recIn.auto(true);
             if ("hbm:gun_tau".equals(itemID)) {
@@ -427,7 +430,7 @@ public class StatsLogic {
     }
 
     public void givePotions(EntityPlayer player) {
-        if (LSPECIALConfig.amplifiedRegeneration && LSPECIALConfig.enduranceBonus && inst.getEnduranceBonusScore().getScorePoints() == 1) {
+        if (LSPECIALConfig.amplifiedRegeneration && LSPECIALConfig.enduranceBonus && inst.getPlayerScorePoints(player, inst.ENDURANCE_BONUS_BOARD) == 1) {
             String p = Tags.MOD_ID + ":" + AMPLIFIED_REGENERATION_NAME;
             if (Potion.getPotionFromResourceLocation("regeneration") != null && Potion.getPotionFromResourceLocation(p) != null) {
                 Potion a = Potion.getPotionFromResourceLocation("regeneration");
@@ -448,29 +451,29 @@ public class StatsLogic {
             }
         }
 
-        if (LSPECIALConfig.charismaBonus && inst.getCharismaBonusScore().getScorePoints() == 1) {
+        if (LSPECIALConfig.charismaBonus && inst.getPlayerScorePoints(player, inst.CHARISMA_BONUS_BOARD) == 1) {
             if (Potion.getPotionFromResourceLocation("resistance") != null && !player.isPotionActive(Potion.getPotionFromResourceLocation("resistance"))) {
                 player.addPotionEffect(new PotionEffect(Potion.getPotionFromResourceLocation("resistance"), LSPECIALConfig.potionTimeTicks, LSPECIALConfig.charismaPotionAmplifier));
             }
         }
     }
 
-    private void applyGunWearPolicy(ItemStack stack) {
+    private void applyGunWearPolicy(EntityPlayer player,ItemStack heldStack) {
         String mode = LSPECIALConfig.gunWearMode;
 
         if ("INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(mode) || !LSPECIALConfig.intelligence) {
             return;
         }
 
-        int intelligence = inst.getIntelligenceScore().getScorePoints();
+        int intelligence = inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD);
         if (intelligence <= 0) {
             return;
         }
 
-        float current = ItemGunBaseNT.getWear(stack, 0);
+        float current = ItemGunBaseNT.getWear(heldStack, 0);
 
-        if (wearTrackedStack != stack || Float.isNaN(previousObservedWear)) {
-            wearTrackedStack = stack;
+        if (wearTrackedStack != heldStack || Float.isNaN(previousObservedWear)) {
+            wearTrackedStack = heldStack;
             previousObservedWear = current;
             return;
         }
@@ -492,7 +495,7 @@ public class StatsLogic {
 
             float adjusted = (float) (previousObservedWear + (current - previousObservedWear) * (1.0 - reduction));
 
-            ItemGunBaseNT.setWear(stack, 0, adjusted);
+            ItemGunBaseNT.setWear(heldStack, 0, adjusted);
             previousObservedWear = adjusted;
         } else {
             previousObservedWear = current;
@@ -557,5 +560,27 @@ public class StatsLogic {
             this.armorPiercing = armorPiercing;
             this.armorThresholdNegation = armorThresholdNegation;
         }
+    }
+
+    private static class PlayerState {
+        int previousHealth = -1;
+        int previousCharisma = -1;
+        int previousAgility = -1;
+
+        ItemStack modifiedGun = ItemStack.EMPTY;
+        boolean modified;
+        boolean installedMagazine;
+
+        float originalDamage;
+        int originalDelay;
+        int originalProjectileAmount;
+        float originalAmmoPiercing;
+        float originalWear;
+        IMagazine originalMagazine;
+
+        ItemStack wearTrackedStack = ItemStack.EMPTY;
+        float previousObservedWear = Float.NaN;
+
+        int gunIndex = -1;
     }
 }

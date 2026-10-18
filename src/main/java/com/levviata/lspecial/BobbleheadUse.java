@@ -35,7 +35,6 @@ public class BobbleheadUse {
 
         inst.scoreboard = player.getEntityWorld().getScoreboard();
         inst.startBoards();
-        inst.startScores(player);
 
         int metadata = stack.getMetadata();
         boolean granted = false;

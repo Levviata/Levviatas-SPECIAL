@@ -9,8 +9,6 @@ import net.minecraft.scoreboard.Scoreboard;
 public class SPECIALScoreboard {
     public static SPECIALScoreboard inst = new SPECIALScoreboard();
 
-    public Scoreboard scoreboard;
-
     public final String STRENGTH_BOARD = "Strength";
     public final String PERCEPTION_BOARD = "Perception";
     public final String ENDURANCE_BOARD = "Endurance";
@@ -76,43 +74,39 @@ public class SPECIALScoreboard {
     private int clientLuck;
     private int clientLimit;
 
-    public void startScores(EntityPlayer player) {
-        ScoreObjective objStrength = scoreboard.getObjective(STRENGTH_BOARD);
-        ScoreObjective objPerception = scoreboard.getObjective(PERCEPTION_BOARD);
-        ScoreObjective objEndurance = scoreboard.getObjective(ENDURANCE_BOARD);
-        ScoreObjective objEnduranceBonus = scoreboard.getObjective(ENDURANCE_BONUS_BOARD);
-        ScoreObjective objCharisma = scoreboard.getObjective(CHARISMA_BOARD);
-        ScoreObjective objCharismaBonus = scoreboard.getObjective(CHARISMA_BONUS_BOARD);
-        ScoreObjective objIntelligence = scoreboard.getObjective(INTELLIGENCE_BOARD);
-        ScoreObjective objAgility = scoreboard.getObjective(AGILITY_BOARD);
-        ScoreObjective objLuck = scoreboard.getObjective(LUCK_BOARD);
-        ScoreObjective objLimit = scoreboard.getObjective(LIMIT_BOARD);
-
-        strengthScore = scoreboard.getOrCreateScore(player.getName(), objStrength);
-        perceptionScore = scoreboard.getOrCreateScore(player.getName(), objPerception);
-        enduranceScore = scoreboard.getOrCreateScore(player.getName(), objEndurance);
-        enduranceBonusScore = scoreboard.getOrCreateScore(player.getName(), objEnduranceBonus);
-        charismaScore = scoreboard.getOrCreateScore(player.getName(), objCharisma);
-        charismaBonusScore = scoreboard.getOrCreateScore(player.getName(), objCharismaBonus);
-        intelligenceScore = scoreboard.getOrCreateScore(player.getName(), objIntelligence);
-        agilityScore = scoreboard.getOrCreateScore(player.getName(), objAgility);
-        luckScore = scoreboard.getOrCreateScore(player.getName(), objLuck);
-        if (!scoreboard.entityHasObjective(player.getName(), objLimit)) {
-            limitScore = scoreboard.getOrCreateScore(player.getName(), objLimit);
-            limitScore.setScorePoints(10);
-        } else {
-            limitScore = scoreboard.getOrCreateScore(player.getName(), objLimit);
+    public int getPlayerScorePoints(EntityPlayer player, String boardName) {
+        if (player == null || player.getEntityWorld() == null || boardName == null) {
+            return 0;
         }
-    }
 
-    /** reads a score for the supplied player without relying on the singleton's cached player. */
-    public int getPlayerScorePoints(EntityPlayer player, String objectiveName) {
-        if (player == null || player.getEntityWorld() == null || objectiveName == null) return 0;
-
+        // 1. get player's current scoreboard
         Scoreboard playerScoreboard = player.getEntityWorld().getScoreboard();
-        ScoreObjective objective = playerScoreboard.getObjective(objectiveName);
-        if (objective == null || !playerScoreboard.entityHasObjective(player.getName(), objective)) return 0;
 
+        // 2. start player's board if null
+        if (playerScoreboard.getObjective(boardName) == null) {
+            playerScoreboard.addScoreObjective(boardName, IScoreCriteria.DUMMY);
+        }
+
+        // 3. get the player's objective off the board
+        ScoreObjective objective = playerScoreboard.getObjective(boardName);
+
+        // 4. check if he has the objective or not
+        if (objective == null || !playerScoreboard.entityHasObjective(player.getName(), objective)) {
+            return 0;
+        }
+
+        // 5. if limit board, and player doesn't have it, set it to 10, otherwise, get or create it as normal
+        if (boardName.equals(LIMIT_BOARD)) {
+            if (!playerScoreboard.entityHasObjective(player.getName(), objective)) {
+                limitScore = playerScoreboard.getOrCreateScore(player.getName(), objective);
+                limitScore.setScorePoints(10);
+            } else {
+                limitScore = playerScoreboard.getOrCreateScore(player.getName(), objective);
+            }
+            return limitScore.getScorePoints();
+        }
+
+        // 5. get or create the score for the player
         return playerScoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
     }
 
@@ -129,43 +123,61 @@ public class SPECIALScoreboard {
         clientLimit = limit;
     }
 
-    public Score getStrengthScore() {
+    public Score getStrengthScore(EntityPlayer player) {
+        ScoreObjective objStrength = scoreboard.getObjective(STRENGTH_BOARD);
+        strengthScore = scoreboard.getOrCreateScore(player.getName(), objStrength);
         return strengthScore;
     }
 
-    public Score getPerceptionScore() {
+    public Score getPerceptionScore(EntityPlayer player) {
+        ScoreObjective objPerception = scoreboard.getObjective(PERCEPTION_BOARD);
+        perceptionScore = scoreboard.getOrCreateScore(player.getName(), objPerception);
         return perceptionScore;
     }
 
-    public Score getEnduranceScore() {
+    public Score getEnduranceScore(EntityPlayer player) {
+        ScoreObjective objEndurance = scoreboard.getObjective(ENDURANCE_BOARD);
+        enduranceScore = scoreboard.getOrCreateScore(player.getName(), objEndurance);
         return enduranceScore;
     }
 
-    public Score getEnduranceBonusScore() {
+    public Score getEnduranceBonusScore(EntityPlayer player) {
+        ScoreObjective objEnduranceBonus = scoreboard.getObjective(ENDURANCE_BONUS_BOARD);
+        enduranceBonusScore = scoreboard.getOrCreateScore(player.getName(), objEnduranceBonus);
         return enduranceBonusScore;
     }
-
-    public Score getIntelligenceScore() {
+    public Score getCharismaScore(EntityPlayer player) {
+        ScoreObjective objCharisma = scoreboard.getObjective(CHARISMA_BOARD);
+        charismaScore = scoreboard.getOrCreateScore(player.getName(), objCharisma);
+        return charismaScore;
+    }
+    public Score getCharismaBonusScore(EntityPlayer player) {
+        ScoreObjective objCharismaBonus = scoreboard.getObjective(CHARISMA_BONUS_BOARD);
+        charismaBonusScore = scoreboard.getOrCreateScore(player.getName(), objCharismaBonus);
+        return charismaBonusScore;
+    }
+    
+    public Score getIntelligenceScore(EntityPlayer player) {
+        ScoreObjective objIntelligence = scoreboard.getObjective(INTELLIGENCE_BOARD);
+        intelligenceScore = scoreboard.getOrCreateScore(player.getName(), objIntelligence);
         return intelligenceScore;
     }
 
-    public Score getCharismaScore() {
-        return charismaScore;
-    }
-
-    public Score getCharismaBonusScore() {
-        return charismaBonusScore;
-    }
-
-    public Score getAgilityScore() {
+    public Score getAgilityScore(EntityPlayer player) {
+        ScoreObjective objAgility = scoreboard.getObjective(AGILITY_BOARD);
+        agilityScore = scoreboard.getOrCreateScore(player.getName(), objAgility);
         return agilityScore;
     }
 
-    public Score getLuckScore() {
+    public Score getLuckScore(EntityPlayer player) {
+        ScoreObjective objLuck = scoreboard.getObjective(LUCK_BOARD);
+        luckScore = scoreboard.getOrCreateScore(player.getName(), objLuck);
         return luckScore;
     }
 
-    public Score getLimitScore() {
+    public Score getLimitScore(EntityPlayer player) {
+
+
         return limitScore;
     }
 
