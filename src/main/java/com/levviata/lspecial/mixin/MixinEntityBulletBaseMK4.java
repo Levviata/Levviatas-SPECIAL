@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Bridges the AMAT capsule's Sedna bullet to NTM's actual EntityRailgunBlast.
- *
+ * <p>
  * HEAD handles the usual case. RETURN handles entities whose BulletConfig is
  * populated during onUpdate rather than before the first tick.
  */

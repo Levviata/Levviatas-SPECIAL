@@ -16,43 +16,54 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Connects Sedna rocket-family bullets, including the Quadro, to the Intelligence rocket-jump perk. */
+/**
+ * Connects Sedna rocket-family bullets, to the Intelligence rocket-jump perk.
+ */
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)
 public abstract class MixinRocketJumpBulletMK4 {
 
-    @Unique private EntityPlayer lspecial$rocketJumpOwner;
-    @Unique private String lspecial$rocketJumpWeapon;
-    @Unique private double lspecial$previousMotionX;
-    @Unique private double lspecial$previousMotionY;
-    @Unique private double lspecial$previousMotionZ;
-    @Unique private double lspecial$explosionX;
-    @Unique private double lspecial$explosionY;
-    @Unique private double lspecial$explosionZ;
-    @Unique private double lspecial$fallbackMotionX;
-    @Unique private double lspecial$fallbackMotionY;
-    @Unique private double lspecial$fallbackMotionZ;
+    @Unique
+    private EntityPlayer lspecial$rocketJumpOwner;
+    @Unique
+    private String lspecial$rocketJumpWeapon;
+    @Unique
+    private double lspecial$previousMotionX;
+    @Unique
+    private double lspecial$previousMotionY;
+    @Unique
+    private double lspecial$previousMotionZ;
+    @Unique
+    private double lspecial$explosionX;
+    @Unique
+    private double lspecial$explosionY;
+    @Unique
+    private double lspecial$explosionZ;
+    @Unique
+    private double lspecial$fallbackMotionX;
+    @Unique
+    private double lspecial$fallbackMotionY;
+    @Unique
+    private double lspecial$fallbackMotionZ;
 
     @Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/entity/EntityLivingBase;Lcom/hbm/items/weapon/sedna/BulletConfig;FFDDDDDD)V",
             at = @At("RETURN"), remap = false)
-    private void lspecial$recordWorldShooterConstructor(net.minecraft.world.World world, EntityLivingBase shooter,
-            com.hbm.items.weapon.sedna.BulletConfig config, float yaw, float pitch,
-            double x, double y, double z, double velocityX, double velocityY, double velocityZ,
-            CallbackInfo callback) {
+    private void lspecial$recordWorldShooterConstructor(net.minecraft.world.World world, EntityLivingBase shooter, com.hbm.items.weapon.sedna.BulletConfig config, float yaw, float pitch,
+                                                        double x, double y, double z, double velocityX, double velocityY, double velocityZ,
+                                                        CallbackInfo callback) {
         lspecial$recordLauncher(shooter, "world-shooter-constructor");
     }
 
     @Inject(method = "<init>(Lnet/minecraft/entity/EntityLivingBase;Lcom/hbm/items/weapon/sedna/BulletConfig;FFDDD)V",
             at = @At("RETURN"), remap = false)
     private void lspecial$recordShooterConstructor(EntityLivingBase shooter,
-            com.hbm.items.weapon.sedna.BulletConfig config, float yaw, float pitch,
-            double velocityX, double velocityY, double velocityZ, CallbackInfo callback) {
+                                                   com.hbm.items.weapon.sedna.BulletConfig config, float yaw, float pitch,
+                                                   double velocityX, double velocityY, double velocityZ, CallbackInfo callback) {
         lspecial$recordLauncher(shooter, "shooter-constructor");
     }
 
     @Unique
     private void lspecial$recordLauncher(EntityLivingBase shooter, String path) {
-        if (!(shooter instanceof EntityPlayer)) return;
-        EntityPlayer player = (EntityPlayer) shooter;
+        if (!(shooter instanceof EntityPlayer player)) return;
         String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
         if (weapon == null) {
             LSPECIALMod.info("[RocketDebug] BulletMK4 launcher-record FAILED path={} player={} mainhand={} offhand={} projectileId={}",
@@ -94,9 +105,8 @@ public abstract class MixinRocketJumpBulletMK4 {
                 shooter == null ? "null" : shooter.getName(), weapon, family,
                 data.hasKey("LSPECIALShooterWeapon"), bullet.world.isRemote,
                 bullet.posX, bullet.posY, bullet.posZ);
-        if (!(shooter instanceof EntityPlayer) || !family) return;
+        if (!(shooter instanceof EntityPlayer player) || !family) return;
 
-        EntityPlayer player = (EntityPlayer) shooter;
         lspecial$rocketJumpOwner = player;
         lspecial$rocketJumpWeapon = weapon;
         lspecial$previousMotionX = player.motionX;

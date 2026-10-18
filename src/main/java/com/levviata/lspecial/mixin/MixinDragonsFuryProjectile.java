@@ -25,17 +25,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 // rationale: NTM owns EntityBulletBaseMK4 collision and fire spawning, but has no addon hook for per-shot range, hit streaks, or impact audio. This mixin limits only the four Topaz configs and wraps their existing impact damage; risks are conflicts with addons mixing into onUpdate/onImpact. Avoidable if NTM adds projectile lifecycle and impact callbacks.
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)
 public abstract class MixinDragonsFuryProjectile {
-    @Shadow public BulletConfig config;
-    @Shadow public float damage;
+    @Shadow
+    public BulletConfig config;
+    @Shadow
+    public float damage;
 
-    @Unique private float lspecial$damageBeforeImpact;
-    @Unique private boolean lspecial$boostedImpactDamage;
-    @Unique private EntityLivingBase lspecial$igniteAfterImpact;
-    @Unique private boolean lspecial$dragonsFuryImpactResolved;
-    @Unique private boolean lspecial$dragonsFuryOriginSet;
-    @Unique private double lspecial$dragonsFuryOriginX;
-    @Unique private double lspecial$dragonsFuryOriginY;
-    @Unique private double lspecial$dragonsFuryOriginZ;
+    @Unique
+    private float lspecial$damageBeforeImpact;
+    @Unique
+    private boolean lspecial$boostedImpactDamage;
+    @Unique
+    private EntityLivingBase lspecial$igniteAfterImpact;
+    @Unique
+    private boolean lspecial$dragonsFuryImpactResolved;
+    @Unique
+    private boolean lspecial$dragonsFuryOriginSet;
+    @Unique
+    private double lspecial$dragonsFuryOriginX;
+    @Unique
+    private double lspecial$dragonsFuryOriginY;
+    @Unique
+    private double lspecial$dragonsFuryOriginZ;
 
     @Inject(method = "onUpdate", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$limitDragonsFuryRange(CallbackInfo callback) {
@@ -77,7 +87,8 @@ public abstract class MixinDragonsFuryProjectile {
     @Inject(method = "onUpdate", at = @At("RETURN"), remap = false)
     private void lspecial$finishDragonsFuryRange(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (projectile.world.isRemote || !LSPECIALConfig.dragonsFuryPerk || !lspecial$isDragonsFuryFlame(config) || !lspecial$dragonsFuryOriginSet) return;
+        if (projectile.world.isRemote || !LSPECIALConfig.dragonsFuryPerk || !lspecial$isDragonsFuryFlame(config) || !lspecial$dragonsFuryOriginSet)
+            return;
         double dx = projectile.posX - lspecial$dragonsFuryOriginX;
         double dy = projectile.posY - lspecial$dragonsFuryOriginY;
         double dz = projectile.posZ - lspecial$dragonsFuryOriginZ;
@@ -90,7 +101,8 @@ public abstract class MixinDragonsFuryProjectile {
     @Inject(method = "onUpdate", at = @At("HEAD"), remap = false)
     private void lspecial$renderDragonsFuryTrail(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (!projectile.world.isRemote || !LSPECIALConfig.dragonsFuryPerk || !lspecial$isDragonsFuryFlame(config)) return;
+        if (!projectile.world.isRemote || !LSPECIALConfig.dragonsFuryPerk || !lspecial$isDragonsFuryFlame(config))
+            return;
         for (int i = 0; i < 3; i++) {
             double spreadX = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
             double spreadY = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
@@ -127,8 +139,7 @@ public abstract class MixinDragonsFuryProjectile {
             if (weaponTag != null) weaponTag.setInteger("LSPECIALDragonsFuryHitStreak", critical ? 0 : streak + 1);
 
             boolean miniCrit = projectile.getEntityData().getBoolean("LSPECIALAirblastMiniCrit");
-            if (hit.typeOfHit == RayTraceResult.Type.ENTITY && hit.entityHit instanceof EntityLivingBase) {
-                EntityLivingBase target = (EntityLivingBase) hit.entityHit;
+            if (hit.typeOfHit == RayTraceResult.Type.ENTITY && hit.entityHit instanceof EntityLivingBase target) {
                 lspecial$igniteAfterImpact = target;
                 float multiplier = target.isBurning() ? 3.0F : 1.0F;
                 if (miniCrit) multiplier *= 1.35F;
@@ -189,8 +200,7 @@ public abstract class MixinDragonsFuryProjectile {
 
     @Unique
     private static ItemStack lspecial$getDragonsFuryStack(EntityLivingBase shooter) {
-        if (!(shooter instanceof EntityPlayer)) return ItemStack.EMPTY;
-        EntityPlayer player = (EntityPlayer) shooter;
+        if (!(shooter instanceof EntityPlayer player)) return ItemStack.EMPTY;
         ItemStack held = player.getHeldItemMainhand();
         if (lspecial$isDragonsFuryWeapon(held)) return held;
         held = player.getHeldItemOffhand();

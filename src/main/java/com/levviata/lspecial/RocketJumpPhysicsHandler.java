@@ -20,7 +20,7 @@ public final class RocketJumpPhysicsHandler {
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || event.player.world.isRemote
                 || !(event.player instanceof EntityPlayer)) return;
-        EntityPlayer player = (EntityPlayer) event.player;
+        EntityPlayer player = event.player;
         NBTTagCompound data = player.getEntityData();
         int ticks = data.getInteger(ACTIVE_TICKS);
         if (data.getBoolean("LSPECIALRocketJumping")) {
@@ -47,8 +47,7 @@ public final class RocketJumpPhysicsHandler {
 
     @SubscribeEvent
     public void onRocketJumpFallDamage(LivingHurtEvent event) {
-        if (!(event.getEntityLiving() instanceof EntityPlayer) || !"fall".equals(event.getSource().damageType)) return;
-        EntityPlayer player = (EntityPlayer) event.getEntityLiving();
+        if (!(event.getEntityLiving() instanceof EntityPlayer player) || !"fall".equals(event.getSource().damageType)) return;
         if (player.getEntityData().getBoolean("LSPECIALRocketJumping")) {
             player.fallDistance = 0.0F;
             event.setCanceled(true);

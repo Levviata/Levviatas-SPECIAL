@@ -304,7 +304,9 @@ public class GuiSPECIAL extends GuiScreen {
         return count;
     }
 
-    /** draws a single line within its allotted width, adding an ellipsis when clipped. */
+    /**
+     * Draws a single line within its allotted width, adding an ellipsis when clipped.
+     */
     private void drawClippedString(String text, int x, int y, int maxWidth, int color) {
         if (text == null || text.isEmpty() || maxWidth <= 0) return;
         if (fontRenderer.getStringWidth(text) <= maxWidth) {
@@ -334,18 +336,7 @@ public class GuiSPECIAL extends GuiScreen {
         drawClippedString(hint, hintX, footerY + 2, Math.max(1, panelLeft + panelWidth - hintX - 4), AMBER);
     }
 
-    private static final class StatRow {
-        private final String name;
-        private final int value;
-        private final boolean enabled;
-        private final String description;
-
-        private StatRow(String name, int value, boolean enabled, String description) {
-            this.name = name;
-            this.value = value;
-            this.enabled = enabled;
-            this.description = description;
-        }
+    private record StatRow(String name, int value, boolean enabled, String description) {
     }
 
     @Override

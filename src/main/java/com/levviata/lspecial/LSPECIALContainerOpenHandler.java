@@ -13,7 +13,9 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
 
-/** invokes tagged-container loot perks from the server-side container-open event. */
+/**
+ * Invokes tagged-container loot perks from the server-side container-open event.
+ */
 public final class LSPECIALContainerOpenHandler {
 
     @SubscribeEvent
@@ -62,7 +64,9 @@ public final class LSPECIALContainerOpenHandler {
         }
     }
 
-    /** finds tile entities referenced directly by a container or through IInventory wrappers. */
+    /**
+     * Finds tile entities referenced directly by a container or through IInventory wrappers.
+     */
     private static void collectTiles(Object value, Set<TileEntity> found, Set<Object> visited, int depth) {
         if (value == null || depth > 3 || visited.contains(value)) return;
         if (value instanceof TileEntity) {

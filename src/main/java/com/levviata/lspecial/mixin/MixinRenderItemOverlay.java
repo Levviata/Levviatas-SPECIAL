@@ -12,7 +12,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** marks discounted villager trade-cost counts in the inventory-style item overlay. */
+/**
+ * Marks discounted villager trade-cost counts in the inventory-style item overlay.
+ */
 @Mixin(RenderItem.class)
 public abstract class MixinRenderItemOverlay {
     @Unique
@@ -36,8 +38,7 @@ public abstract class MixinRenderItemOverlay {
     }
 
     @Inject(method = "renderItemOverlayIntoGUI(Lnet/minecraft/client/gui/FontRenderer;Lnet/minecraft/client/renderer/texture/TextureManager;Lnet/minecraft/item/ItemStack;IILjava/lang/String;)V", at = @At("RETURN"), remap = false)
-    private void lspecial$clearOverlayStack(FontRenderer fontRenderer, TextureManager textureManager,
-            ItemStack stack, int x, int y, String text, CallbackInfo callback) {
+    private void lspecial$clearOverlayStack(FontRenderer fontRenderer, TextureManager textureManager, ItemStack stack, int x, int y, String text, CallbackInfo callback) {
         lspecial$currentOverlayStack = null;
     }
 

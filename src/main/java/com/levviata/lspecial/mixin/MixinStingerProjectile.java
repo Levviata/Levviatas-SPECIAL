@@ -17,45 +17,57 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** records configured missile-family impacts and applies their Intelligence rocket-jump behavior. */
+/**
+ * Records configured missile-family impacts and applies their Intelligence rocket-jump behavior.
+ */
 @Mixin(value = EntityBulletBaseNT.class, remap = false)
 public abstract class MixinStingerProjectile {
 
-    @Unique private EntityPlayer lspecial$rocketJumpOwner;
-    @Unique private String lspecial$rocketJumpWeapon;
-    @Unique private double lspecial$previousMotionX;
-    @Unique private double lspecial$previousMotionY;
-    @Unique private double lspecial$previousMotionZ;
-    @Unique private double lspecial$explosionX;
-    @Unique private double lspecial$explosionY;
-    @Unique private double lspecial$explosionZ;
-    @Unique private double lspecial$fallbackMotionX;
-    @Unique private double lspecial$fallbackMotionY;
-    @Unique private double lspecial$fallbackMotionZ;
+    @Unique
+    private EntityPlayer lspecial$rocketJumpOwner;
+    @Unique
+    private String lspecial$rocketJumpWeapon;
+    @Unique
+    private double lspecial$previousMotionX;
+    @Unique
+    private double lspecial$previousMotionY;
+    @Unique
+    private double lspecial$previousMotionZ;
+    @Unique
+    private double lspecial$explosionX;
+    @Unique
+    private double lspecial$explosionY;
+    @Unique
+    private double lspecial$explosionZ;
+    @Unique
+    private double lspecial$fallbackMotionX;
+    @Unique
+    private double lspecial$fallbackMotionY;
+    @Unique
+    private double lspecial$fallbackMotionZ;
 
     @Inject(method = "<init>(Lnet/minecraft/world/World;ILnet/minecraft/entity/EntityLivingBase;)V",
             at = @At("RETURN"), remap = false)
     private void lspecial$recordLauncherConstructor(net.minecraft.world.World world, int configId,
-                                                     EntityLivingBase shooter, CallbackInfo callback) {
+                                                    EntityLivingBase shooter, CallbackInfo callback) {
         lspecial$recordLauncher(shooter, "constructor-config");
     }
 
     @Inject(method = "<init>(Lnet/minecraft/world/World;ILnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/entity/EntityLivingBase;FF)V",
             at = @At("RETURN"), remap = false)
     private void lspecial$recordTargetedLauncherConstructor(net.minecraft.world.World world, int configId,
-                                                             EntityLivingBase shooter, EntityLivingBase target,
-                                                             float velocity, float inaccuracy, CallbackInfo callback) {
+                                                            EntityLivingBase shooter, EntityLivingBase target,
+                                                            float velocity, float inaccuracy, CallbackInfo callback) {
         lspecial$recordLauncher(shooter, "constructor-targeted");
     }
 
     @Unique
     private void lspecial$recordLauncher(EntityLivingBase shooter, String path) {
-        if (!(shooter instanceof EntityPlayer)) {
+        if (!(shooter instanceof EntityPlayer player)) {
             LSPECIALMod.info("[RocketDebug] BulletNT launcher-record skipped path={} shooter={}", path,
                     shooter == null ? "null" : shooter.getClass().getName());
             return;
         }
-        EntityPlayer player = (EntityPlayer) shooter;
         String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
         EntityBulletBaseNT projectile = (EntityBulletBaseNT) (Object) this;
         if (weapon == null) {
@@ -76,7 +88,9 @@ public abstract class MixinStingerProjectile {
                 ? "empty" : stack.getItem().getRegistryName().toString();
     }
 
-    /** Wrap the full NTM impact, because both block and entity hits route through onImpact. */
+    /**
+     * Wrap the full NTM impact, because both block and entity hits route through onImpact.
+     */
     @Inject(method = "onImpact(Lnet/minecraft/util/math/RayTraceResult;)V", at = @At("HEAD"), remap = false)
     private void lspecial$beginRocketJumpImpact(RayTraceResult hit, CallbackInfo callback) {
         EntityBulletBaseNT projectile = (EntityBulletBaseNT) (Object) this;
@@ -89,9 +103,8 @@ public abstract class MixinStingerProjectile {
                 shooter == null ? "null" : shooter.getName(), weapon, family,
                 StingerDamageHandler.isLauncherRecorded(projectile), projectile.world.isRemote,
                 projectile.posX, projectile.posY, projectile.posZ);
-        if (projectile.world.isRemote || !(shooter instanceof EntityPlayer) || !family) return;
+        if (projectile.world.isRemote || !(shooter instanceof EntityPlayer player) || !family) return;
 
-        EntityPlayer player = (EntityPlayer) shooter;
         lspecial$rocketJumpOwner = player;
         lspecial$rocketJumpWeapon = weapon;
         lspecial$previousMotionX = player.motionX;

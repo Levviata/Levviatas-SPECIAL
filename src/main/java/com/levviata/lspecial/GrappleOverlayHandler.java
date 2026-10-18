@@ -43,9 +43,15 @@ public final class GrappleOverlayHandler {
 
     @SubscribeEvent
     public void onCrosshair(RenderGameOverlayEvent.Pre event) {
-        if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) return;
+        if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
+            return;
+        }
+
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.player == null || mc.player.getHeldItemMainhand().isEmpty() || !isDoubleBarrel(mc.player.getHeldItemMainhand()) || !isEnabled(mc.player)) return;
+        if (mc.player == null || mc.player.getHeldItemMainhand().isEmpty() || !isDoubleBarrel(mc.player.getHeldItemMainhand()) || !isEnabled(mc.player)) {
+            return;
+        }
+
         event.setCanceled(true);
     }
 
@@ -70,8 +76,8 @@ public final class GrappleOverlayHandler {
         float scaleFactor = mc.displayWidth / (float) screenWidth;
         float centerX = screenWidth / 2.0F;
         float centerY = screenHeight / 2.0F;
-        float reticleSize = screenHeight * RETICLE_HEIGHT_RATIO * (float)LSPECIALConfig.doubleBarrelGrappleCrosshairScale;
-        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * 1.4F * (float)LSPECIALConfig.doubleBarrelGrappleHookScale;
+        float reticleSize = screenHeight * RETICLE_HEIGHT_RATIO * (float) LSPECIALConfig.doubleBarrelGrappleCrosshairScale;
+        float hookSize = reticleSize * HOOK_TO_RETICLE_RATIO * 1.4F * (float) LSPECIALConfig.doubleBarrelGrappleHookScale;
         float defaultHookOffset = reticleSize * DEFAULT_HOOK_OFFSET_RATIO;
         float targetX = centerX;
         float targetY = centerY;
@@ -84,11 +90,20 @@ public final class GrappleOverlayHandler {
         if (!hasTarget) previousTargetId = -1;
         if (grappleTarget != null) {
             float[] projected = projectEntity(grappleTarget, event.getPartialTicks(), mc);
-            if (projected != null) { targetX = projected[0] / scaleFactor; targetY = projected[1] / scaleFactor; }
+            if (projected != null) {
+                targetX = projected[0] / scaleFactor;
+                targetY = projected[1] / scaleFactor;
+            }
         }
 
-        if (reticleX < 0.0D || reticleY < 0.0D) { reticleX = centerX; reticleY = centerY; }
-        if (hookX < 0.0D || hookY < 0.0D) { hookX = centerX; hookY = centerY + reticleSize * 0.5D + defaultHookOffset; }
+        if (reticleX < 0.0D || reticleY < 0.0D) {
+            reticleX = centerX;
+            reticleY = centerY;
+        }
+        if (hookX < 0.0D || hookY < 0.0D) {
+            hookX = centerX;
+            hookY = centerY + reticleSize * 0.5D + defaultHookOffset;
+        }
         double amount = 1.0D - Math.pow(1.0D - FOLLOW_SPEED, Math.max(1.0D, event.getPartialTicks() + 1.0D));
         reticleX += (targetX - reticleX) * amount;
         reticleY += (targetY - reticleY) * amount;
@@ -138,7 +153,7 @@ public final class GrappleOverlayHandler {
                     hookY += dy * followAmount;
                 }
             }
-            drawHookIcon(mc, (float)hookX, (float)hookY, hookSize, false, screenWidth, screenHeight);
+            drawHookIcon(mc, (float) hookX, (float) hookY, hookSize, false, screenWidth, screenHeight);
         }
     }
 
@@ -157,10 +172,14 @@ public final class GrappleOverlayHandler {
         GlStateManager.enableBlend();
         GlStateManager.color(1.0F, red ? 0.12F : 1.0F, red ? 0.12F : 1.0F, red ? 1.0F : 0.85F);
         GL11.glBegin(GL11.GL_QUADS);
-        GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(1.0F, 0.0F); GL11.glVertex3f(x + size / 2.0F, y - size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(0.0F, 0.0F); GL11.glVertex3f(x - size / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(0.0F, 1.0F);
+        GL11.glVertex3f(x - size / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 1.0F);
+        GL11.glVertex3f(x + size / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 0.0F);
+        GL11.glVertex3f(x + size / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(0.0F, 0.0F);
+        GL11.glVertex3f(x - size / 2.0F, y - size / 2.0F, 0.0F);
         GL11.glEnd();
         GlStateManager.disableBlend();
         GlStateManager.enableDepth();
@@ -175,21 +194,38 @@ public final class GrappleOverlayHandler {
     private static void drawHookHalf(Minecraft mc, float x, float y, float size, boolean rightHalf, float progress, float scaleFactor, int screenWidth, int screenHeight) {
         mc.getTextureManager().bindTexture(new ResourceLocation("lspecial", "textures/gui/meathook.png"));
         GL11.glPushMatrix();
-        GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glPushMatrix(); GL11.glLoadIdentity();
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
         GL11.glOrtho(0.0D, screenWidth, screenHeight, 0.0D, -1000.0D, 1000.0D);
-        GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPushMatrix(); GL11.glLoadIdentity();
-        GlStateManager.disableLighting(); GlStateManager.disableDepth(); GlStateManager.enableBlend();
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        GlStateManager.disableLighting();
+        GlStateManager.disableDepth();
+        GlStateManager.enableBlend();
         GlStateManager.color(1.0F, 0.12F + 0.88F * progress, 0.12F + 0.88F * progress, 1.0F);
         float u0 = rightHalf ? 0.5F : 0.0F, u1 = rightHalf ? 1.0F : 0.5F;
         float x0 = rightHalf ? x : x - size / 2.0F, x1 = rightHalf ? x + size / 2.0F : x;
         GL11.glBegin(GL11.GL_QUADS);
-        GL11.glTexCoord2f(u0, 1.0F); GL11.glVertex3f(x0, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(u1, 1.0F); GL11.glVertex3f(x1, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(u1, 0.0F); GL11.glVertex3f(x1, y - size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(u0, 0.0F); GL11.glVertex3f(x0, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(u0, 1.0F);
+        GL11.glVertex3f(x0, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(u1, 1.0F);
+        GL11.glVertex3f(x1, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(u1, 0.0F);
+        GL11.glVertex3f(x1, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(u0, 0.0F);
+        GL11.glVertex3f(x0, y - size / 2.0F, 0.0F);
         GL11.glEnd();
-        GlStateManager.color(1, 1, 1, 1); GlStateManager.disableBlend(); GlStateManager.enableDepth(); GlStateManager.enableLighting();
-        GL11.glPopMatrix(); GL11.glMatrixMode(GL11.GL_PROJECTION); GL11.glPopMatrix(); GL11.glMatrixMode(GL11.GL_MODELVIEW); GL11.glPopMatrix();
+        GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.disableBlend();
+        GlStateManager.enableDepth();
+        GlStateManager.enableLighting();
+        GL11.glPopMatrix();
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPopMatrix();
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPopMatrix();
     }
 
     private static void drawReticle(Minecraft mc, float x, float y, float size, int cooldownTicks, float scaleFactor, int screenHeight) {
@@ -250,10 +286,14 @@ public final class GrappleOverlayHandler {
         GlStateManager.color(red, green, blue, alpha);
         GL11.glBegin(GL11.GL_QUADS);
         float width = size * (245.0F / 130.0F);
-        GL11.glTexCoord2f(0.0F, 1.0F); GL11.glVertex3f(x - width / 2.0F, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(1.0F, 1.0F); GL11.glVertex3f(x + width / 2.0F, y + size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(1.0F, 0.0F); GL11.glVertex3f(x + width / 2.0F, y - size / 2.0F, 0.0F);
-        GL11.glTexCoord2f(0.0F, 0.0F); GL11.glVertex3f(x - width / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(0.0F, 1.0F);
+        GL11.glVertex3f(x - width / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 1.0F);
+        GL11.glVertex3f(x + width / 2.0F, y + size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(1.0F, 0.0F);
+        GL11.glVertex3f(x + width / 2.0F, y - size / 2.0F, 0.0F);
+        GL11.glTexCoord2f(0.0F, 0.0F);
+        GL11.glVertex3f(x - width / 2.0F, y - size / 2.0F, 0.0F);
         GL11.glEnd();
     }
 
@@ -274,16 +314,24 @@ public final class GrappleOverlayHandler {
         double y = target.lastTickPosY + (target.posY - target.lastTickPosY) * partialTicks + target.height * 0.68D - mc.getRenderManager().viewerPosY;
         double z = target.lastTickPosZ + (target.posZ - target.lastTickPosZ) * partialTicks - mc.getRenderManager().viewerPosZ;
         FloatBuffer screen = BufferUtils.createFloatBuffer(3);
-        if (!GLU.gluProject((float)x, (float)y, (float)z, model, projection, viewport, screen)) return null;
+        if (!GLU.gluProject((float) x, (float) y, (float) z, model, projection, viewport, screen)) {
+            return null;
+        }
         float px = screen.get(0);
         float py = mc.displayHeight - screen.get(1);
-        if (screen.get(2) < 0.0F || screen.get(2) > 1.0F || px < 0 || py < 0 || px > mc.displayWidth || py > mc.displayHeight) return null;
+        if (screen.get(2) < 0.0F || screen.get(2) > 1.0F || px < 0 || py < 0 || px > mc.displayWidth || py > mc.displayHeight) {
+            return null;
+        }
         return new float[]{px, py};
     }
 
-    /** Ray-traces living entities within grapple range, respecting blocks in the way. */
+    /**
+     * Ray-traces living entities within grapple range, respecting blocks in the way.
+     */
     private static Entity findGrappleTarget(EntityPlayer player, double range) {
-        if (range <= 0.0D) return null;
+        if (range <= 0.0D) {
+            return null;
+        }
 
         net.minecraft.util.math.Vec3d eye = player.getPositionEyes(1.0F);
         net.minecraft.util.math.Vec3d look = player.getLook(1.0F).normalize();

@@ -7,7 +7,9 @@ import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-/** registers the custom weapon sounds used by the secondary-fire perks. */
+/**
+ * Registers the custom weapon sounds used by the secondary-fire perks.
+ */
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public final class LSPECIALSounds {
     public static SoundEvent DRAGONS_FURY_SHOOT;

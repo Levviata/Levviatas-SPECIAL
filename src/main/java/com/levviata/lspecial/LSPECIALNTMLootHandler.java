@@ -18,7 +18,9 @@ import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Random;
 
-/** applies the NTM wand-loot pool bonuses to crates tagged during wand-loot replacement. */
+/**
+ * Applies the NTM wand-loot pool bonuses to crates tagged during wand-loot replacement.
+ */
 public final class LSPECIALNTMLootHandler {
     public static final String CONTAINER_TAG = "LSPECIALContainer";
     public static final String POOL_TAG = "LSPECIALootPool";
@@ -30,7 +32,9 @@ public final class LSPECIALNTMLootHandler {
     private LSPECIALNTMLootHandler() {
     }
 
-    /** stores the exact pool and roll range used by the NTM wand-loot block. */
+    /**
+     * Stores the exact pool and roll range used by the NTM wand-loot block.
+     */
     public static void tagContainer(net.minecraft.tileentity.TileEntity tile, String poolName, int minItems, int maxItems) {
         if (tile == null) {
             LSPECIALMod.logWarn("[LSPECIAL Loot] Cannot tag wand-loot target: tile entity is null (pool={})", poolName);
@@ -54,7 +58,9 @@ public final class LSPECIALNTMLootHandler {
         LSPECIALMod.info("[LSPECIAL Loot] Tagged {} at {} with pool={} rolls={}..{}", tile.getClass().getName(), tile.getPos(), poolName, data.getInteger(MIN_ITEMS_TAG), data.getInteger(MAX_ITEMS_TAG));
     }
 
-    /** applies each eligible perk independently, preserving existing stacks and never overwriting slots. */
+    /**
+     * Applies each eligible perk independently, preserving existing stacks and never overwriting slots.
+     */
     public static void onContainerOpened(TileEntity tile, EntityPlayer player) {
         if (tile == null) {
             LSPECIALMod.logWarn("[LSPECIAL Loot] Container-open handler received a null tile entity");
@@ -156,7 +162,9 @@ public final class LSPECIALNTMLootHandler {
         data.setTag(tagName, players);
     }
 
-    /** gets a modifiable inventory from either an NTM crate or a vanilla chest. */
+    /**
+     * Gets a modifiable inventory from either an NTM crate or a vanilla chest.
+     */
     private static IItemHandlerModifiable getInventory(TileEntity tile) {
         if (tile instanceof com.hbm.tileentity.machine.storage.TileEntityCrateBase) {
             return ((com.hbm.tileentity.machine.storage.TileEntityCrateBase) tile).inventory;
@@ -172,42 +180,55 @@ public final class LSPECIALNTMLootHandler {
         return null;
     }
 
-    /** bridges vanilla inventories to the item-handler API used by the loot insertion code. */
-    private static final class VanillaInventoryAdapter implements IItemHandlerModifiable {
-        private final IInventory inventory;
-
-        private VanillaInventoryAdapter(IInventory inventory) {
-            this.inventory = inventory;
-        }
+    /**
+         * Bridges vanilla inventories to the item-handler API used by the loot insertion code.
+         */
+        private record VanillaInventoryAdapter(IInventory inventory) implements IItemHandlerModifiable {
 
         @Override
-        public int getSlots() {
-            return inventory.getSizeInventory();
-        }
+            public int getSlots() {
+                return inventory.getSizeInventory();
+            }
 
-        @Override
-        @Nonnull
-        public ItemStack getStackInSlot(int slot) {
-            if (slot < 0 || slot >= getSlots()) return ItemStack.EMPTY;
-            ItemStack stack = inventory.getStackInSlot(slot);
-            return stack == null ? ItemStack.EMPTY : stack;
-        }
+            @Override
+            @Nonnull
+            public ItemStack getStackInSlot(int slot) {
+                if (slot < 0 || slot >= getSlots()) return ItemStack.EMPTY;
+                ItemStack stack = inventory.getStackInSlot(slot);
+                return stack == null ? ItemStack.EMPTY : stack;
+            }
 
-        @Override
-        @Nonnull
-        public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
-            if (stack.isEmpty()) return ItemStack.EMPTY;
-            if (slot < 0 || slot >= getSlots() || !inventory.isItemValidForSlot(slot, stack)) return stack;
+            @Override
+            @Nonnull
+            public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
+                if (stack.isEmpty()) return ItemStack.EMPTY;
+                if (slot < 0 || slot >= getSlots() || !inventory.isItemValidForSlot(slot, stack)) return stack;
 
-            ItemStack existing = getStackInSlot(slot);
-            int limit = Math.min(stack.getMaxStackSize(), getSlotLimit(slot));
-            if (limit <= 0) return stack;
+                ItemStack existing = getStackInSlot(slot);
+                int limit = Math.min(stack.getMaxStackSize(), getSlotLimit(slot));
+                if (limit <= 0) return stack;
 
-            if (existing.isEmpty()) {
-                int inserted = Math.min(stack.getCount(), limit);
+                if (existing.isEmpty()) {
+                    int inserted = Math.min(stack.getCount(), limit);
+                    if (!simulate) {
+                        ItemStack result = stack.copy();
+                        result.setCount(inserted);
+                        inventory.setInventorySlotContents(slot, result);
+                        inventory.markDirty();
+                    }
+                    if (inserted >= stack.getCount()) return ItemStack.EMPTY;
+                    ItemStack remainder = stack.copy();
+                    remainder.shrink(inserted);
+                    return remainder;
+                }
+
+                if (!ItemHandlerHelper.canItemStacksStack(existing, stack)) return stack;
+                int space = limit - existing.getCount();
+                if (space <= 0) return stack;
+                int inserted = Math.min(space, stack.getCount());
                 if (!simulate) {
-                    ItemStack result = stack.copy();
-                    result.setCount(inserted);
+                    ItemStack result = existing.copy();
+                    result.grow(inserted);
                     inventory.setInventorySlotContents(slot, result);
                     inventory.markDirty();
                 }
@@ -217,74 +238,64 @@ public final class LSPECIALNTMLootHandler {
                 return remainder;
             }
 
-            if (!ItemHandlerHelper.canItemStacksStack(existing, stack)) return stack;
-            int space = limit - existing.getCount();
-            if (space <= 0) return stack;
-            int inserted = Math.min(space, stack.getCount());
-            if (!simulate) {
+            @Override
+            @Nonnull
+            public ItemStack extractItem(int slot, int amount, boolean simulate) {
+                if (slot < 0 || slot >= getSlots() || amount <= 0) return ItemStack.EMPTY;
+                ItemStack existing = getStackInSlot(slot);
+                if (existing.isEmpty()) return ItemStack.EMPTY;
+                int extracted = Math.min(amount, existing.getCount());
                 ItemStack result = existing.copy();
-                result.grow(inserted);
-                inventory.setInventorySlotContents(slot, result);
-                inventory.markDirty();
+                result.setCount(extracted);
+                if (!simulate) {
+                    if (extracted >= existing.getCount()) {
+                        inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
+                    } else {
+                        ItemStack remainder = existing.copy();
+                        remainder.shrink(extracted);
+                        inventory.setInventorySlotContents(slot, remainder);
+                    }
+                    inventory.markDirty();
+                }
+                return result;
             }
-            if (inserted >= stack.getCount()) return ItemStack.EMPTY;
-            ItemStack remainder = stack.copy();
-            remainder.shrink(inserted);
-            return remainder;
-        }
 
-        @Override
-        @Nonnull
-        public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            if (slot < 0 || slot >= getSlots() || amount <= 0) return ItemStack.EMPTY;
-            ItemStack existing = getStackInSlot(slot);
-            if (existing.isEmpty()) return ItemStack.EMPTY;
-            int extracted = Math.min(amount, existing.getCount());
-            ItemStack result = existing.copy();
-            result.setCount(extracted);
-            if (!simulate) {
-                if (extracted >= existing.getCount()) {
+            @Override
+            public int getSlotLimit(int slot) {
+                return slot < 0 || slot >= getSlots() ? 0 : inventory.getInventoryStackLimit();
+            }
+
+            @Override
+            public void setStackInSlot(int slot, @Nonnull ItemStack stack) {
+                if (slot < 0 || slot >= getSlots()) throw new IndexOutOfBoundsException("slot " + slot);
+                if (stack.isEmpty()) {
                     inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
                 } else {
-                    ItemStack remainder = existing.copy();
-                    remainder.shrink(extracted);
-                    inventory.setInventorySlotContents(slot, remainder);
+                    ItemStack result = stack.copy();
+                    result.setCount(Math.min(result.getCount(), getSlotLimit(slot)));
+                    inventory.setInventorySlotContents(slot, result);
                 }
                 inventory.markDirty();
             }
-            return result;
         }
 
-        @Override
-        public int getSlotLimit(int slot) {
-            return slot < 0 || slot >= getSlots() ? 0 : inventory.getInventoryStackLimit();
-        }
-
-        @Override
-        public void setStackInSlot(int slot, @Nonnull ItemStack stack) {
-            if (slot < 0 || slot >= getSlots()) throw new IndexOutOfBoundsException("slot " + slot);
-            if (stack.isEmpty()) {
-                inventory.setInventorySlotContents(slot, ItemStack.EMPTY);
-            } else {
-                ItemStack result = stack.copy();
-                result.setCount(Math.min(result.getCount(), getSlotLimit(slot)));
-                inventory.setInventorySlotContents(slot, result);
-            }
-            inventory.markDirty();
-        }
-    }
-
-    /** avoids ItemPool.getPool's fallback pool when a configured pool name is invalid. */
+    /**
+     * Avoids ItemPool.getPool's fallback pool when a configured pool name is invalid.
+     */
     private static boolean isValidPool(String name) {
         if (name == null || name.trim().isEmpty() || ItemPool.pools == null) return false;
         ItemPool pool = ItemPool.pools.get(name);
         return pool != null && pool.pool != null && pool.pool.length > 0;
     }
 
-    /** generates NTM weighted items and inserts them safely without replacing existing inventory slots. */
+    /**
+     * Generates NTM weighted items and inserts them safely without replacing existing inventory slots.
+     */
     // i didnt intend to make the AI fill up the chest fully for luck plus perception bonus but its staying
     private static boolean addPoolItems(IItemHandlerModifiable inventory, String poolName, int rolls, Random random, boolean fillUntilFull) {
-        if (!isValidPool(poolName) || inventory == null || rolls <= 0) return false;
+        if (!isValidPool(poolName) || inventory == null || rolls <= 0) {
+            return false;
+        }
         WeightedRandomChestContentFrom1710[] pool = ItemPool.pools.get(poolName).pool;
         int attempts = 0;
         int remainingRolls = rolls;
@@ -312,7 +323,8 @@ public final class LSPECIALNTMLootHandler {
     private static boolean isFull(IItemHandlerModifiable inventory) {
         for (int i = 0; i < inventory.getSlots(); i++) {
             ItemStack stack = inventory.getStackInSlot(i);
-            if (stack.isEmpty() || stack.getCount() < Math.min(stack.getMaxStackSize(), inventory.getSlotLimit(i))) return false;
+            if (stack.isEmpty() || stack.getCount() < Math.min(stack.getMaxStackSize(), inventory.getSlotLimit(i)))
+                return false;
         }
         return true;
     }

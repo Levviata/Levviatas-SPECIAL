@@ -5,7 +5,9 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-/** A large, gravity-free flame sprite for the dedicated NTM flamer renderer. */
+/**
+ * A large, gravity-free flame sprite for the dedicated NTM flamer renderer.
+ */
 @SideOnly(Side.CLIENT)
 public final class TF2FlameParticle extends ParticleFlame {
     private final float lspecial$baseScale;
@@ -22,7 +24,7 @@ public final class TF2FlameParticle extends ParticleFlame {
     @Override
     public void onUpdate() {
         super.onUpdate();
-        float life = (float)this.particleAge / (float)this.particleMaxAge;
+        float life = (float) this.particleAge / (float) this.particleMaxAge;
         this.particleScale = this.lspecial$baseScale * (1.0F - 0.45F * life);
     }
 }

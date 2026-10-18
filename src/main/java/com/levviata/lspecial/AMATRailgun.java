@@ -6,14 +6,18 @@ import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.util.DamageResistanceHandler;
 import net.minecraft.util.math.RayTraceResult;
 
-/** adds a native Sedna caliber for the BMG that homes exclusively toward Quackos. */
+/**
+ * adds a native Sedna caliber for the BMG that homes exclusively toward Quackos.
+ */
 public final class AMATRailgun {
     private static BulletConfig projectileConfig;
 
     private AMATRailgun() {
     }
 
-    /** uses NTM's ordinary Sedna magazine and projectile pipeline for deuterium plasma capsules. */
+    /**
+     * uses NTM's ordinary Sedna magazine and projectile pipeline for deuterium plasma capsules.
+     */
     public static BulletConfig getBulletConfig() {
         init();
         return projectileConfig;

@@ -16,7 +16,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** persists the identity of the entity and weapon that launched an NTM throwable. */
+/**
+ * Persists the identity of the entity and weapon that launched an NTM throwable.
+ */
 @Mixin(value = EntityThrowableNT.class, remap = false)
 public abstract class MixinProjectileShooter {
 
@@ -38,8 +40,7 @@ public abstract class MixinProjectileShooter {
 
         NBTTagCompound data = ((EntityThrowableNT) (Object) this).getEntityData();
         data.setUniqueId("LSPECIALShooterUUID", shooter.getUniqueID());
-        if (shooter instanceof EntityPlayer) {
-            EntityPlayer player = (EntityPlayer) shooter;
+        if (shooter instanceof EntityPlayer player) {
             ItemStack held = player.getHeldItemMainhand();
             String rocketFamilyWeapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
             if (rocketFamilyWeapon != null) {
@@ -52,8 +53,7 @@ public abstract class MixinProjectileShooter {
             } else if (!held.isEmpty() && held.getItem().getRegistryName() != null) {
                 data.setString("LSPECIALShooterWeapon", held.getItem().getRegistryName().toString());
             }
-            if (!held.isEmpty() && held.getItem() instanceof ItemGunBaseNT) {
-                ItemGunBaseNT gun = (ItemGunBaseNT) held.getItem();
+            if (!held.isEmpty() && held.getItem() instanceof ItemGunBaseNT gun) {
                 boolean secondary = false;
                 for (int i = 0; i < gun.getConfigCount(); i++) {
                     secondary |= ItemGunBaseNT.getSecondary(held, i);

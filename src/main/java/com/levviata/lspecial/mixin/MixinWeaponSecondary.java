@@ -34,11 +34,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** adds server-authoritative secondary-fire actions while retaining NTM's native gun implementation. */
+/**
+ * Adds server-authoritative secondary-fire actions while retaining NTM's native gun implementation.
+ */
 @Mixin(value = ItemGunBaseNT.class, remap = false)
 public abstract class MixinWeaponSecondary {
 
-    /** handles crouch-secondary ammo cycling, the Lag's self-kill action, and double-barrel grappling. */
+    /**
+     * Handles crouch-secondary ammo cycling, the Lag's self-kill action, and double-barrel grappling.
+     */
     @Inject(method = "handleKeybind(Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/inventory/IInventory;Lnet/minecraft/item/ItemStack;Lcom/hbm/handler/HbmKeybinds$EnumKeybind;Z)V", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory, ItemStack stack, HbmKeybinds.EnumKeybind keybind, boolean newState, CallbackInfo callback) {
         if (!(entity instanceof EntityPlayer player) || stack == null || stack.isEmpty() || keybind == null) {
@@ -193,7 +197,9 @@ public abstract class MixinWeaponSecondary {
         }
     }
 
-    /** returns whether the player's current Intelligence score meets the requested perk level. */
+    /**
+     * Returns whether the player's current Intelligence score meets the requested perk level.
+     */
     @Unique
     private static boolean lspecial$hasIntelligence(EntityPlayer player, int level) {
         return LSPECIALConfig.intelligence
@@ -203,13 +209,17 @@ public abstract class MixinWeaponSecondary {
                 && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= level;
     }
 
-    /** returns the registry identifier used to match a weapon without relying on its display name. */
+    /**
+     * Returns the registry identifier used to match a weapon without relying on its display name.
+     */
     @Unique
     private static String lspecial$registryId(ItemStack stack) {
         return stack.getItem().getRegistryName() == null ? null : stack.getItem().getRegistryName().toString();
     }
 
-    /** identifies the guns with a defined alternate caliber or energy-projectile mode. */
+    /**
+     * Identifies the guns with a defined alternate caliber or energy-projectile mode.
+     */
     @Unique
     private static boolean lspecial$supportsAmmoCycling(String itemId) {
         return "hbm:gun_pepperbox".equals(itemId) || lspecial$isStarF(itemId) || lspecial$isUzi(itemId)
@@ -237,7 +247,9 @@ public abstract class MixinWeaponSecondary {
         return "hbm:gun_minigun".equals(itemId) || "hbm:gun_minigun_dual".equals(itemId);
     }
 
-    /** identifies weapons that should copy the Heretic's secondary-fire aiming behavior. */
+    /**
+     * Identifies weapons that should copy the Heretic's secondary-fire aiming behavior.
+     */
     @Unique
     private static boolean lspecial$isHereticScopeCopyWeapon(String itemId) {
         return "hbm:gun_maresleg".equals(itemId) || "hbm:gun_liberator".equals(itemId)
@@ -246,7 +258,9 @@ public abstract class MixinWeaponSecondary {
                 || "hbm:gun_am180".equals(itemId);
     }
 
-    /** returns every native NTM bullet configuration in the alternate caliber family. */
+    /**
+     * Returns every native NTM bullet configuration in the alternate caliber family.
+     */
     @Unique
     private static List<BulletConfig> lspecial$getAlternateCalibers(String itemId) {
         if ("hbm:gun_amat".equals(itemId)) {
@@ -254,11 +268,19 @@ public abstract class MixinWeaponSecondary {
         }
         String prefix;
         Class<?> factory;
-        if ("hbm:gun_pepperbox".equals(itemId)) { factory = XFactory44.class; prefix = "m44_"; }
-        else if (lspecial$isStarF(itemId)) { factory = XFactory50.class; prefix = "bmg50_"; }
-        else if (lspecial$isUzi(itemId)) { factory = XFactory556mm.class; prefix = "r556_"; }
-        else if (lspecial$isG3(itemId)) { factory = XFactory10ga.class; prefix = "g10"; }
-        else return java.util.Collections.emptyList();
+        if ("hbm:gun_pepperbox".equals(itemId)) {
+            factory = XFactory44.class;
+            prefix = "m44_";
+        } else if (lspecial$isStarF(itemId)) {
+            factory = XFactory50.class;
+            prefix = "bmg50_";
+        } else if (lspecial$isUzi(itemId)) {
+            factory = XFactory556mm.class;
+            prefix = "r556_";
+        } else if (lspecial$isG3(itemId)) {
+            factory = XFactory10ga.class;
+            prefix = "g10";
+        } else return java.util.Collections.emptyList();
 
         List<BulletConfig> result = lspecial$getBulletConfigs(factory, prefix);
         result.sort(Comparator.comparingInt(config -> config.id));
@@ -280,7 +302,9 @@ public abstract class MixinWeaponSecondary {
         return result;
     }
 
-    /** swaps each distinct magazine on single and akimbo weapons without changing NTM's firing pipeline. */
+    /**
+     * Swaps each distinct magazine on single and akimbo weapons without changing NTM's firing pipeline.
+     */
     @Unique
     private static boolean lspecial$cycleSupportedAmmo(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
         if (!(stack.getItem() instanceof ItemGunBaseNT gun)) return false;
@@ -329,7 +353,9 @@ public abstract class MixinWeaponSecondary {
         return changed;
     }
 
-    /** unwraps the Luck wrapper so magazine-specific mode and capacity logic sees the native magazine type. */
+    /**
+     * Unwraps the Luck wrapper so magazine-specific mode and capacity logic sees the native magazine type.
+     */
     @Unique
     private static IMagazine lspecial$unwrapMagazine(IMagazine magazine) {
         while (magazine instanceof RefundMagazine) {
@@ -338,7 +364,9 @@ public abstract class MixinWeaponSecondary {
         return magazine;
     }
 
-    /** creates a stable key so shared magazines are switched once even on multi-receiver guns. */
+    /**
+     * Creates a stable key so shared magazines are switched once even on multi-receiver guns.
+     */
     @Unique
     private static String lspecial$getMagazineKey(IMagazine magazine) {
         IMagazine original = lspecial$unwrapMagazine(magazine);
@@ -349,7 +377,9 @@ public abstract class MixinWeaponSecondary {
         return null;
     }
 
-    /** changes one magazine's selected caliber and refunds only ammunition physically loaded into that magazine. */
+    /**
+     * Changes one magazine's selected caliber and refunds only ammunition physically loaded into that magazine.
+     */
     @Unique
     private static boolean lspecial$cycleOneMagazine(EntityPlayer player, ItemStack stack, IInventory inventory,
                                                      IMagazine magazine, List<BulletConfig> alternateCalibers) {
@@ -368,7 +398,8 @@ public abstract class MixinWeaponSecondary {
         BulletConfig defaultAmmo = accepted.getFirst();
         List<BulletConfig> alternateOptions = new java.util.ArrayList<>();
         for (BulletConfig config : alternateCalibers) {
-            if (config != null && config != defaultAmmo && !alternateOptions.contains(config)) alternateOptions.add(config);
+            if (config != null && config != defaultAmmo && !alternateOptions.contains(config))
+                alternateOptions.add(config);
         }
         if (alternateOptions.isEmpty()) return false;
         int currentAlternate = alternateOptions.indexOf(current);
@@ -404,7 +435,9 @@ public abstract class MixinWeaponSecondary {
         return true;
     }
 
-    /** cycles the Minigun's inventory-fed belt through native capacitor configurations without refunding inventory ammo. */
+    /**
+     * Cycles the Minigun's inventory-fed belt through native capacitor configurations without refunding inventory ammo.
+     */
     @Unique
     private static boolean lspecial$cycleBeltAmmo(ItemStack stack, MagazineBelt magazine) {
         List<BulletConfig> accepted = magazine.acceptedBullets;
@@ -444,7 +477,9 @@ public abstract class MixinWeaponSecondary {
         return true;
     }
 
-    /** adds the native capacitor configurations used by NTM's laser, Tesla, and emerald energy weapons. */
+    /**
+     * Adds the native capacitor configurations used by NTM's laser, Tesla, and emerald energy weapons.
+     */
     @Unique
     private static void lspecial$registerEnergyCapacitors(List<BulletConfig> accepted) {
         for (BulletConfig config : lspecial$getEnergyCapacitors()) {
@@ -469,7 +504,9 @@ public abstract class MixinWeaponSecondary {
         return null;
     }
 
-    /** returns old-caliber ammunition to inventory, dropping every leftover stack beside the player. */
+    /**
+     * Returns old-caliber ammunition to inventory, dropping every leftover stack beside the player.
+     */
     @Unique
     private static boolean lspecial$refundAmmoToPlayer(EntityPlayer player, BulletConfig oldConfig, int count) {
         if (count <= 0) return true;
@@ -492,7 +529,9 @@ public abstract class MixinWeaponSecondary {
     }
 
 
-    /** identifies weapons with implemented alternate fire that can be selected as a persistent mode. */
+    /**
+     * Identifies weapons with implemented alternate fire that can be selected as a persistent mode.
+     */
     @Unique
     private static boolean lspecial$supportsToggleMode(String itemId) {
         return "hbm:gun_carbine".equals(itemId) || "hbm:gun_lag".equals(itemId)
@@ -513,7 +552,9 @@ public abstract class MixinWeaponSecondary {
         }
     }
 
-    /** sets native primary input while the secondary button is held for alternate-fire modes. */
+    /**
+     * Sets native primary input while the secondary button is held for alternate-fire modes.
+     */
     @Unique
     private static void lspecial$setPrimaryForAllConfigs(ItemStack stack, boolean pressed) {
         if (!(stack.getItem() instanceof ItemGunBaseNT gun)) {
@@ -525,19 +566,23 @@ public abstract class MixinWeaponSecondary {
         }
     }
 
-    /** finds the nearest entity in the player's look direction and applies a bounded pull velocity. */
+    /**
+     * Finds the nearest entity in the player's look direction and applies a bounded pull velocity.
+     */
     @Unique
     private static void lspecial$pullPlayerTowardTarget(EntityPlayer player, double range, double pullSpeed) {
         if (player.world.isRemote || !(player instanceof net.minecraft.entity.player.EntityPlayerMP)) return;
         Entity target = lspecial$findGrappleTarget(player, range);
-        if (target != null) GrappleController.start((net.minecraft.entity.player.EntityPlayerMP) player, target, false, pullSpeed);
+        if (target != null)
+            GrappleController.start((net.minecraft.entity.player.EntityPlayerMP) player, target, false, pullSpeed);
     }
 
     @Unique
     private static void lspecial$pullTargetTowardPlayer(EntityPlayer player, double range, double pullSpeed) {
         if (player.world.isRemote || !(player instanceof net.minecraft.entity.player.EntityPlayerMP)) return;
         Entity target = lspecial$findGrappleTarget(player, range);
-        if (target != null) GrappleController.start((net.minecraft.entity.player.EntityPlayerMP) player, target, true, pullSpeed);
+        if (target != null)
+            GrappleController.start((net.minecraft.entity.player.EntityPlayerMP) player, target, true, pullSpeed);
     }
 
     @Unique

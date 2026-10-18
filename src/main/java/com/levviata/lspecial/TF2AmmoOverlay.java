@@ -22,7 +22,10 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 // todo
-/** TF2-style loaded-ammo counter for configured NTM weapons. */
+
+/**
+ * TF2-style loaded-ammo counter for configured NTM weapons.
+ */
 public final class TF2AmmoOverlay {
     private static final ResourceLocation BADGE = new ResourceLocation("lspecial", "textures/gui/gui_badge.png");
     private static final int TEXTURE_WIDTH = 1024;
@@ -46,7 +49,7 @@ public final class TF2AmmoOverlay {
         lspecial$renderEvents++;
         if (!lspecial$loggedOverlayReady) {
             lspecial$loggedOverlayReady = true;
-           // LSPECIALMod.logWarn("[TF2AmmoGUI] render hook active: event={}, side=client", event.getType());
+            // LSPECIALMod.logWarn("[TF2AmmoGUI] render hook active: event={}, side=client", event.getType());
         }
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.player;

@@ -12,11 +12,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** feeds the light revolver's native firing state without requiring physical primary-fire input. */
+/**
+ * Feeds the light revolver's native firing state without requiring physical primary-fire input.
+ */
 @Mixin(value = ItemGunBaseNT.class, remap = false)
 public abstract class MixinLightRevolverRapidFire {
 
-    /** holds native primary input for the selected light revolver while its perk is enabled. */
+    /**
+     * Holds native primary input for the selected light revolver while its perk is enabled.
+     */
     @Inject(method = "onUpdate", at = @At("RETURN"), remap = false)
     private void lspecial$forceLightRevolverPrimary(ItemStack stack, World world, Entity entity,
                                                     int slot, boolean selected, CallbackInfo callback) {

@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
  * Replaces the projectile at the actual World.spawnEntity boundary.
- *
+ * <p>
  * The previous onUpdate-based approach could miss the shot if the active config
  * was resolved differently or if the gun fired a hitscan EntityBulletBeamBase.
  * This hook sees both ordinary Sedna bullets and beam/hitscan entities before
@@ -41,12 +41,10 @@ public abstract class MixinWorldRailgunBlast {
         double dy = original.motionY;
         double dz = original.motionZ;
 
-        if (original instanceof EntityBulletBaseMK4) {
-            EntityBulletBaseMK4 bullet = (EntityBulletBaseMK4) original;
+        if (original instanceof EntityBulletBaseMK4 bullet) {
             config = bullet.config;
             shooter = bullet.getThrower();
-        } else if (original instanceof EntityBulletBeamBase) {
-            EntityBulletBeamBase beam = (EntityBulletBeamBase) original;
+        } else if (original instanceof EntityBulletBeamBase beam) {
             config = beam.config;
             shooter = beam.thrower;
             dx = beam.headingX;

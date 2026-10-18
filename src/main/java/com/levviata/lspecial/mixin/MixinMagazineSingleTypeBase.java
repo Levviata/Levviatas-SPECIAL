@@ -23,30 +23,47 @@ import com.hbm.items.weapon.sedna.factory.*;
 
 import java.util.List;
 
-/** applies selected-caliber persistence and configured capacities to NTM single-type magazines. */
+/**
+ * Applies selected-caliber persistence and configured capacities to NTM single-type magazines.
+ */
 @Mixin(value = MagazineSingleTypeBase.class, remap = false)
 public abstract class MixinMagazineSingleTypeBase {
 
-    @Shadow public List<BulletConfig> acceptedBullets;
-    @Shadow public int index;
-    @Shadow public int capacity;
+    @Shadow
+    public List<BulletConfig> acceptedBullets;
+    @Shadow
+    public int index;
+    @Shadow
+    public int capacity;
 
-    /** registers every supported bullet variant in each alternate caliber family before NTM validates saved types. */
+    /**
+     * Registers every supported bullet variant in each alternate caliber family before NTM validates saved types.
+     */
     @Inject(method = "getType(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lcom/hbm/items/weapon/sedna/BulletConfig;", at = @At("HEAD"), remap = false)
     private void lspecial$registerSavedAlternateCaliber(ItemStack stack, IInventory inventory,
-            CallbackInfoReturnable<BulletConfig> callback) {
-        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null || acceptedBullets == null) return;
+                                                        CallbackInfoReturnable<BulletConfig> callback) {
+        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null || acceptedBullets == null)
+            return;
         String itemId = stack.getItem().getRegistryName().toString();
         Class<?> factory = null;
         String prefix = null;
-        if ("hbm:gun_pepperbox".equals(itemId)) { factory = XFactory44.class; prefix = "m44_"; }
-        else if ("hbm:gun_amat".equals(itemId)) {
+        if ("hbm:gun_pepperbox".equals(itemId)) {
+            factory = XFactory44.class;
+            prefix = "m44_";
+        } else if ("hbm:gun_amat".equals(itemId)) {
             BulletConfig requested = AMATRailgun.getBulletConfig();
             if (requested != null && !acceptedBullets.contains(requested)) acceptedBullets.add(requested);
             return;
-        } else if ("hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId)) { factory = XFactory50.class; prefix = "bmg50_"; }
-        else if ("hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId)) { factory = XFactory556mm.class; prefix = "r556_"; }
-        else if ("hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId)) { factory = XFactory10ga.class; prefix = "g10"; }
+        } else if ("hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId)) {
+            factory = XFactory50.class;
+            prefix = "bmg50_";
+        } else if ("hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId)) {
+            factory = XFactory556mm.class;
+            prefix = "r556_";
+        } else if ("hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId)) {
+            factory = XFactory10ga.class;
+            prefix = "g10";
+        }
         if (factory == null) return;
         try {
             for (java.lang.reflect.Field field : factory.getFields()) {
@@ -59,7 +76,9 @@ public abstract class MixinMagazineSingleTypeBase {
         }
     }
 
-    /** returns the explicitly selected caliber even when NTM's ordinary lookup would fall back to the first config. */
+    /**
+     * Returns the explicitly selected caliber even when NTM's ordinary lookup would fall back to the first config.
+     */
     @Inject(method = "getType(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lcom/hbm/items/weapon/sedna/BulletConfig;", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$preserveSelectedCaliber(ItemStack stack, IInventory inventory, CallbackInfoReturnable<BulletConfig> callback) {
         if (stack == null || stack.isEmpty() || !stack.hasTagCompound()) {
@@ -78,7 +97,9 @@ public abstract class MixinMagazineSingleTypeBase {
         }
     }
 
-    /** loads only the selected ammunition and uses getCapacity so Intelligence capacity upgrades can fill completely. */
+    /**
+     * Loads only the selected ammunition and uses getCapacity so Intelligence capacity upgrades can fill completely.
+     */
     @Inject(method = "standardReload(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;I)V", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$reloadSelectedCaliber(ItemStack stack, IInventory inventory, int amount, CallbackInfo callback) {
         if (stack == null || stack.isEmpty()) {
@@ -163,7 +184,9 @@ public abstract class MixinMagazineSingleTypeBase {
         callback.cancel();
     }
 
-    /** applies the Intelligence higher-perk capacity without changing the shared base magazine capacity. */
+    /**
+     * Applies the Intelligence higher-perk capacity without changing the shared base magazine capacity.
+     */
     @Inject(method = "getCapacity", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$applyHigherPerkCapacity(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
         if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) return;
@@ -211,7 +234,7 @@ public abstract class MixinMagazineSingleTypeBase {
             callback.setReturnValue(LSPECIALConfig.carbineMagazineCapacity);
         } else if (("hbm:gun_star_f".equals(registryName) || "hbm:gun_star_f_akimbo".equals(registryName))
                 && LSPECIALConfig.modifyGuns && SPECIALScoreboard.inst.getPlayerScorePoints(
-                    player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= 15) {
+                player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= 15) {
             callback.setReturnValue(LSPECIALConfig.starFCapacity);
         }
     }

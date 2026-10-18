@@ -12,12 +12,30 @@ import net.minecraft.entity.player.EntityPlayerMP;
 public class GrappleCameraPacket implements IMessage {
     private int targetId;
     private boolean active;
-    public GrappleCameraPacket() { }
-    public GrappleCameraPacket(int targetId, boolean active) { this.targetId = targetId; this.active = active; }
-    @Override public void toBytes(ByteBuf buf) { buf.writeInt(targetId); buf.writeBoolean(active); }
-    @Override public void fromBytes(ByteBuf buf) { targetId = buf.readInt(); active = buf.readBoolean(); }
+
+    public GrappleCameraPacket() {
+    }
+
+    public GrappleCameraPacket(int targetId, boolean active) {
+        this.targetId = targetId;
+        this.active = active;
+    }
+
+    @Override
+    public void toBytes(ByteBuf buf) {
+        buf.writeInt(targetId);
+        buf.writeBoolean(active);
+    }
+
+    @Override
+    public void fromBytes(ByteBuf buf) {
+        targetId = buf.readInt();
+        active = buf.readBoolean();
+    }
+
     public static class Handler implements IMessageHandler<GrappleCameraPacket, IMessage> {
-        @Override public IMessage onMessage(GrappleCameraPacket message, MessageContext context) {
+        @Override
+        public IMessage onMessage(GrappleCameraPacket message, MessageContext context) {
             if (context.side == Side.CLIENT) {
                 Minecraft.getMinecraft().addScheduledTask(() -> {
                     if (message.targetId == -3) GrappleClientHandler.resetCooldown();

@@ -22,18 +22,24 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-/** Applies Intelligence perk firing delays without permanently mutating NTM receiver data. */
+/**
+ * Applies Intelligence perk firing delays without permanently mutating NTM receiver data.
+ */
 // rationale: NTM has no public per-shot sound selector for the Topaz flamer, so this changes Receiver#getFireSound only for that item. Other addons targeting this method may conflict; an NTM sound callback would avoid the mixin.
 @Mixin(value = Receiver.class, remap = false)
 public abstract class MixinReceiver implements ReceiverStateAccess {
 
-    @Shadow protected int index;
-    @Shadow protected boolean refireOnHold_DNA;
-    @Shadow protected boolean refireAfterDry_DNA;
+    @Shadow
+    protected int index;
+    @Shadow
+    protected boolean refireOnHold_DNA;
+    @Shadow
+    protected boolean refireAfterDry_DNA;
 
     @Override
     public boolean lspecial$getNativeRefireOnHold() {
@@ -45,10 +51,12 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         return refireAfterDry_DNA;
     }
 
-    /** calculates firing delay from the native receiver value so switching weapons cannot retain another gun's delay. */
+    /**
+     * Calculates firing delay from the native receiver value so switching weapons cannot retain another gun's delay.
+     */
     @Inject(method = "getDelayAfterFire", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$calculateFiringDelay(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
-        if (stack == null || stack.isEmpty() || !LSPECIALConfig.modifyGuns)  {
+        if (stack == null || stack.isEmpty() || !LSPECIALConfig.modifyGuns) {
             return;
         }
 
@@ -64,7 +72,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
 
             if (modifiedDelay > 0 && LSPECIALConfig.buckshotDelayNerf && lspecial$isBuckshotAmmo(activeAmmo)) {
                 modifiedDelay = (int) Math.round(LSPECIALExpression.eval(
-                        LSPECIALConfig.buckshotDelayFormula, variables, (double) modifiedDelay));
+                        LSPECIALConfig.buckshotDelayFormula, variables, modifiedDelay));
             }
             delay = Math.max(0, modifiedDelay);
         }
@@ -92,7 +100,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         callback.setReturnValue(Math.max(0, delay));
     }
 
-    /** returns the player's Intelligence score, or zero when the scoreboard is not ready. */
+    /**
+     * Returns the player's Intelligence score, or zero when the scoreboard is not ready.
+     */
     @Unique
     private static int lspecial$getIntelligence() {
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
@@ -102,7 +112,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         return SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD);
     }
 
-    /** checks the selected ammunition configuration rather than any matching item in the inventory. */
+    /**
+     * Checks the selected ammunition configuration rather than any matching item in the inventory.
+     */
     @Unique
     private static boolean lspecial$isBuckshotAmmo(BulletConfig config) {
         if (config == null || config.ammo == null) {
@@ -131,7 +143,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         return false;
     }
 
-    /** reads the active magazine bullet configuration without forcing an inventory-based caliber choice. */
+    /**
+     * Reads the active magazine bullet configuration without forcing an inventory-based caliber choice.
+     */
     @Unique
     private BulletConfig lspecial$getActiveAmmo(ItemStack stack) {
         IMagazine magazine = ((Receiver) (Object) this).getMagazine(stack);
@@ -165,7 +179,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         return "hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId);
     }
 
-    /** selects the custom projectile sound for the Dragon's Fury fireball. */
+    /**
+     * Selects the custom projectile sound for the Dragon's Fury fireball.
+     */
     @Inject(method = "getFireSound", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$useSecondaryFlamerSound(ItemStack stack, CallbackInfoReturnable<SoundEvent> callback) {
         String itemId = lspecial$registryId(stack);
@@ -177,7 +193,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         }
     }
 
-    /** Keeps the native Carbine semi-auto perk without changing Lag/Lincoln refire behavior. */
+    /**
+     * Keeps the native Carbine semi-auto perk without changing Lag/Lincoln refire behavior.
+     */
     @Inject(method = "getRefireOnHold", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$configureSecondaryRefire(ItemStack stack, CallbackInfoReturnable<Boolean> callback) {
         if (LSPECIALConfig.carbineSemiAutoPerk && lspecial$isCarbineHigherPerk(stack) && lspecial$isSecondaryHeld(stack)) {
@@ -185,10 +203,12 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         }
     }
 
-    /** scales the native Carbine recoil callback without replacing its ordinary firing implementation. */
+    /**
+     * Scales the native Carbine recoil callback without replacing its ordinary firing implementation.
+     */
     @Inject(method = "getRecoil", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$scaleCarbineRecoil(ItemStack stack,
-            CallbackInfoReturnable<BiConsumer<ItemStack, ItemGunBaseNT.LambdaContext>> callback) {
+                                             CallbackInfoReturnable<BiConsumer<ItemStack, ItemGunBaseNT.LambdaContext>> callback) {
         if (!lspecial$isCarbineHigherPerk(stack)) return;
         final double multiplier = LSPECIALConfig.carbineRecoilMultiplier;
         final BiConsumer<ItemStack, ItemGunBaseNT.LambdaContext> original = callback.getReturnValue();
@@ -212,7 +232,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         });
     }
 
-    /** checks that the stack is the Carbine and the higher Intelligence perk is active. */
+    /**
+     * Checks that the stack is the Carbine and the higher Intelligence perk is active.
+     */
     @Unique
     private static boolean lspecial$isCarbineHigherPerk(ItemStack stack) {
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
@@ -223,7 +245,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
                 && "hbm:gun_carbine".equals(lspecial$registryId(stack));
     }
 
-    /** tightens spread while the supported lesser-perk weapons are scoped. */
+    /**
+     * Tightens spread while the supported lesser-perk weapons are scoped.
+     */
     @Inject(method = "getInnateSpread", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$adjustScopedSpread(ItemStack stack, CallbackInfoReturnable<Float> callback) {
         if (stack == null || stack.isEmpty() || !LSPECIALConfig.scopedSecondarySpread
@@ -237,7 +261,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         }
     }
 
-    /** tightens ammunition-derived spread as well as innate spread while a copied scope is active. */
+    /**
+     * Tightens ammunition-derived spread as well as innate spread while a copied scope is active.
+     */
     @Inject(method = "getAmmoSpread", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$adjustScopedAmmoSpread(ItemStack stack, CallbackInfoReturnable<Float> callback) {
         if (stack == null || stack.isEmpty() || !LSPECIALConfig.scopedSecondarySpread
@@ -251,7 +277,9 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         }
     }
 
-    /** checks the shared SPECIAL score safely because NTM can query receiver values on either side. */
+    /**
+     * Checks the shared SPECIAL score safely because NTM can query receiver values on either side.
+     */
     @Unique
     private static boolean lspecial$hasIntelligence(int level) {
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
@@ -262,14 +290,18 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
                 && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= level;
     }
 
-    /** checks the NTM per-config secondary input state stored on the weapon stack. */
+    /**
+     * Checks the NTM per-config secondary input state stored on the weapon stack.
+     */
     @Unique
     private boolean lspecial$isSecondaryHeld(ItemStack stack) {
         return stack != null && !stack.isEmpty() && (ItemGunBaseNT.getSecondary(stack, index)
                 || (stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALSecondaryMode")));
     }
 
-    /** returns the namespaced item ID without depending on translated display text. */
+    /**
+     * Returns the namespaced item ID without depending on translated display text.
+     */
     @Unique
     private static String lspecial$registryId(ItemStack stack) {
         return stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null

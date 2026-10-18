@@ -14,7 +14,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
-/** Applies Luck-based armor durability and powered-armor energy protection. */
+/**
+ * Applies Luck-based armor durability and powered-armor energy protection.
+ */
 @Mixin(EntityPlayer.class)
 public abstract class MixinEntityPlayerLuckArmor {
 
@@ -33,8 +35,7 @@ public abstract class MixinEntityPlayerLuckArmor {
         int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
 
         // NTM powered armor maps ItemStack damage into battery energy consumption.
-        if (stack.getItem() instanceof ArmorFSBPowered) {
-            ArmorFSBPowered poweredArmor = (ArmorFSBPowered) stack.getItem();
+        if (stack.getItem() instanceof ArmorFSBPowered poweredArmor) {
             long chargeBefore = poweredArmor.getCharge(stack);
             if (LSPECIALConfig.luck && LSPECIALConfig.luckArmorDurabilityProtection && luck > 0) {
                 double chance = Math.min(LSPECIALConfig.luckArmorDurabilityChanceCap,

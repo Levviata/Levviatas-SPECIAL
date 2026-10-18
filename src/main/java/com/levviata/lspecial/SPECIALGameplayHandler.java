@@ -27,7 +27,9 @@ import java.util.List;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
-/** server-side SPECIAL effects that need Forge events rather than per-frame GUI code. */
+/**
+ * Server-side SPECIAL effects that need Forge events rather than per-frame GUI code.
+ */
 public final class SPECIALGameplayHandler {
     private static final Map<EntityPlayer, LockedGun> rapidFireLocks = new WeakHashMap<>();
     private static final Map<EntityPlayer, PendingSelfKill> pendingSelfKills = new WeakHashMap<>();
@@ -48,10 +50,18 @@ public final class SPECIALGameplayHandler {
             config = bullet.getBulletConfig();
             yaw = bullet.rotationYaw;
             pitch = bullet.rotationPitch;
-            x = bullet.posX; y = bullet.posY; z = bullet.posZ;
-            motionX = bullet.motionX; motionY = bullet.motionY; motionZ = bullet.motionZ;
-            velocity = bullet.velocity; previousVelocity = bullet.prevVelocity; acceleration = bullet.accel;
-            damage = bullet.damage; ricochets = bullet.ricochets; lockonTarget = bullet.lockonTarget;
+            x = bullet.posX;
+            y = bullet.posY;
+            z = bullet.posZ;
+            motionX = bullet.motionX;
+            motionY = bullet.motionY;
+            motionZ = bullet.motionZ;
+            velocity = bullet.velocity;
+            previousVelocity = bullet.prevVelocity;
+            acceleration = bullet.accel;
+            damage = bullet.damage;
+            ricochets = bullet.ricochets;
+            lockonTarget = bullet.lockonTarget;
             entityData = bullet.getEntityData().copy();
             ticksRemaining = delay;
         }
@@ -63,9 +73,15 @@ public final class SPECIALGameplayHandler {
             EntityBulletBaseMK4 clone = new EntityBulletBaseMK4(shooter.world, shooter, config,
                     shooter.rotationYaw, shooter.rotationPitch, spawnX, spawnY, spawnZ, motionX, motionY, motionZ);
             clone.setPosition(spawnX, spawnY, spawnZ);
-            clone.motionX = motionX; clone.motionY = motionY; clone.motionZ = motionZ;
-            clone.damage = damage; clone.velocity = velocity; clone.prevVelocity = previousVelocity;
-            clone.accel = acceleration; clone.ricochets = 0; clone.lockonTarget = lockonTarget;
+            clone.motionX = motionX;
+            clone.motionY = motionY;
+            clone.motionZ = motionZ;
+            clone.damage = damage;
+            clone.velocity = velocity;
+            clone.prevVelocity = previousVelocity;
+            clone.accel = acceleration;
+            clone.ricochets = 0;
+            clone.lockonTarget = lockonTarget;
             clone.getEntityData().merge(entityData.copy());
             clone.getEntityData().setBoolean("LSPECIALBurstClone", true);
             return clone;
@@ -96,7 +112,9 @@ public final class SPECIALGameplayHandler {
         }
     }
 
-    /** keeps the selected light revolver locked while its triggered rapid-fire burst is active. */
+    /**
+     * Keeps the selected light revolver locked while its triggered rapid-fire burst is active.
+     */
     @SubscribeEvent
     public void onRapidFirePlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -121,7 +139,9 @@ public final class SPECIALGameplayHandler {
         lspecial$setRapidFire(locked.stack, true);
     }
 
-    /** starts a native rapid-fire burst and locks selection to the exact stack that triggered it. */
+    /**
+     * Starts a native rapid-fire burst and locks selection to the exact stack that triggered it.
+     */
     public static boolean startLightRevolverRapidFire(EntityPlayer player, ItemStack stack) {
         if (!lspecial$canUseLightRevolverRapidFire(player) || !lspecial$isLightRevolver(stack)) return false;
         int slot = lspecial$findHotbarStack(player, stack);
@@ -143,19 +163,25 @@ public final class SPECIALGameplayHandler {
         return true;
     }
 
-    /** reports whether this exact stack currently owns the player's rapid-fire burst. */
+    /**
+     * Reports whether this exact stack currently owns the player's rapid-fire burst.
+     */
     public static boolean isLightRevolverRapidFireLocked(EntityPlayer player, ItemStack stack) {
         LockedGun locked = rapidFireLocks.get(player);
         return locked != null && locked.stack == stack && lspecial$canUseLightRevolverRapidFire(player);
     }
 
-    /** releases the lock and clears native primary input so firing cannot continue after the burst. */
+    /**
+     * Releases the lock and clears native primary input so firing cannot continue after the burst.
+     */
     private static void lspecial$releaseRapidFire(EntityPlayer player, LockedGun locked) {
         rapidFireLocks.remove(player);
         lspecial$setRapidFire(locked.stack, false);
     }
 
-    /** checks the configured perk and its Intelligence threshold before forcing fire input. */
+    /**
+     * Checks the configured perk and its Intelligence threshold before forcing fire input.
+     */
     private static boolean lspecial$canUseLightRevolverRapidFire(EntityPlayer player) {
         return player != null && !player.isDead && LSPECIALConfig.modifyGuns
                 && LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk
@@ -164,13 +190,17 @@ public final class SPECIALGameplayHandler {
                 && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5;
     }
 
-    /** identifies the NTM light revolver without relying on its translated name. */
+    /**
+     * Identifies the NTM light revolver without relying on its translated name.
+     */
     private static boolean lspecial$isLightRevolver(ItemStack stack) {
         return stack != null && !stack.isEmpty() && stack.getItem().getRegistryName() != null
                 && "hbm:gun_light_revolver".equals(stack.getItem().getRegistryName().toString());
     }
 
-    /** finds the exact stack identity in the hotbar so a replacement stack cannot inherit the lock. */
+    /**
+     * Finds the exact stack identity in the hotbar so a replacement stack cannot inherit the lock.
+     */
     private static int lspecial$findHotbarStack(EntityPlayer player, ItemStack target) {
         for (int slot = 0; slot < 9; slot++) {
             if (player.inventory.getStackInSlot(slot) == target) return slot;
@@ -178,7 +208,9 @@ public final class SPECIALGameplayHandler {
         return -1;
     }
 
-    /** sets the native primary-fire state for each NTM configuration on the locked stack. */
+    /**
+     * Sets the native primary-fire state for each NTM configuration on the locked stack.
+     */
     private static void lspecial$setRapidFire(ItemStack stack, boolean firing) {
         if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return;
         for (int config = 0; config < gun.getConfigCount(); config++) {
@@ -186,7 +218,9 @@ public final class SPECIALGameplayHandler {
         }
     }
 
-    /** Snapshots native Sedna projectiles and queues two matching follow-up shots 0.4 seconds apart. */
+    /**
+     * Snapshots native Sedna projectiles and queues two matching follow-up shots 0.4 seconds apart.
+     */
     @SubscribeEvent
     public void onBurstProjectileSpawn(EntityJoinWorldEvent event) {
         if (event.getWorld().isRemote || !(event.getEntity() instanceof EntityBulletBaseMK4 bullet)) return;
@@ -230,7 +264,9 @@ public final class SPECIALGameplayHandler {
         if (pending.isEmpty()) pendingProjectileBursts.remove(player);
     }
 
-    /** starts the Lag self-kill countdown and plays its inspect animation. */
+    /**
+     * Starts the Lag self-kill countdown and plays its inspect animation.
+     */
     public static boolean startLagSelfKill(EntityPlayer player, ItemStack stack) {
         if (player == null || player.world.isRemote || player.isDead || stack == null || stack.isEmpty()
                 || player.getHeldItemMainhand() != stack
@@ -244,20 +280,26 @@ public final class SPECIALGameplayHandler {
         return true;
     }
 
-    /** checks the Lag's Intelligence requirement using the same lesser-perk setting as its other actions. */
+    /**
+     * Checks the Lag's Intelligence requirement using the same lesser-perk setting as its other actions.
+     */
     private static boolean lspecial$hasLagSelfKillPerk(EntityPlayer player) {
         return LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst != null
                 && inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD) != null
                 && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5;
     }
 
-    /** identifies the Lag by registry id rather than its translated item name. */
+    /**
+     * Identifies the Lag by registry id rather than its translated item name.
+     */
     private static boolean lspecial$isLag(ItemStack stack) {
         return stack.getItem().getRegistryName() != null
                 && "hbm:gun_lag".equals(stack.getItem().getRegistryName().toString());
     }
 
-    /** plays the Lag firing cue on tick 19 and applies the self-kill on tick 20. */
+    /**
+     * Plays the Lag firing cue on tick 19 and applies the self-kill on tick 20.
+     */
     private void lspecial$tickPendingSelfKill(EntityPlayer player) {
         PendingSelfKill pending = pendingSelfKills.get(player);
         if (pending == null) return;
@@ -276,7 +318,9 @@ public final class SPECIALGameplayHandler {
         }
     }
 
-    /** plays the gun's native fire sound and consumes one loaded round for the final cue. */
+    /**
+     * Plays the gun's native fire sound and consumes one loaded round for the final cue.
+     */
     private static void lspecial$playLagFireCue(EntityPlayer player, ItemStack stack) {
         if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return;
         GunConfig config = gun.getConfig(stack, 0);
@@ -311,7 +355,9 @@ public final class SPECIALGameplayHandler {
 
     }
 
-    /** restores equipped NTM power armor after each five-minute interval when its charge is nearly depleted. */
+    /**
+     * Restores equipped NTM power armor after each five-minute interval when its charge is nearly depleted.
+     */
     private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
         if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe
                 || player.ticksExisted % 6000 != 0) return;

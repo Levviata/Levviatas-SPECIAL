@@ -19,15 +19,15 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 
-/** records the launcher's identity and replaces owner blast propulsion with the Intelligence rocket-jump perk. */
+/**
+ * Records the launcher's identity and replaces owner blast propulsion with the Intelligence rocket-jump perk.
+ */
 @Mixin(value = EntityRocket.class, remap = false)
 public abstract class MixinEntityRocket {
 
     @Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/entity/EntityLivingBase;FF)V",
             at = @At("RETURN"), remap = false)
-    private void lspecial$recordTargetedRocketLauncher(World world, EntityLivingBase shooter,
-                                                        EntityLivingBase target, float velocity,
-                                                        float inaccuracy, CallbackInfo callback) {
+    private void lspecial$recordTargetedRocketLauncher(World world, EntityLivingBase shooter, EntityLivingBase target, float velocity, float inaccuracy, CallbackInfo callback) {
         lspecial$recordLauncher(shooter);
     }
 
@@ -49,24 +49,22 @@ public abstract class MixinEntityRocket {
         String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) shooter);
         if (weapon == null) {
             LSPECIALMod.info("[RocketDebug] EntityRocket launcher-record FAILED player={} rocketId={} mainhand={} offhand={}",
-                    ((EntityPlayer) shooter).getName(), rocket.getEntityId(),
-                    ((EntityPlayer) shooter).getHeldItemMainhand().getItem().getRegistryName(),
-                    ((EntityPlayer) shooter).getHeldItemOffhand().getItem().getRegistryName());
+                    shooter.getName(), rocket.getEntityId(),
+                    shooter.getHeldItemMainhand().getItem().getRegistryName(),
+                    shooter.getHeldItemOffhand().getItem().getRegistryName());
             return;
         }
         rocket.getEntityData().setUniqueId("LSPECIALShooterUUID", shooter.getUniqueID());
         rocket.getEntityData().setString("LSPECIALShooterWeapon", weapon);
         LSPECIALMod.info("[RocketDebug] EntityRocket launcher-recorded player={} weapon={} rocketId={}",
-                ((EntityPlayer) shooter).getName(), weapon, rocket.getEntityId());
+                shooter.getName(), weapon, rocket.getEntityId());
     }
 
     @Redirect(method = "onUpdate()V",
             at = @At(value = "INVOKE",
                     target = "Lcom/hbm/explosion/ExplosionLarge;explode(Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;DDDFZZZ)V"),
             remap = false)
-    private void lspecial$replaceRocketOwnerPropulsion(World world, Entity explosionSource,
-                                                        double x, double y, double z, float size,
-                                                        boolean smoke, boolean rubble, boolean shrapnel) {
+    private void lspecial$replaceRocketOwnerPropulsion(World world, Entity explosionSource, double x, double y, double z, float size, boolean smoke, boolean rubble, boolean shrapnel) {
         EntityRocket rocket = (EntityRocket) (Object) this;
         Entity shooter = rocket.shootingEntity;
         String weapon = rocket.getEntityData().getString("LSPECIALShooterWeapon");

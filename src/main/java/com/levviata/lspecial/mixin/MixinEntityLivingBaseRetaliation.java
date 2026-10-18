@@ -18,7 +18,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Records retaliation targets and accumulates player damage for dynamic retaliation. */
+/**
+ * Records retaliation targets and accumulates player damage for dynamic retaliation.
+ */
 @Mixin(EntityLivingBase.class)
 public abstract class MixinEntityLivingBaseRetaliation {
 
@@ -31,12 +33,13 @@ public abstract class MixinEntityLivingBaseRetaliation {
     private void lspecial$recordRetaliationTarget(EntityLivingBase target, CallbackInfo ci) {
         if (!"PERSISTENT".equalsIgnoreCase(LSPECIALConfig.charismaNeutralRetaliationMode)
                 || !LSPECIALConfig.charisma || !LSPECIALConfig.charismaNeutralMobs
-                || !(target instanceof EntityPlayer) || !((Object) this instanceof EntityLiving)) {
+                || !(target instanceof EntityPlayer) || !((Object) this instanceof EntityLiving mob)) {
             return;
         }
 
-        EntityLiving mob = (EntityLiving) (Object) this;
-        if (mob.world.isRemote) return;
+        if (mob.world.isRemote) {
+            return;
+        }
 
         NBTTagCompound data = mob.getEntityData();
         data.setUniqueId(LSPECIAL_RETALIATION_TARGET, target.getUniqueID());
@@ -47,9 +50,10 @@ public abstract class MixinEntityLivingBaseRetaliation {
     @Inject(method = "attackEntityFrom(Lnet/minecraft/util/DamageSource;F)Z", at = @At("RETURN"))
     private void lspecial$trackPlayerDamage(DamageSource source, float amount,
                                             CallbackInfoReturnable<Boolean> cir) {
-        if (!((Object) this instanceof EntityLiving)) return;
+        if (!((Object) this instanceof EntityLiving mob)) {
+            return;
+        }
 
-        EntityLiving mob = (EntityLiving) (Object) this;
         if (mob.world.isRemote) return;
         if (!"DYNAMIC".equalsIgnoreCase(LSPECIALConfig.charismaNeutralRetaliationMode)
                 || !LSPECIALConfig.charisma || !LSPECIALConfig.charismaNeutralMobs) {

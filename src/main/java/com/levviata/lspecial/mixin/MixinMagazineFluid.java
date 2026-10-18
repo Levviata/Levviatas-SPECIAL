@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** adds fluid capacity to NTM's drill magazine without changing the magazine's shared base capacity. */
+/**
+ * Adds fluid capacity to NTM's drill magazine without changing the magazine's shared base capacity.
+ */
 @Mixin(value = MagazineFluid.class, remap = false)
 public abstract class MixinMagazineFluid {
 

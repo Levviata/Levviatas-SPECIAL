@@ -3,6 +3,7 @@ package com.levviata.lspecial;
 import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.input.Keyboard;
 import net.minecraft.client.Minecraft;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +12,9 @@ import java.util.Map;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
-/** small, scrollable overlay for the non-weapon SPECIAL perk descriptions. */
+/**
+ * Small, scrollable overlay for the non-weapon SPECIAL perk descriptions.
+ */
 public final class GuiSPECIALPerks extends GuiScreen {
     private static final int AMBER = 0xFFFFC45A;
     private static final int BRIGHT = 0xFFFFD477;
@@ -93,15 +96,18 @@ public final class GuiSPECIALPerks extends GuiScreen {
         }
     }
 
-    @Override public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    @Override
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
         int w = Math.max(1, Math.min(360, width - 16));
         int h = Math.max(1, Math.min(250, height - 16));
         int x = Math.max(0, (width - w) / 2), y = Math.max(0, (height - h) / 2);
         drawRect(0, 0, width, height, 0x88000000);
         drawRect(x, y, x + w, y + h, PANEL);
-        drawRect(x, y, x + w, y + 1, MUTED); drawRect(x, y + h - 1, x + w, y + h, MUTED);
-        drawRect(x, y, x + 1, y + h, MUTED); drawRect(x + w - 1, y, x + w, y + h, MUTED);
+        drawRect(x, y, x + w, y + 1, MUTED);
+        drawRect(x, y + h - 1, x + w, y + h, MUTED);
+        drawRect(x, y, x + 1, y + h, MUTED);
+        drawRect(x + w - 1, y, x + w, y + h, MUTED);
 
         int innerX = x + Math.min(12, Math.max(2, w / 12));
         int innerWidth = Math.max(1, w - (innerX - x) * 2);
@@ -132,10 +138,15 @@ public final class GuiSPECIALPerks extends GuiScreen {
         List<String> result = new ArrayList<>();
         for (String text : lines) {
             String remaining = text;
-            if (remaining.isEmpty()) { result.add(""); continue; }
+            if (remaining.isEmpty()) {
+                result.add("");
+                continue;
+            }
             while (!remaining.isEmpty()) {
                 String part = fontRenderer.trimStringToWidth(remaining, Math.max(1, maxWidth));
-                if (part.isEmpty()) break;
+                if (part.isEmpty()) {
+                    break;
+                }
                 if (part.length() < remaining.length()) {
                     int split = part.lastIndexOf(' ');
                     if (split > 0) part = part.substring(0, split);
@@ -147,16 +158,27 @@ public final class GuiSPECIALPerks extends GuiScreen {
         return result;
     }
 
-    @Override public void handleMouseInput() throws IOException {
+    @Override
+    public void handleMouseInput() throws IOException {
         super.handleMouseInput();
         int wheel = org.lwjgl.input.Mouse.getEventDWheel();
-        if (wheel != 0) scroll = clamp(scroll + (wheel < 0 ? 1 : -1));
+        if (wheel != 0) {
+            scroll = clamp(scroll + (wheel < 0 ? 1 : -1));
+        }
     }
 
-    @Override protected void keyTyped(char typedChar, int keyCode) throws IOException {
-        if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_BACK) { mc.displayGuiScreen(parent); return; }
-        if (keyCode == Keyboard.KEY_DOWN) scroll = clamp(scroll + 1);
-        if (keyCode == Keyboard.KEY_UP) scroll = clamp(scroll - 1);
+    @Override
+    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        if (keyCode == Keyboard.KEY_ESCAPE || keyCode == Keyboard.KEY_BACK) {
+            mc.displayGuiScreen(parent);
+            return;
+        }
+        if (keyCode == Keyboard.KEY_DOWN) {
+            scroll = clamp(scroll + 1);
+        }
+        if (keyCode == Keyboard.KEY_UP) {
+            scroll = clamp(scroll - 1);
+        }
         super.keyTyped(typedChar, keyCode);
     }
 
@@ -167,7 +189,11 @@ public final class GuiSPECIALPerks extends GuiScreen {
         int visible = Math.max(0, (h - 24 - 40 - 2) / 12);
         return Math.max(0, Math.min(value, Math.max(0, getWrappedLines(innerWidth).size() - visible)));
     }
-    @Override public boolean doesGuiPauseGame() { return false; }
+
+    @Override
+    public boolean doesGuiPauseGame() {
+        return false;
+    }
 
     private static int getVillagerDiscountPercent() {
         if (!LSPECIALConfig.charisma || !LSPECIALConfig.charismaVillagerDiscount) {

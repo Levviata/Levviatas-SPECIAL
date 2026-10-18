@@ -13,7 +13,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Map;
 import java.util.Random;
 
-/** tags containers populated by NTM item pools, including structure-generated chests. */
+/**
+ * Tags containers populated by NTM item pools, including structure-generated chests.
+ */
 @Mixin(value = WeightedRandomChestContentFrom1710.class, remap = false)
 public abstract class MixinNTMItemPoolChestTag {
     @Inject(
@@ -21,8 +23,7 @@ public abstract class MixinNTMItemPoolChestTag {
             at = @At("RETURN"),
             remap = false
     )
-    private static void lspecial$tagPoolContainer(Random random, WeightedRandomChestContentFrom1710[] contents,
-                                                   ICapabilityProvider provider, int rolls, CallbackInfo callback) {
+    private static void lspecial$tagPoolContainer(Random random, WeightedRandomChestContentFrom1710[] contents, ICapabilityProvider provider, int rolls, CallbackInfo callback) {
         if (!(provider instanceof TileEntity) || contents == null || ItemPool.pools == null) {
             return;
         }

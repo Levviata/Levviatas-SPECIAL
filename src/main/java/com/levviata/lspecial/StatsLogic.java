@@ -113,7 +113,9 @@ public class StatsLogic {
             } else if (heldStack.hasTagCompound() && heldStack.getTagCompound().getBoolean("LSPECIALAppliedUnbreakable")) {
                 NBTTagCompound tag = heldStack.getTagCompound();
                 tag.setBoolean("Unbreakable", tag.getBoolean("LSPECIALWasUnbreakable"));
-                tag.removeTag("LSPECIALAppliedUnbreakable"); tag.removeTag("LSPECIALWasUnbreakable"); tag.removeTag("LSPECIALWasUnbreakableRecorded");
+                tag.removeTag("LSPECIALAppliedUnbreakable");
+                tag.removeTag("LSPECIALWasUnbreakable");
+                tag.removeTag("LSPECIALWasUnbreakableRecorded");
             }
         }
 
@@ -218,7 +220,7 @@ public class StatsLogic {
 
         if (LSPECIALConfig.perception && LSPECIALConfig.perceptionArmorThresholdNegation && inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD) > LSPECIALConfig.perceptionArmorThresholdNegationLevel) {
             double addedNegation = (inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD) - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
-            bC.armorThresholdNegation = (float)Math.min(1.0, state.originalArmorThresholdNegation + addedNegation);
+            bC.armorThresholdNegation = (float) Math.min(1.0, state.originalArmorThresholdNegation + addedNegation);
         }
         if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5 && !heldStack.isEmpty()) {
             String itemID = String.valueOf(heldStack.getItem().getRegistryName());
@@ -304,7 +306,7 @@ public class StatsLogic {
                         if (ae != null) {
                             int cAmplifier = ae.getAmplifier();
                             player.removePotionEffect(a);
-                            player.addPotionEffect(new PotionEffect(b, ae.getDuration(), cAmplifier + (int)LSPECIALConfig.regenAmplifierBonus));
+                            player.addPotionEffect(new PotionEffect(b, ae.getDuration(), cAmplifier + (int) LSPECIALConfig.regenAmplifierBonus));
                         }
                     }
                 } else if (!player.isPotionActive(b)) {
@@ -377,7 +379,9 @@ public class StatsLogic {
     }
 
     private static double expression(String formula, String key, double value, String key2, double value2) {
-        Map<String, Double> vars = new HashMap<>(); vars.put(key, value); if (key2 != null) vars.put(key2, value2);
+        Map<String, Double> vars = new HashMap<>();
+        vars.put(key, value);
+        if (key2 != null) vars.put(key2, value2);
         return LSPECIALExpression.eval(formula, vars, value);
     }
 
@@ -413,39 +417,19 @@ public class StatsLogic {
         private ItemStack loggedSednaGun = ItemStack.EMPTY;
     }
 
-    private static final class GunState {
-        private final int index;
-        private final Receiver receiver;
-        private final BulletConfig bulletConfig;
-        private final float damage;
-        private final boolean refireOnHold;
-        private final boolean refireAfterDry;
-        private final boolean doesPenetrate;
-        private final float headshotMultiplier;
-        private final int rounds;
-        private final IMagazine magazine;
-        private final float wear;
-        private final float armorPiercing;
-        private final float armorThresholdNegation;
-
-        private GunState(int index, Receiver receiver, BulletConfig bulletConfig, float damage,
-                         boolean refireOnHold, boolean refireAfterDry, boolean doesPenetrate,
-                         float headshotMultiplier, int rounds, IMagazine magazine, float wear,
-                         float armorPiercing, float armorThresholdNegation) {
-            this.index = index;
-            this.receiver = receiver;
-            this.bulletConfig = bulletConfig;
-            this.damage = damage;
-            this.refireOnHold = refireOnHold;
-            this.refireAfterDry = refireAfterDry;
-            this.doesPenetrate = doesPenetrate;
-            this.headshotMultiplier = headshotMultiplier;
-            this.rounds = rounds;
-            this.magazine = magazine;
-            this.wear = wear;
-            this.armorPiercing = armorPiercing;
-            this.armorThresholdNegation = armorThresholdNegation;
-        }
+    private record GunState(int index,
+                            Receiver receiver,
+                            BulletConfig bulletConfig,
+                            float damage,
+                            boolean refireOnHold,
+                            boolean refireAfterDry,
+                            boolean doesPenetrate,
+                            float headshotMultiplier,
+                            int rounds,
+                            IMagazine magazine,
+                            float wear,
+                            float armorPiercing,
+                            float armorThresholdNegation) {
     }
 
     @SubscribeEvent
@@ -496,12 +480,14 @@ public class StatsLogic {
         updatePlayerAttributes(player, heldStack, state);
     }
 
-    /** Update a player's:<br>
+    /**
+     * Update a player's:<br>
      * - Strength (held item's damage),<br>
      * - Endurance (max health),<br>
      * - Charisma (armor and armor toughness),<br>
      * - and Agility (speed and fly speed)<br>
-     * if it has changed compared to last player tick.*/
+     * if it has changed compared to last player tick.
+     */
     private void updatePlayerAttributes(EntityPlayer player, ItemStack heldStack, PlayerState state) {
         // strength
         IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);

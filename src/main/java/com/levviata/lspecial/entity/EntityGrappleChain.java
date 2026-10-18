@@ -8,7 +8,9 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.world.World;
 
-/** Server-spawned grapple-chain visual; synchronized endpoint IDs make it visible to all tracking clients. */
+/**
+ * Server-spawned grapple-chain visual; synchronized endpoint IDs make it visible to all tracking clients.
+ */
 public class EntityGrappleChain extends Entity {
     private static final DataParameter<Integer> OWNER_ID =
             EntityDataManager.createKey(EntityGrappleChain.class, DataSerializers.VARINT);
@@ -30,8 +32,13 @@ public class EntityGrappleChain extends Entity {
         setPosition(owner.posX, owner.posY + owner.getEyeHeight(), owner.posZ);
     }
 
-    public int getOwnerId() { return dataManager.get(OWNER_ID); }
-    public int getTargetId() { return dataManager.get(TARGET_ID); }
+    public int getOwnerId() {
+        return dataManager.get(OWNER_ID);
+    }
+
+    public int getTargetId() {
+        return dataManager.get(TARGET_ID);
+    }
 
     @Override
     protected void entityInit() {
@@ -56,10 +63,14 @@ public class EntityGrappleChain extends Entity {
     }
 
     @Override
-    public boolean canBeCollidedWith() { return false; }
+    public boolean canBeCollidedWith() {
+        return false;
+    }
 
     @Override
-    public boolean canBePushed() { return false; }
+    public boolean canBePushed() {
+        return false;
+    }
 
     @Override
     protected void readEntityFromNBT(NBTTagCompound compound) {

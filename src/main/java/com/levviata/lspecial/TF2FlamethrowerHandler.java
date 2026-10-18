@@ -22,17 +22,26 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 // todo
-/** TF2-style secondary airblast for NTM's standard Sedna flamethrower. */
+
+/**
+ * TF2-style secondary airblast for NTM's standard Sedna flamethrower.
+ */
 public final class TF2FlamethrowerHandler {
     private static final int AIRBLAST_AMMO_COST = 20;
     private static final double AIRBLAST_RANGE = 5.0D;
     private static final double AIRBLAST_CONE_DOT = 0.45D;
 
-    /** The only knob to turn for flame speed - everything else below derives from it, see {@link #ticksToReachRange}. */
+    /**
+     * The only knob to turn for flame speed - everything else below derives from it, see {@link #ticksToReachRange}.
+     */
     private static final float LSPECIAL_FLAME_VELOCITY = 0.8F;
-    /** Hard flame range in blocks - must match the "8.0D" literals in MixinTF2FlameProjectile. */
+    /**
+     * Hard flame range in blocks - must match the "8.0D" literals in MixinTF2FlameProjectile.
+     */
     public static final double LSPECIAL_FLAME_RANGE_BLOCKS = 8.0D;
-    /** Extra ticks of headroom tacked onto the computed range-time before it's used as the expires floor. */
+    /**
+     * Extra ticks of headroom tacked onto the computed range-time before it's used as the expires floor.
+     */
     private static final int LSPECIAL_FLAME_EXPIRES_MARGIN = 20;
 
     /**
@@ -87,7 +96,9 @@ public final class TF2FlamethrowerHandler {
         config.setLife(Math.max(config.expires, neededTicks));
     }
 
-    /** Called on the server from the Sedna secondary-key hook. */
+    /**
+     * Called on the server from the Sedna secondary-key hook.
+     */
     public static boolean airblast(EntityPlayer player, ItemStack weapon) {
         if (player == null || weapon == null || weapon.isEmpty() || player.world.isRemote || player.isDead) {
             return false;
@@ -126,8 +137,7 @@ public final class TF2FlamethrowerHandler {
                 continue;
             }
 
-            if (target instanceof EntityLivingBase) {
-                EntityLivingBase living = (EntityLivingBase) target;
+            if (target instanceof EntityLivingBase living) {
                 boolean wasBurning = living.isBurning();
                 living.extinguish();
                 HbmLivingCapability.IEntityHbmProps fireProps = HbmLivingProps.getData(living);
@@ -167,8 +177,7 @@ public final class TF2FlamethrowerHandler {
         player.world.playSound(null, player.getPosition(), net.minecraft.init.SoundEvents.ENTITY_BLAZE_SHOOT,
                 net.minecraft.util.SoundCategory.PLAYERS, 0.75F, 1.35F);
         // send a visible expanding blast plane to tracking clients; use WorldServer's packet path
-        if (player.world instanceof net.minecraft.world.WorldServer) {
-            net.minecraft.world.WorldServer serverWorld = (net.minecraft.world.WorldServer) player.world;
+        if (player.world instanceof net.minecraft.world.WorldServer serverWorld) {
             Vec3d right = look.crossProduct(new Vec3d(0.0D, 1.0D, 0.0D));
             if (right.lengthSquared() < 0.0001D) right = new Vec3d(1.0D, 0.0D, 0.0D);
             right = right.normalize();
@@ -233,8 +242,7 @@ public final class TF2FlamethrowerHandler {
     private static boolean consumeAmmo(ItemStack stack, EntityPlayer player, int amount) {
         if (amount <= 0) return true;
         if (player == null || stack == null || stack.isEmpty()
-                || !(stack.getItem() instanceof ItemGunBaseNT)) return false;
-        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+                || !(stack.getItem() instanceof ItemGunBaseNT gun)) return false;
         for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
             GunConfig config;
             try {
@@ -265,7 +273,7 @@ public final class TF2FlamethrowerHandler {
     @SubscribeEvent
     public void tickPressureLocks(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || event.player.world.isRemote) return;
-        EntityPlayer player = (EntityPlayer) event.player;
+        EntityPlayer player = event.player;
         for (ItemStack stack : player.inventory.mainInventory) lspecial$tickPressure(stack);
         for (ItemStack stack : player.inventory.armorInventory) lspecial$tickPressure(stack);
         lspecial$tickPressure(player.getHeldItemOffhand());

@@ -21,7 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** server-authoritative grapple movement shared by both grapple directions. */
+/**
+ * Server-authoritative grapple movement shared by both grapple directions.
+ */
 public final class GrappleController {
     private static final Map<UUID, State> ACTIVE = new HashMap<>();
     private static final Map<UUID, Long> COOLDOWN_UNTIL = new HashMap<>();
@@ -40,6 +42,7 @@ public final class GrappleController {
             this.groundGraceUntil = -1L;
         }
     }
+
     private static final class State {
         final int targetId;
         final Entity targetEntity;
@@ -48,6 +51,7 @@ public final class GrappleController {
         EntityGrappleChain chain;
         long targetDeathGraceUntil;
         boolean killRewardGranted;
+
         State(Entity target, boolean pullTarget, double speed) {
             this.targetId = target.getEntityId();
             this.targetEntity = target;
@@ -56,14 +60,28 @@ public final class GrappleController {
         }
     }
 
-    public GrappleController() { }
+    public GrappleController() {
+    }
 
-    public static boolean isActive(EntityPlayerMP player) { return ACTIVE.containsKey(player.getUniqueID()); }
-    public static boolean isOnCooldown(EntityPlayerMP player) { Long until = COOLDOWN_UNTIL.get(player.getUniqueID()); return until != null && player.world.getTotalWorldTime() < until; }
-    public static boolean isPullingTarget(EntityPlayerMP player) { State state = ACTIVE.get(player.getUniqueID()); return state != null && state.pullTarget; }
+    public static boolean isActive(EntityPlayerMP player) {
+        return ACTIVE.containsKey(player.getUniqueID());
+    }
+
+    public static boolean isOnCooldown(EntityPlayerMP player) {
+        Long until = COOLDOWN_UNTIL.get(player.getUniqueID());
+        return until != null && player.world.getTotalWorldTime() < until;
+    }
+
+    public static boolean isPullingTarget(EntityPlayerMP player) {
+        State state = ACTIVE.get(player.getUniqueID());
+        return state != null && state.pullTarget;
+    }
 
     public static boolean start(EntityPlayerMP player, Entity target, boolean pullTarget, double speed) {
-        if (target == null || target.isDead || target.world != player.world || target == player || isActive(player) || isOnCooldown(player)) return false;
+        if (target == null || target.isDead || target.world != player.world || target == player || isActive(player) || isOnCooldown(player)) {
+            return false;
+        }
+
         State state = new State(target, pullTarget, speed);
         ACTIVE.put(player.getUniqueID(), state);
         COOLDOWN_UNTIL.put(player.getUniqueID(), player.world.getTotalWorldTime() + 60L);
@@ -91,8 +109,9 @@ public final class GrappleController {
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.player.world.isRemote || !(event.player instanceof EntityPlayerMP)) return;
-        EntityPlayerMP player = (EntityPlayerMP) event.player;
+        if (event.phase != TickEvent.Phase.END || event.player.world.isRemote || !(event.player instanceof EntityPlayerMP player)) {
+            return;
+        }
         if (player.getEntityData().getBoolean("LSPECIALGrappleFallSafe")) {
             player.fallDistance = 0.0F;
             if (player.onGround) player.getEntityData().setBoolean("LSPECIALGrappleFallSafe", false);
@@ -136,7 +155,10 @@ public final class GrappleController {
         Vec3d delta = to.subtract(from);
         double distance = delta.length();
         if (distance < 1.25D) {
-            if (state.pullTarget) { target.motionX = target.motionY = target.motionZ = 0; target.velocityChanged = true; }
+            if (state.pullTarget) {
+                target.motionX = target.motionY = target.motionZ = 0;
+                target.velocityChanged = true;
+            }
             stop(player);
             return;
         }
@@ -148,8 +170,7 @@ public final class GrappleController {
         mover.motionZ += (velocity.z - mover.motionZ) * acceleration;
         mover.fallDistance = 0;
         mover.velocityChanged = true;
-        if (mover instanceof EntityPlayerMP) {
-            EntityPlayerMP movingPlayer = (EntityPlayerMP) mover;
+        if (mover instanceof EntityPlayerMP movingPlayer) {
             float yaw = movingPlayer.rotationYaw * 0.017453292F;
             double forwardX = -Math.sin(yaw);
             double forwardZ = Math.cos(yaw);
@@ -199,12 +220,13 @@ public final class GrappleController {
         lspecial$refillDoubleBarrel(player);
     }
 
-    /** refills the held double-barrel magazine after killing an entity while pulling the player toward it. */
+    /**
+     * Refills the held double-barrel magazine after killing an entity while pulling the player toward it.
+     */
     private static void lspecial$refillDoubleBarrel(EntityPlayerMP player) {
         ItemStack stack = player.getHeldItemMainhand();
-        if (stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT)
+        if (stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)
                 || !"hbm:gun_double_barrel".equals(stack.getItem().getRegistryName().toString())) return;
-        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
         for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
             GunConfig config = gun.getConfig(stack, configIndex);
             if (config == null) continue;
@@ -223,8 +245,7 @@ public final class GrappleController {
 
     @SubscribeEvent
     public void onLivingFall(LivingFallEvent event) {
-        if (event.getEntityLiving() instanceof EntityPlayerMP) {
-            EntityPlayerMP player = (EntityPlayerMP) event.getEntityLiving();
+        if (event.getEntityLiving() instanceof EntityPlayerMP player) {
             if (player.getEntityData().getBoolean("LSPECIALGrappleFallSafe")) {
                 event.setCanceled(true);
                 player.fallDistance = 0.0F;

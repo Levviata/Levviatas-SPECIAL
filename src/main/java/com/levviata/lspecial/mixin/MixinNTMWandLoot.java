@@ -16,14 +16,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** captures the original NTM pool when a wand-loot block replaces itself with its target container. */
+/**
+ * Captures the original NTM pool when a wand-loot block replaces itself with its target container.
+ */
 @Mixin(targets = "com.hbm.blocks.generic.BlockWandLoot$TileEntityWandLoot", remap = false)
 public abstract class MixinNTMWandLoot {
-    @Shadow(remap = false) private String poolName;
-    @Shadow(remap = false) private int minItems;
-    @Shadow(remap = false) private int maxItems;
-    @Shadow(remap = false) private Block replaceBlock;
-    @Shadow(remap = false) private boolean triggerReplace;
+    @Shadow(remap = false)
+    private String poolName;
+    @Shadow(remap = false)
+    private int minItems;
+    @Shadow(remap = false)
+    private int maxItems;
+    @Shadow(remap = false)
+    private Block replaceBlock;
+    @Shadow(remap = false)
+    private boolean triggerReplace;
 
     @Inject(method = "replace()V", at = @At("RETURN"), remap = false)
     private void lspecial$tagReplacedContainer(CallbackInfo callback) {

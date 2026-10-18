@@ -21,9 +21,16 @@ public final class GrappleClientHandler {
     private static boolean fangClinkPending;
     private static GrappleCycleSound cycleSound;
 
-    public GrappleClientHandler() { }
-    public static int getCooldownTicks() { return cooldownTicks; }
-    public static int getFangRefreshTicks() { return fangRefreshTicks; }
+    public GrappleClientHandler() {
+    }
+
+    public static int getCooldownTicks() {
+        return cooldownTicks;
+    }
+
+    public static int getFangRefreshTicks() {
+        return fangRefreshTicks;
+    }
 
     public static void resetCooldown() {
         cooldownTicks = 0;
@@ -76,7 +83,10 @@ public final class GrappleClientHandler {
             jumpWasDown = false;
             return;
         }
-        if (targetId < 0) { jumpWasDown = false; return; }
+        if (targetId < 0) {
+            jumpWasDown = false;
+            return;
+        }
         boolean jumpDown = mc.gameSettings.keyBindJump.isKeyDown();
         if (jumpDown && !jumpWasDown) LSPECIALMod.NETWORK.sendToServer(new GrappleCameraPacket(-2, false));
         jumpWasDown = jumpDown;
@@ -87,8 +97,8 @@ public final class GrappleClientHandler {
         double dy = target.posY + target.height * 0.65D - (mc.player.posY + mc.player.getEyeHeight());
         double dz = target.posZ - mc.player.posZ;
         double horizontal = Math.sqrt(dx * dx + dz * dz);
-        float yaw = (float)(Math.toDegrees(Math.atan2(dz, dx)) - 90.0D);
-        float pitch = (float)-Math.toDegrees(Math.atan2(dy, horizontal));
+        float yaw = (float) (Math.toDegrees(Math.atan2(dz, dx)) - 90.0D);
+        float pitch = (float) -Math.toDegrees(Math.atan2(dy, horizontal));
         mc.player.rotationYaw += MathHelper.wrapDegrees(yaw - mc.player.rotationYaw) * 0.22F;
         mc.player.rotationPitch += MathHelper.wrapDegrees(pitch - mc.player.rotationPitch) * 0.22F;
         mc.player.rotationPitch = MathHelper.clamp(mc.player.rotationPitch, -89.0F, 89.0F);
@@ -142,5 +152,5 @@ public final class GrappleClientHandler {
         public void setDonePlaying(boolean b) {
             this.donePlaying = b;
         }
-     }
+    }
 }

@@ -19,7 +19,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Applies Charisma discounts to a per-player copy of a villager's offers. */
+/**
+ * Applies Charisma discounts to a per-player copy of a villager's offers.
+ */
 @Mixin(EntityVillager.class)
 public abstract class MixinEntityVillager {
 
@@ -50,7 +52,9 @@ public abstract class MixinEntityVillager {
         callback.setReturnValue(playerRecipes);
     }
 
-    /** Keeps the villager's persistent offer-use counters in sync with the discounted copies. */
+    /**
+     * Keeps the villager's persistent offer-use counters in sync with the discounted copies.
+     */
     @Inject(method = "useRecipe(Lnet/minecraft/village/MerchantRecipe;)V", at = @At("HEAD"))
     private void lspecial$syncPlayerTradeUsage(MerchantRecipe usedRecipe, CallbackInfo callback) {
         if (usedRecipe == null || buyingList == null || buyingList.isEmpty()) return;

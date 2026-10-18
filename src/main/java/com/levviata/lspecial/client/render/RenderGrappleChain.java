@@ -16,10 +16,13 @@ import org.lwjgl.opengl.GL11;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Renders the supplied OBJ chain links with a movement-driven, damped curve. */
+/**
+ * Renders the supplied OBJ chain links with a movement-driven, damped curve.
+ */
 public class RenderGrappleChain extends Render<EntityGrappleChain> {
     private static final ResourceLocation TEXTURE = new ResourceLocation("hbm", "textures/models/misc/universaldark.png");
     private static final ResourceLocation MODEL = new ResourceLocation("lspecial", "models/n45_chain.obj"); // same as in hbm for now
@@ -28,20 +31,23 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
     private static final List<int[]> FACES = new ArrayList<>();
     private static boolean modelLoaded;
     private static final java.util.Map<Integer, BendState> BEND_STATE = new java.util.HashMap<>();
+
     private static final class BendState {
         double bend;
         double bendVelocity;
         double previousSideSpeed;
     }
 
-    public RenderGrappleChain(RenderManager manager) { super(manager); }
+    public RenderGrappleChain(RenderManager manager) {
+        super(manager);
+    }
 
     private static void loadModel() {
         if (modelLoaded) {
             return;
         }
         modelLoaded = true;
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(MODEL).getInputStream(), "UTF-8"))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(MODEL).getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
@@ -59,7 +65,9 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
                 }
             }
         } catch (Exception ignored) {
-            VERTICES.clear(); UVS.clear(); FACES.clear();
+            VERTICES.clear();
+            UVS.clear();
+            FACES.clear();
         }
     }
 
@@ -111,7 +119,7 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
         physics.bend += physics.bendVelocity;
         physics.bend = Math.max(-1.25D, Math.min(1.25D, physics.bend));
         double bendState = physics.bend;
-        int links = Math.max(1, Math.min(100, (int)Math.ceil(length / 0.38D)));
+        int links = Math.max(1, Math.min(100, (int) Math.ceil(length / 0.38D)));
 
         bindTexture(TEXTURE);
         GlStateManager.pushMatrix();
@@ -154,7 +162,8 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
         double angle = Math.toDegrees(Math.acos(dot));
         GlStateManager.pushMatrix();
         GlStateManager.translate(point.x - renderManager.viewerPosX, point.y - renderManager.viewerPosY, point.z - renderManager.viewerPosZ);
-        if (rotationAxis.lengthSquared() > 1.0E-6D) GlStateManager.rotate((float)angle, (float)rotationAxis.x, (float)rotationAxis.y, (float)rotationAxis.z);
+        if (rotationAxis.lengthSquared() > 1.0E-6D)
+            GlStateManager.rotate((float) angle, (float) rotationAxis.x, (float) rotationAxis.y, (float) rotationAxis.z);
         GlStateManager.translate(0.0D, -0.43D, 0.0D);
         GlStateManager.scale(0.42F, 0.42F, 0.42F);
         Tessellator tessellator = Tessellator.getInstance();
@@ -165,7 +174,10 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
                 Vec3d v = VERTICES.get(face[j * 2]);
                 float u = 0.0F, vv = 0.0F;
                 int uv = face[j * 2 + 1];
-                if (uv >= 0 && uv < UVS.size()) { u = UVS.get(uv)[0]; vv = UVS.get(uv)[1]; }
+                if (uv >= 0 && uv < UVS.size()) {
+                    u = UVS.get(uv)[0];
+                    vv = UVS.get(uv)[1];
+                }
                 buffer.pos(v.x, v.y, v.z).tex(u, vv).endVertex();
             }
         }
@@ -180,5 +192,7 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
     }
 
     @Override
-    protected ResourceLocation getEntityTexture(EntityGrappleChain entity) { return TEXTURE; }
+    protected ResourceLocation getEntityTexture(EntityGrappleChain entity) {
+        return TEXTURE;
+    }
 }

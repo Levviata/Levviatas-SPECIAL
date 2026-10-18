@@ -27,12 +27,15 @@ public abstract class MixinEntityLivingCharismaNeutrality {
     @Inject(method = "setAttackTarget(Lnet/minecraft/entity/EntityLivingBase;)V",
             at = @At("HEAD"), cancellable = true)
     private void lspecial$applyCharismaNeutrality(EntityLivingBase target, CallbackInfo ci) {
-        if (!(target instanceof EntityPlayer)) return;
+        if (!(target instanceof EntityPlayer player)) {
+            return;
+        }
 
         EntityLiving mob = (EntityLiving) (Object) this;
-        if (mob.world.isRemote) return;
+        if (mob.world.isRemote) {
+            return;
+        }
 
-        EntityPlayer player = (EntityPlayer) target;
         ResourceLocation registryKey = EntityList.getKey(mob);
         String entityId = registryKey == null ? "<unregistered>" : registryKey.toString();
         String mode = LSPECIALConfig.charismaNeutralRetaliationMode == null

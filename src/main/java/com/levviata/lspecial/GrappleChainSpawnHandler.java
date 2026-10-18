@@ -36,11 +36,10 @@ public final class GrappleChainSpawnHandler {
                 EntityGrappleChain chain = iterator.next();
                 iterator.remove();
 
-                if (chain.isDead || !(chain.world instanceof WorldServer)) {
+                if (chain.isDead || !(chain.world instanceof WorldServer world)) {
                     continue;
                 }
 
-                WorldServer world = (WorldServer) chain.world;
                 if (!world.isBlockLoaded(chain.getPosition())) {
                     continue;
                 }

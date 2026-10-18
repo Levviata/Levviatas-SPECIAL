@@ -20,14 +20,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** records beam-projectile ownership and strengthens the Tau's charged secondary shot. */
+/**
+ * Records beam-projectile ownership and strengthens the Tau's charged secondary shot.
+ */
 @Mixin(value = EntityBulletBeamBase.class, remap = false)
 public abstract class MixinBeamProjectile {
-    @Shadow public EntityLivingBase thrower;
-    @Shadow public BulletConfig config;
-    @Shadow public float damage;
-    @Unique private float lspecial$damageBeforeImpact;
-    @Unique private boolean lspecial$boostedImpact;
+    @Shadow
+    public EntityLivingBase thrower;
+    @Shadow
+    public BulletConfig config;
+    @Shadow
+    public float damage;
+    @Unique
+    private float lspecial$damageBeforeImpact;
+    @Unique
+    private boolean lspecial$boostedImpact;
 
     @Inject(method = "<init>(Lnet/minecraft/entity/EntityLivingBase;Lcom/hbm/items/weapon/sedna/BulletConfig;F)V", at = @At("RETURN"), remap = false)
     private void lspecial$recordBeamOwner(EntityLivingBase entity, BulletConfig config, float baseDamage, CallbackInfo callback) {
@@ -45,7 +52,7 @@ public abstract class MixinBeamProjectile {
         NBTTagCompound data = ((EntityBulletBeamBase) (Object) this).getEntityData();
         data.setUniqueId("LSPECIALShooterUUID", shooter.getUniqueID());
         if (shooter instanceof EntityPlayer) {
-            ItemStack held = ((EntityPlayer) shooter).getHeldItemMainhand();
+            ItemStack held = shooter.getHeldItemMainhand();
             if (!held.isEmpty() && held.getItem().getRegistryName() != null) {
                 data.setString("LSPECIALShooterWeapon", held.getItem().getRegistryName().toString());
             }
@@ -67,7 +74,7 @@ public abstract class MixinBeamProjectile {
         NBTTagCompound data = ((EntityBulletBeamBase) (Object) this).getEntityData();
         String weaponId = data.getString("LSPECIALShooterWeapon");
         if (weaponId.isEmpty()) {
-            ItemStack held = ((EntityPlayer) thrower).getHeldItemMainhand();
+            ItemStack held = thrower.getHeldItemMainhand();
             weaponId = held.isEmpty() || held.getItem().getRegistryName() == null
                     ? "" : held.getItem().getRegistryName().toString();
         }

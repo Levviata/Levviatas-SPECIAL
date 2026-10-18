@@ -84,7 +84,7 @@ public class LSPECIALMod {
                 LSPECIALConfig.rocketJumpLesserPerk, LSPECIALConfig.intelligence,
                 LSPECIALConfig.rocketJumpLesserPerkLevel);
         EntityRegistry.registerModEntity(new ResourceLocation(Tags.MOD_ID, "grapple_chain"),
-                EntityGrappleChain.class, "grapple_chain", 1, this,  64, 1, true);
+                EntityGrappleChain.class, "grapple_chain", 1, this, 64, 1, true);
         MinecraftForge.EVENT_BUS.register(new GrappleChainSpawnHandler());
         MinecraftForge.EVENT_BUS.register(new BobbleheadUse());
         MinecraftForge.EVENT_BUS.register(new StatsLogic());

@@ -16,7 +16,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** Shared TF2-style blast-jump behavior for NTM rocket projectile implementations. */
+/**
+ * Shared TF2-style blast-jump behavior for NTM rocket projectile implementations.
+ */
 public final class RocketJumpHandler {
     private static final String ROCKET_JUMPING = "LSPECIALRocketJumping";
     private static final String REWARD_PENDING = "LSPECIALRocketJumpRewardPending";
@@ -25,10 +27,13 @@ public final class RocketJumpHandler {
     private RocketJumpHandler() {
     }
 
-    /** checks the Intelligence 5 lesser-perk gate for the supplied player's own scoreboard. */
+    /**
+     * Checks the Intelligence 5 lesser-perk gate for the supplied player's own scoreboard.
+     */
     public static boolean isPerkActive(EntityPlayer player) {
         if (player == null || SPECIALScoreboard.inst == null
-                || SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null) return false;
+                || SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null)
+            return false;
         int intelligence = SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD);
         boolean active = LSPECIALConfig.intelligence && LSPECIALConfig.rocketJumpLesserPerk
                 && intelligence >= LSPECIALConfig.rocketJumpLesserPerkLevel;
@@ -38,7 +43,9 @@ public final class RocketJumpHandler {
         return active;
     }
 
-    /** replaces the native owner knockback with a radial impulse biased upward, preserving existing momentum. */
+    /**
+     * Replaces the native owner knockback with a radial impulse biased upward, preserving existing momentum.
+     */
     public static void applyBlastJump(EntityPlayer player, double explosionX, double explosionY, double explosionZ,
                                       double previousMotionX, double previousMotionY, double previousMotionZ,
                                       double fallbackMotionX, double fallbackMotionY, double fallbackMotionZ,
@@ -123,12 +130,16 @@ public final class RocketJumpHandler {
                 player.motionX, player.motionY, player.motionZ);
     }
 
-    /** clears the armed reward when the next rocket attempt fails to launch the player. */
+    /**
+     * Clears the armed reward when the next rocket attempt fails to launch the player.
+     */
     private static void clearPendingRocketReward(EntityPlayer player) {
         player.getEntityData().removeTag(REWARD_PENDING);
     }
 
-    /** consumes the previous jump's one-shot reward on this jump, then arms the next reward. */
+    /**
+     * Consumes the previous jump's one-shot reward on this jump, then arms the next reward.
+     */
     private static void refundRocketOnSuccessfulJump(EntityPlayer player) {
         NBTTagCompound data = player.getEntityData();
         int lastTick = LAST_REWARD_TICK.getOrDefault(player.getUniqueID(), Integer.MIN_VALUE / 2);
@@ -168,8 +179,11 @@ public final class RocketJumpHandler {
         } else if (launcher.getItem() instanceof ItemGunBaseNT gun) {
             for (int configIndex = 0; configIndex < gun.getConfigCount() && !refunded; configIndex++) {
                 GunConfig config;
-                try { config = gun.getConfig(launcher, configIndex); }
-                catch (RuntimeException ignored) { continue; }
+                try {
+                    config = gun.getConfig(launcher, configIndex);
+                } catch (RuntimeException ignored) {
+                    continue;
+                }
                 if (config == null) continue;
                 Receiver[] receivers = config.getReceivers(launcher);
                 if (receivers == null) continue;

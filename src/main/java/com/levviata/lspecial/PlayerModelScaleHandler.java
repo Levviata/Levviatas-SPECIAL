@@ -8,9 +8,12 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
-/** client-only visual scaling. It never changes the entity's bounding box or attributes. */
+/**
+ * Client-only visual scaling. It never changes the entity's bounding box or attributes.
+ */
 public final class PlayerModelScaleHandler {
     private boolean lspecial$matrixPushed;
+
     @SubscribeEvent
     public void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
         lspecial$matrixPushed = false;
@@ -37,7 +40,9 @@ public final class PlayerModelScaleHandler {
         }
     }
 
-    /** uses the client cache for the local player and the player's scoreboard for everyone else. */
+    /**
+     * Uses the client cache for the local player and the player's scoreboard for everyone else.
+     */
     private static int lspecial$getEndurance(EntityPlayer player) {
         if (player == Minecraft.getMinecraft().player && inst != null) return inst.getClientEndurance();
         return inst == null ? 0 : inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);

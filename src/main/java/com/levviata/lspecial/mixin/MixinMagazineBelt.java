@@ -11,16 +11,22 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
 import java.util.Arrays;
 import java.util.List;
 
-/** preserves the Minigun's selected capacitor mode by registering its supported energy configs. */
+/**
+ * Preserves the Minigun's selected capacitor mode by registering its supported energy configs.
+ */
 @Mixin(value = MagazineBelt.class, remap = false)
 public abstract class MixinMagazineBelt {
 
-    @Shadow public List<BulletConfig> acceptedBullets;
+    @Shadow
+    public List<BulletConfig> acceptedBullets;
 
-    /** resolves the saved capacitor mode before NTM falls back to its first accepted type. */
+    /**
+     * Resolves the saved capacitor mode before NTM falls back to its first accepted type.
+     */
     @Inject(method = "getType(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lcom/hbm/items/weapon/sedna/BulletConfig;", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$preserveSelectedCapacitor(ItemStack stack, IInventory inventory, CallbackInfoReturnable<BulletConfig> callback) {
         if (stack == null || stack.isEmpty() || !stack.hasTagCompound() || stack.getItem().getRegistryName() == null || acceptedBullets == null) {
@@ -43,13 +49,18 @@ public abstract class MixinMagazineBelt {
         }
     }
 
-    /** registers supported capacitor configurations before NTM resolves the stored magazine type. */
+    /**
+     * Registers supported capacitor configurations before NTM resolves the stored magazine type.
+     */
     @Inject(method = "getType(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lcom/hbm/items/weapon/sedna/BulletConfig;", at = @At("HEAD"), remap = false)
-    private void lspecial$registerMinigunCapacitors(ItemStack stack, IInventory inventory,
-            CallbackInfoReturnable<BulletConfig> callback) {
-        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null || acceptedBullets == null) return;
+    private void lspecial$registerMinigunCapacitors(ItemStack stack, IInventory inventory, CallbackInfoReturnable<BulletConfig> callback) {
+        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null || acceptedBullets == null) {
+            return;
+        }
         String itemId = stack.getItem().getRegistryName().toString();
-        if (!"hbm:gun_minigun".equals(itemId) && !"hbm:gun_minigun_dual".equals(itemId)) return;
+        if (!"hbm:gun_minigun".equals(itemId) && !"hbm:gun_minigun_dual".equals(itemId)) {
+            return;
+        }
         for (BulletConfig config : Arrays.asList(XFactoryEnergy.energy_las,
                 XFactoryEnergy.energy_las_overcharge, XFactoryEnergy.energy_las_ir,
                 XFactoryEnergy.energy_tesla, XFactoryEnergy.energy_tesla_overcharge,

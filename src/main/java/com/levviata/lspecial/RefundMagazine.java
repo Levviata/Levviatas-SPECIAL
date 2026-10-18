@@ -104,7 +104,9 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
         }
     }
 
-    /** counts only the selected ammunition, including stacks stored inside NTM ammo bags. */
+    /**
+     * Counts only the selected ammunition, including stacks stored inside NTM ammo bags.
+     */
     private static int countAmmo(IInventory inventory, BulletConfig config) {
         if (inventory == null || config == null || config.ammo == null) return 0;
         int count = 0;

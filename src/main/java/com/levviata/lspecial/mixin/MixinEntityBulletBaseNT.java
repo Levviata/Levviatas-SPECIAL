@@ -14,17 +14,26 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Applies the rocket-jump perk to NTM's native bullet-based rocket projectiles. */
+/**
+ * Applies the rocket-jump perk to NTM's native bullet-based rocket projectiles.
+ */
 @Mixin(value = EntityBulletBaseNT.class, remap = false)
 public abstract class MixinEntityBulletBaseNT {
 
-    @Unique private double lspecial$motionX;
-    @Unique private double lspecial$motionY;
-    @Unique private double lspecial$motionZ;
-    @Unique private double lspecial$impactX;
-    @Unique private double lspecial$impactY;
-    @Unique private double lspecial$impactZ;
-    @Unique private boolean lspecial$jumpCandidate;
+    @Unique
+    private double lspecial$motionX;
+    @Unique
+    private double lspecial$motionY;
+    @Unique
+    private double lspecial$motionZ;
+    @Unique
+    private double lspecial$impactX;
+    @Unique
+    private double lspecial$impactY;
+    @Unique
+    private double lspecial$impactZ;
+    @Unique
+    private boolean lspecial$jumpCandidate;
 
     @Inject(method = "<init>", at = @At("RETURN"), remap = false)
     private void lspecial$recordRocketLauncher(CallbackInfo ci) {
@@ -85,8 +94,9 @@ public abstract class MixinEntityBulletBaseNT {
 
         EntityBulletBaseNT bullet = (EntityBulletBaseNT) (Object) this;
         Entity owner = bullet.getThrower();
-        if (!(owner instanceof EntityPlayer)) return;
-        EntityPlayer player = (EntityPlayer) owner;
+        if (!(owner instanceof EntityPlayer player)) {
+            return;
+        }
         boolean active = RocketJumpHandler.isPerkActive(player);
         LSPECIALMod.info("[RocketDebug] BulletBaseNT impact RETURN player={} projectileId={} perkActive={} owner={} motionBefore=({}, {}, {})",
                 player.getName(), bullet.getEntityId(), active, player.getUniqueID(),

@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Comparator;
 
-/** AMAT-only Quackos homing for the railgun projectile. */
+/**
+ * AMAT railgun projectile
+ */
 @Mixin(value = EntityRailgunBlast.class, remap = false)
 public abstract class MixinEntityRailgunBlast {
 

@@ -151,7 +151,6 @@ public final class LSPECIALConfig {
     public static double doubleBarrelGrappleAirStrafe = 0.16;
 
 
-
     public static boolean tauSecondaryDamageBonus = true;
     public static double tauSecondaryDamageMultiplier = 6.0;
 
@@ -274,7 +273,7 @@ public final class LSPECIALConfig {
         enduranceBonus = b(STATS, "enduranceBonus", true, "Enable Endurance bonus");
         infiniteItemDurability = b(STATS, "infiniteItemDurability", true, "Intelligence level 5 perk. Held damageable items do not lose durability");
 
-       // bobblehead consumption
+        // bobblehead consumption
         statsPerBobblehead = i(BOB, "statsPerBobblehead", 1, 1, Integer.MAX_VALUE, "Points per bobblehead");
         bobbleheadRename = b(BOB, "rename", true, "Give bobbleheads their stats in their display name");
 
@@ -349,7 +348,7 @@ public final class LSPECIALConfig {
         perceptionArmorThresholdNegationLevel = i(STATS, "perceptionArmorThresholdNegationLevel", 15, 0, 100, "Perception level at which armor-threshold negation starts");
         pepperboxSixShotPerk = b(GUNS, "pepperboxSixShotPerk", true, "Intelligence 5: Pepperbox fires six rounds per cycle");
         revolverPenetrationPerk = b(GUNS, "revolverPenetrationPerk", true, "Intelligence 15: configured revolvers penetrate and deal increased headshot damage");
-        revolverHeadshotMultiplier = (float)d(GUNS, "revolverHeadshotMultiplier", 3.0, 1, 20, "Headshot multiplier for the Intelligence revolver perk");
+        revolverHeadshotMultiplier = (float) d(GUNS, "revolverHeadshotMultiplier", 3.0, 1, 20, "Headshot multiplier for the Intelligence revolver perk");
         laserPistolDelayBalance = b(GUNS, "laserPistolDelayBalance", true, "Apply the higher-perk laser pistol delay balance");
         laserPistolDelayTicks = i(GUNS, "laserPistolDelayTicks", 10, 0, 1200, "Laser pistol delay in ticks");
         fatmanHigherPerk = b(GUNS, "fatmanHigherPerk", true, "Intelligence 15: increase Fat Man magazine capacity and apply its delay");
@@ -520,12 +519,15 @@ public final class LSPECIALConfig {
     private static boolean b(String category, String key, boolean defaultValue, String comment) {
         return config.get(category, key, defaultValue, sideComment(category, comment)).getBoolean(defaultValue);
     }
+
     private static int i(String category, String key, int defaultValue, int min, int max, String comment) {
         return config.get(category, key, defaultValue, sideComment(category, comment), min, max).getInt(defaultValue);
     }
+
     private static double d(String category, String key, double defaultValue, double min, double max, String comment) {
         return config.get(category, key, defaultValue, sideComment(category, comment), min, max).getDouble(defaultValue);
     }
+
     private static String s(String category, String key, String defaultValue, String comment) {
         return config.get(category, key, defaultValue, sideComment(category, comment)).getString();
     }

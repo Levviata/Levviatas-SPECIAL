@@ -5,15 +5,19 @@ import com.levviata.lspecial.TF2FlamethrowerHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.world.World;
+
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.Random;
 
-/** Renders a large, colored flame body through NTM's native BulletConfig renderer callback. */
+/**
+ * Renders a large, colored flame body through NTM's native BulletConfig renderer callback.
+ */
 public final class TF2FlameRenderer {
     private static final Map<EntityBulletBaseMK4, int[]> LAST_AGE_AND_VARIATION = new WeakHashMap<>();
 
-    private TF2FlameRenderer() {}
+    private TF2FlameRenderer() {
+    }
 
     public static void render(EntityBulletBaseMK4 bullet, Float partialTicks) {
         World world = bullet.world;
@@ -21,7 +25,7 @@ public final class TF2FlameRenderer {
         int[] state = LAST_AGE_AND_VARIATION.get(bullet);
         if (state == null) {
             Random random = new Random(bullet.getUniqueID().getMostSignificantBits() ^ bullet.getUniqueID().getLeastSignificantBits());
-            state = new int[] {-1, 80 + random.nextInt(41), 80 + random.nextInt(41)};
+            state = new int[]{-1, 80 + random.nextInt(41), 80 + random.nextInt(41)};
             LAST_AGE_AND_VARIATION.put(bullet, state);
         }
         if (state[0] == bullet.ticksExisted) return;
@@ -40,17 +44,26 @@ public final class TF2FlameRenderer {
         float r, g, b;
         // bands match the spec exactly: near 0-2 blocks (blue), mid 2-5 blocks (yellow), far 5-8 blocks (white)
         if (distance < 2.0D) {
-            float t = (float)(distance / 2.0D); r = 0.08F + 0.32F * t; g = 0.20F + 0.35F * t; b = 1.0F;
+            float t = (float) (distance / 2.0D);
+            r = 0.08F + 0.32F * t;
+            g = 0.20F + 0.35F * t;
+            b = 1.0F;
         } else if (distance < 5.0D) {
-            float t = (float)((distance - 2.0D) / 3.0D); r = 0.40F + 0.60F * t; g = 0.55F + 0.40F * t; b = 1.0F - 0.92F * t;
+            float t = (float) ((distance - 2.0D) / 3.0D);
+            r = 0.40F + 0.60F * t;
+            g = 0.55F + 0.40F * t;
+            b = 1.0F - 0.92F * t;
         } else {
-            float t = (float)Math.min(1.0D, (distance - 5.0D) / 3.0D); r = 1.0F; g = 0.95F + 0.05F * t; b = 0.08F + 0.92F * t;
+            float t = (float) Math.min(1.0D, (distance - 5.0D) / 3.0D);
+            r = 1.0F;
+            g = 0.95F + 0.05F * t;
+            b = 0.08F + 0.92F * t;
         }
         float saturation = state[2] / 100.0F;
-        float luminance = 0.299F*r + 0.587F*g + 0.114F*b;
-        r = clamp((luminance + (r-luminance)*saturation) * state[1]/100.0F);
-        g = clamp((luminance + (g-luminance)*saturation) * state[1]/100.0F);
-        b = clamp((luminance + (b-luminance)*saturation) * state[1]/100.0F);
+        float luminance = 0.299F * r + 0.587F * g + 0.114F * b;
+        r = clamp((luminance + (r - luminance) * saturation) * state[1] / 100.0F);
+        g = clamp((luminance + (g - luminance) * saturation) * state[1] / 100.0F);
+        b = clamp((luminance + (b - luminance) * saturation) * state[1] / 100.0F);
 
         // growth duration tracks whatever velocity the flame is actually tuned to, so it always finishes
         // growing right around when the flame reaches its hard range - see TF2FlamethrowerHandler.ticksToReachRange
@@ -72,5 +85,7 @@ public final class TF2FlameRenderer {
         }
     }
 
-    private static float clamp(float value) { return Math.max(0.0F, Math.min(1.0F, value)); }
+    private static float clamp(float value) {
+        return Math.max(0.0F, Math.min(1.0F, value));
+    }
 }

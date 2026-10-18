@@ -23,6 +23,6 @@ public class PotionAmplifiedRegeneration extends Potion {
     @Override
     public boolean isReady(int duration, int amplifier) {
         int interval = 50 >> amplifier;
-        return interval > 0 ? duration % interval == 0 : true;
+        return interval <= 0 || duration % interval == 0;
     }
 }

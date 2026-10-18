@@ -20,13 +20,16 @@ import java.util.WeakHashMap;
 // rationale: NTM's onUpdate owns collision and movement, so this mixin adjusts the velocity after each normal tick instead of cancelling or replacing that tick. It caches the initial velocity, applies a distance-based 100%-to-10% speed curve, and kills only standard flamer projectiles at 8 blocks. The render mixin supplies the enlarged visual flame. Other projectile configs are untouched; conflicts are avoidable if NTM adds native per-config speed, gravity and range settings.
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)
 public abstract class MixinTF2FlameProjectile {
-    @Shadow public BulletConfig config;
-    @Unique private static final Map<EntityBulletBaseMK4, double[]> lspecial$baseMotion = new WeakHashMap<>();
+    @Shadow
+    public BulletConfig config;
+    @Unique
+    private static final Map<EntityBulletBaseMK4, double[]> lspecial$baseMotion = new WeakHashMap<>();
 
     @Inject(method = "getGravityVelocity()F", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$removeFlameGravity(CallbackInfoReturnable<Float> callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (LSPECIALConfig.flamethrowerPerk && lspecial$isStandardFlame(lspecial$getConfig(projectile))) callback.setReturnValue(0.0F);
+        if (LSPECIALConfig.flamethrowerPerk && lspecial$isStandardFlame(lspecial$getConfig(projectile)))
+            callback.setReturnValue(0.0F);
     }
 
     @Inject(method = "onUpdate()V", at = @At("TAIL"), remap = false)
