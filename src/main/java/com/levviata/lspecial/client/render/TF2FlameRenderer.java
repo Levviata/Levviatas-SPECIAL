@@ -27,14 +27,16 @@ public final class TF2FlameRenderer {
         state[0] = bullet.ticksExisted;
 
         EntityLivingBase shooter = bullet.getThrower();
-        double distance = shooter == null ? Math.min(8.0D, bullet.ticksExisted * 0.16D) : bullet.getDistance(shooter);
+        // ~0.08 blocks/tick average covers 8 blocks in ~100 ticks (5s) at the tuned flame velocity (see TF2FlamethrowerHandler.initFlameTuning)
+        double distance = shooter == null ? Math.min(8.0D, bullet.ticksExisted * 0.08D) : bullet.getDistance(shooter);
         float r, g, b;
-        if (distance < 2.5D) {
-            float t = (float)(distance / 2.5D); r = 0.08F + 0.32F * t; g = 0.20F + 0.35F * t; b = 1.0F;
-        } else if (distance < 5.5D) {
-            float t = (float)((distance - 2.5D) / 3.0D); r = 0.40F + 0.60F * t; g = 0.55F + 0.40F * t; b = 1.0F - 0.92F * t;
+        // bands match the spec exactly: near 0-2 blocks (blue), mid 2-5 blocks (yellow), far 5-8 blocks (white)
+        if (distance < 2.0D) {
+            float t = (float)(distance / 2.0D); r = 0.08F + 0.32F * t; g = 0.20F + 0.35F * t; b = 1.0F;
+        } else if (distance < 5.0D) {
+            float t = (float)((distance - 2.0D) / 3.0D); r = 0.40F + 0.60F * t; g = 0.55F + 0.40F * t; b = 1.0F - 0.92F * t;
         } else {
-            float t = (float)Math.min(1.0D, (distance - 5.5D) / 2.5D); r = 1.0F; g = 0.95F + 0.05F * t; b = 0.08F + 0.92F * t;
+            float t = (float)Math.min(1.0D, (distance - 5.0D) / 3.0D); r = 1.0F; g = 0.95F + 0.05F * t; b = 0.08F + 0.92F * t;
         }
         float saturation = state[2] / 100.0F;
         float luminance = 0.299F*r + 0.587F*g + 0.114F*b;

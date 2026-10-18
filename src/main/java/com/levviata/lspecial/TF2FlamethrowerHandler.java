@@ -1,8 +1,10 @@
 package com.levviata.lspecial;
 
+import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
+import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.capability.HbmLivingCapability;
@@ -24,6 +26,45 @@ public final class TF2FlamethrowerHandler {
     private static final int AIRBLAST_AMMO_COST = 20;
     private static final double AIRBLAST_RANGE = 5.0D;
     private static final double AIRBLAST_CONE_DOT = 0.45D;
+
+    /** Matches MixinTF2FlameProjectile's hard 8-block range and the ~5s growth curve in TF2FlameRenderer. */
+    private static final float LSPECIAL_FLAME_VELOCITY = 0.2F;
+    /** Generous backstop so NTM's native BulletConfig#expires never cuts the flame off before it
+     *  either reaches 8 blocks (handled by MixinTF2FlameProjectile) or finishes its 5s growth. */
+    private static final int LSPECIAL_FLAME_EXPIRES = 140;
+
+    /**
+     * Re-tunes the four standard flamer BulletConfigs so the TF2-style rework (no gravity, distance-based
+     * speed/size/color curve capped at 8 blocks) has room to actually play out.
+     * <p>
+     * Native NTM speeds (velocity=1F) cover 8 blocks in roughly a second, which finishes the flight long
+     * before the 5-second size-growth curve in {@link com.levviata.lspecial.client.render.TF2FlameRenderer}
+     * completes, so the flame would always disappear tiny instead of reaching its full 120% size. Slowing
+     * the base velocity down syncs the two: at {@code LSPECIAL_FLAME_VELOCITY}, decelerating from 100% to
+     * 10% speed over the 8-block range takes ~100 ticks (5s), matching the growth curve almost exactly.
+     * <p>
+     * Native per-config lifetimes also differ wildly (flame_gas expires after just 10 ticks), which would
+     * kill that ammo type's flame almost immediately regardless of the above; bumping every standard config
+     * to the same generous {@code LSPECIAL_FLAME_EXPIRES} makes the 8-block distance check (and not NTM's
+     * built-in timer) the thing that actually ends the flame's life in practice.
+     * <p>
+     * Must run after {@code XFactoryFlamer.init()} (i.e. after all mods' init phase), so this is called from
+     * {@link com.levviata.lspecial.LSPECIALMod#postInit}. Dragon's Fury (gun_flamer_topaz) uses its own
+     * flame_topaz_* configs and is untouched here.
+     */
+    public static void initFlameTuning() {
+        lspecial$tuneFlame(XFactoryFlamer.flame_diesel);
+        lspecial$tuneFlame(XFactoryFlamer.flame_gas);
+        lspecial$tuneFlame(XFactoryFlamer.flame_napalm);
+        lspecial$tuneFlame(XFactoryFlamer.flame_balefire);
+        lspecial$tuneFlame(XFactoryFlamer.flame_nograv);
+    }
+
+    private static void lspecial$tuneFlame(BulletConfig config) {
+        if (config == null) return;
+        config.setVel(LSPECIAL_FLAME_VELOCITY);
+        config.setLife(Math.max(config.expires, LSPECIAL_FLAME_EXPIRES));
+    }
 
     /** Called on the server from the Sedna secondary-key hook. */
     public static boolean airblast(EntityPlayer player, ItemStack weapon) {

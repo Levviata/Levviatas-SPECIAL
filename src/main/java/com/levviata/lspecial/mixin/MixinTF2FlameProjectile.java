@@ -37,7 +37,11 @@ public abstract class MixinTF2FlameProjectile {
 
         EntityLivingBase shooter = projectile.getThrower();
         if (shooter == null || shooter.isDead) {
+            // no shooter to measure distance against (e.g. they died or disconnected mid-burst):
+            // kill the flame immediately instead of letting it coast on its last motion until
+            // NTM's native BulletConfig#expires eventually catches it
             lspecial$baseMotion.remove(projectile);
+            projectile.setDead();
             return;
         }
 
