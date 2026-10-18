@@ -22,7 +22,7 @@ import java.util.List;
 /** Renders the supplied OBJ chain links with a movement-driven, damped curve. */
 public class RenderGrappleChain extends Render<EntityGrappleChain> {
     private static final ResourceLocation TEXTURE = new ResourceLocation("hbm", "textures/models/misc/universaldark.png");
-    private static final ResourceLocation MODEL = new ResourceLocation("lspecial", "models/n45_chain.obj");
+    private static final ResourceLocation MODEL = new ResourceLocation("lspecial", "models/n45_chain.obj"); // same as in hbm for now
     private static final List<Vec3d> VERTICES = new ArrayList<>();
     private static final List<float[]> UVS = new ArrayList<>();
     private static final List<int[]> FACES = new ArrayList<>();
@@ -37,7 +37,9 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
     public RenderGrappleChain(RenderManager manager) { super(manager); }
 
     private static void loadModel() {
-        if (modelLoaded) return;
+        if (modelLoaded) {
+            return;
+        }
         modelLoaded = true;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(Minecraft.getMinecraft().getResourceManager().getResource(MODEL).getInputStream(), "UTF-8"))) {
             String line;

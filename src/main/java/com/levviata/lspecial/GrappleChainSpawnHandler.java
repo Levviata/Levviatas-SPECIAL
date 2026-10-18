@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * defers grapple-chain spawning until the end of the server tick so the entity tracker
+ * Defers grapple-chain spawning until the end of the server tick so the entity tracker
  * is not modified while its tracked-entity map is being iterated.
  */
 public final class GrappleChainSpawnHandler {
