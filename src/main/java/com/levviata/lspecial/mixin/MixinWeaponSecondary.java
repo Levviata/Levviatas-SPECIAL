@@ -110,7 +110,8 @@ public abstract class MixinWeaponSecondary {
         if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
 
         // Both flame weapons use TF2 airblast on secondary fire; Dragon's Fury shares its pressure lock.
-        if ("hbm:gun_flamer".equals(itemId) || "hbm:gun_flamer_topaz".equals(itemId)) {
+        if (("hbm:gun_flamer".equals(itemId) && LSPECIALConfig.flamethrowerPerk)
+                || ("hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryPerk)) {
             if (pressed && !player.world.isRemote) {
                 TF2FlamethrowerHandler.airblast(player, stack);
             }

@@ -15,6 +15,9 @@ public final class LSPECIALSounds {
     public static SoundEvent DRAGONS_FURY_IMPACT;
     public static SoundEvent DRAGONS_FURY_IMPACT_MINICRIT;
     public static SoundEvent DRAGONS_FURY_IMPACT_CRIT;
+    public static SoundEvent ROCKET_REFUND1;
+    public static SoundEvent ROCKET_REFUND2;
+    public static SoundEvent ROCKET_REFUND3;
     public static SoundEvent GRAPPLE_START;
     public static SoundEvent GRAPPLE_CYCLE;
     public static SoundEvent GRAPPLE_OUT;
@@ -31,6 +34,9 @@ public final class LSPECIALSounds {
         DRAGONS_FURY_IMPACT = register(event, "dragons_fury_impact");
         DRAGONS_FURY_IMPACT_MINICRIT = register(event, "dragons_fury_impact_bonus_damage");
         DRAGONS_FURY_IMPACT_CRIT = register(event, "dragons_fury_impact_bonus_damage_pain");
+        ROCKET_REFUND1 = register(event, "rocket_refund1");
+        ROCKET_REFUND2 = register(event, "rocket_refund2");
+        ROCKET_REFUND3 = register(event, "rocket_refund3");
         GRAPPLE_START = register(event, "grapple_start");
         GRAPPLE_CYCLE = register(event, "grapple_cycle");
         GRAPPLE_OUT = register(event, "grapple_out");

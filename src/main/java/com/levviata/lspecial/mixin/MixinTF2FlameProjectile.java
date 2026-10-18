@@ -3,6 +3,7 @@ package com.levviata.lspecial.mixin;
 import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
+import com.levviata.lspecial.LSPECIALConfig;
 import net.minecraft.entity.EntityLivingBase;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -25,14 +26,14 @@ public abstract class MixinTF2FlameProjectile {
     @Inject(method = "getGravityVelocity()F", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$removeFlameGravity(CallbackInfoReturnable<Float> callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (lspecial$isStandardFlame(lspecial$getConfig(projectile))) callback.setReturnValue(0.0F);
+        if (LSPECIALConfig.flamethrowerPerk && lspecial$isStandardFlame(lspecial$getConfig(projectile))) callback.setReturnValue(0.0F);
     }
 
     @Inject(method = "onUpdate()V", at = @At("TAIL"), remap = false)
     private void lspecial$shapeFlameFlight(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
         if (projectile.world == null || projectile.world.isRemote) return;
-        if (!lspecial$isStandardFlame(lspecial$getConfig(projectile))) return;
+        if (!LSPECIALConfig.flamethrowerPerk || !lspecial$isStandardFlame(lspecial$getConfig(projectile))) return;
 
         EntityLivingBase shooter = projectile.getThrower();
         if (shooter == null || shooter.isDead) {

@@ -72,6 +72,7 @@ public final class TF2FlamethrowerHandler {
      * flame_topaz_* configs and is untouched here.
      */
     public static void initFlameTuning() {
+        if (!LSPECIALConfig.flamethrowerPerk) return;
         lspecial$tuneFlame(XFactoryFlamer.flame_diesel);
         lspecial$tuneFlame(XFactoryFlamer.flame_gas);
         lspecial$tuneFlame(XFactoryFlamer.flame_napalm);
@@ -93,6 +94,10 @@ public final class TF2FlamethrowerHandler {
         }
         String itemId = weapon.getItem().getRegistryName() == null ? "" : weapon.getItem().getRegistryName().toString();
         boolean dragonsFury = "hbm:gun_flamer_topaz".equals(itemId);
+        boolean standardFlamethrower = "hbm:gun_flamer".equals(itemId);
+        if ((dragonsFury && !LSPECIALConfig.dragonsFuryPerk)
+                || (standardFlamethrower && !LSPECIALConfig.flamethrowerPerk)
+                || (!dragonsFury && !standardFlamethrower)) return false;
         int ammoCost = dragonsFury ? 50 : AIRBLAST_AMMO_COST;
         if (!consumeAmmo(weapon, player, ammoCost)) return false;
         if (dragonsFury) {

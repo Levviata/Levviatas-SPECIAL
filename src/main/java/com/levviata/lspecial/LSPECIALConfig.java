@@ -165,10 +165,14 @@ public final class LSPECIALConfig {
     public static boolean AMATRailgunProjectile = true;
 
     public static boolean stingerSelfDamageProtection = true;
+    public static boolean dragonsFuryPerk = false;
+    public static boolean flamethrowerPerk = false;
     public static boolean rocketJumpLesserPerk = true;
     public static int rocketJumpLesserPerkLevel = 5;
     public static double rocketJumpStrength = 1.2D;
     public static double rocketJumpVerticalBias = 0.65D;
+    public static double rocketJumpForwardVelocityFactor = 0.5D;
+    public static double rocketJumpVelocityCap = 0.0D;
 
     public static boolean carbineHigherPerkCapacity = true;
     public static int carbineMagazineCapacity = 30;
@@ -392,10 +396,14 @@ public final class LSPECIALConfig {
         henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-shot sequential burst");
         AMATRailgunProjectile = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: crouch + secondary selects the deuterium plasma capsule caliber for the AMAT; its native Sedna projectile homes to Quackos");
         stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Suppress self-inflicted damage from configured Stinger-family projectiles");
+        dragonsFuryPerk = b(GUNS, "dragonsFuryPerk", false, "Enable the incomplete Dragon's Fury perk logic");
+        flamethrowerPerk = b(GUNS, "flamethrowerPerk", false, "Enable the incomplete TF2-style flamethrower perk logic");
         rocketJumpLesserPerk = b(GUNS, "rocketJumpLesserPerk", true, "Intelligence level 5 lesser perk. Replace the owner's native NTM rocket blast propulsion with TF2-style rocket jumping for the configured Stinger-family launchers");
         rocketJumpLesserPerkLevel = i(GUNS, "rocketJumpLesserPerkLevel", 5, 5, 100, "Minimum Intelligence required for the TF2-style rocket-jumping lesser perk");
         rocketJumpStrength = d(GUNS, "rocketJumpStrength", 1.2D, 0.1D, 5.0D, "Base velocity impulse applied to the rocket owner when the rocket explodes");
         rocketJumpVerticalBias = d(GUNS, "rocketJumpVerticalBias", 0.65D, 0.0D, 2.0D, "Upward bias added to the blast direction for TF2-style rocket jumping");
+        rocketJumpForwardVelocityFactor = d(GUNS, "rocketJumpForwardVelocityFactor", 0.5D, 0.0D, 4.0D, "Fraction of the player's forward velocity added during a rocket jump");
+        rocketJumpVelocityCap = d(GUNS, "rocketJumpVelocityCap", 0.0D, 0.0D, 100.0D, "Maximum rocket-jump velocity in blocks per tick; 0 disables the cap");
         carbineHigherPerkCapacity = b(GUNS, "carbineHigherPerkCapacity", true, "Intelligence 15: increase the carbine magazine capacity");
         carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");
         carbineSemiAutoPerk = b(GUNS, "carbineSemiAutoPerk", true, "Intelligence 15: right-click fires one Carbine shot per press; left-click retains native fire behavior");

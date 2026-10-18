@@ -1,4 +1,28 @@
 {
+  "rocket_refund1": {
+    "sounds": [
+      {
+        "name": "lspecial:rocket_refund1",
+        "stream": false
+      }
+    ]
+  },
+  "rocket_refund2": {
+    "sounds": [
+      {
+        "name": "lspecial:rocket_refund2",
+        "stream": false
+      }
+    ]
+  },
+  "rocket_refund3": {
+    "sounds": [
+      {
+        "name": "lspecial:rocket_refund3",
+        "stream": false
+      }
+    ]
+  },
   "dragons_fury_shoot": {
     "sounds": [
       {

@@ -2,6 +2,7 @@ package com.levviata.lspecial.mixin;
 
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
+import com.levviata.lspecial.LSPECIALConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,6 +16,7 @@ public abstract class MixinDragonsFuryConfig {
 
     @Inject(method = "init()V", at = @At("RETURN"), remap = false)
     private static void lspecial$configureDragonsFuryFireballs(CallbackInfo callback) {
+        if (!LSPECIALConfig.dragonsFuryPerk) return;
         lspecial$singleFireball(XFactoryFlamer.flame_topaz_diesel);
         lspecial$singleFireball(XFactoryFlamer.flame_topaz_gas);
         lspecial$singleFireball(XFactoryFlamer.flame_topaz_napalm);

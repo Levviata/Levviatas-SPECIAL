@@ -4,6 +4,7 @@ import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
 import com.hbm.render.entity.projectile.RenderBulletMK4;
+import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.client.render.TF2FlameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -25,7 +26,7 @@ public abstract class MixinTF2FlameRender {
         if (bullet.world == null || !bullet.world.isRemote) return;
         BulletConfig active = bullet.config != null ? bullet.config : bullet.getBulletConfig();
         if (active == null) return;
-        if (lspecial$isStandardFlame(active)) {
+        if (LSPECIALConfig.flamethrowerPerk && lspecial$isStandardFlame(active)) {
             BulletConfig renderConfig = lspecial$renderConfigs.get(active);
             if (renderConfig == null) {
                 renderConfig = active.clone();

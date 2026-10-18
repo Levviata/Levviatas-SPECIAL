@@ -164,7 +164,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     @Inject(method = "getFireSound", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$useSecondaryFlamerSound(ItemStack stack, CallbackInfoReturnable<SoundEvent> callback) {
         String itemId = lspecial$registryId(stack);
-        if ("hbm:gun_flamer_topaz".equals(itemId)) {
+        if (LSPECIALConfig.dragonsFuryPerk && "hbm:gun_flamer_topaz".equals(itemId)) {
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
             boolean criticalShot = tag != null && tag.getInteger("LSPECIALDragonsFuryHitStreak") >= 4;
             callback.setReturnValue(criticalShot ? LSPECIALSounds.DRAGONS_FURY_SHOOT_CRIT

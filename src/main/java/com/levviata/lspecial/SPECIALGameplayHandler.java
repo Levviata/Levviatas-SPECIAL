@@ -57,12 +57,15 @@ public final class SPECIALGameplayHandler {
         }
 
         private EntityBulletBaseMK4 spawn(EntityPlayer shooter) {
+            double spawnX = shooter.posX;
+            double spawnY = shooter.posY;
+            double spawnZ = shooter.posZ;
             EntityBulletBaseMK4 clone = new EntityBulletBaseMK4(shooter.world, shooter, config,
-                    yaw, pitch, x, y, z, motionX, motionY, motionZ);
-            clone.setPosition(x, y, z);
+                    shooter.rotationYaw, shooter.rotationPitch, spawnX, spawnY, spawnZ, motionX, motionY, motionZ);
+            clone.setPosition(spawnX, spawnY, spawnZ);
             clone.motionX = motionX; clone.motionY = motionY; clone.motionZ = motionZ;
             clone.damage = damage; clone.velocity = velocity; clone.prevVelocity = previousVelocity;
-            clone.accel = acceleration; clone.ricochets = ricochets; clone.lockonTarget = lockonTarget;
+            clone.accel = acceleration; clone.ricochets = 0; clone.lockonTarget = lockonTarget;
             clone.getEntityData().merge(entityData.copy());
             clone.getEntityData().setBoolean("LSPECIALBurstClone", true);
             return clone;
@@ -215,8 +218,8 @@ public final class SPECIALGameplayHandler {
             pending = new ArrayList<>();
             pendingProjectileBursts.put(player, pending);
         }
-        pending.add(new PendingProjectile(bullet, 8));
-        pending.add(new PendingProjectile(bullet, 16));
+        pending.add(new PendingProjectile(bullet, 5));
+        pending.add(new PendingProjectile(bullet, 10));
     }
 
     private static void lspecial$tickPendingProjectiles(EntityPlayer player) {

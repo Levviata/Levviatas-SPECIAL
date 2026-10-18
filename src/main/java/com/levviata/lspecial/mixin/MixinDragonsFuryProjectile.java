@@ -40,7 +40,7 @@ public abstract class MixinDragonsFuryProjectile {
     @Inject(method = "onUpdate", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$limitDragonsFuryRange(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (projectile.world.isRemote) return;
+        if (projectile.world.isRemote || !LSPECIALConfig.dragonsFuryPerk) return;
         BulletConfig activeConfig = config != null ? config : projectile.getBulletConfig();
         if (!lspecial$isDragonsFuryFlame(activeConfig)) return;
 
@@ -77,7 +77,7 @@ public abstract class MixinDragonsFuryProjectile {
     @Inject(method = "onUpdate", at = @At("RETURN"), remap = false)
     private void lspecial$finishDragonsFuryRange(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (projectile.world.isRemote || !lspecial$isDragonsFuryFlame(config) || !lspecial$dragonsFuryOriginSet) return;
+        if (projectile.world.isRemote || !LSPECIALConfig.dragonsFuryPerk || !lspecial$isDragonsFuryFlame(config) || !lspecial$dragonsFuryOriginSet) return;
         double dx = projectile.posX - lspecial$dragonsFuryOriginX;
         double dy = projectile.posY - lspecial$dragonsFuryOriginY;
         double dz = projectile.posZ - lspecial$dragonsFuryOriginZ;
@@ -90,7 +90,7 @@ public abstract class MixinDragonsFuryProjectile {
     @Inject(method = "onUpdate", at = @At("HEAD"), remap = false)
     private void lspecial$renderDragonsFuryTrail(CallbackInfo callback) {
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (!projectile.world.isRemote || !lspecial$isDragonsFuryFlame(config)) return;
+        if (!projectile.world.isRemote || !LSPECIALConfig.dragonsFuryPerk || !lspecial$isDragonsFuryFlame(config)) return;
         for (int i = 0; i < 3; i++) {
             double spreadX = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
             double spreadY = (projectile.world.rand.nextDouble() - 0.5D) * 0.12D;
@@ -106,7 +106,7 @@ public abstract class MixinDragonsFuryProjectile {
         lspecial$boostedImpactDamage = false;
         lspecial$igniteAfterImpact = null;
         EntityBulletBaseMK4 projectile = (EntityBulletBaseMK4) (Object) this;
-        if (projectile.world.isRemote || hit == null) return;
+        if (projectile.world.isRemote || !LSPECIALConfig.dragonsFuryPerk || hit == null) return;
 
         if (lspecial$isDragonsFuryFlame(config)) {
             if (hit.typeOfHit != RayTraceResult.Type.ENTITY && hit.typeOfHit != RayTraceResult.Type.BLOCK) return;
