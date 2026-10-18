@@ -4,7 +4,6 @@ import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -51,11 +50,7 @@ public abstract class MixinTF2FlameProjectile {
             return;
         }
 
-        double[] base = lspecial$baseMotion.get(projectile);
-        if (base == null) {
-            base = new double[] { projectile.motionX, projectile.motionY, projectile.motionZ };
-            lspecial$baseMotion.put(projectile, base);
-        }
+        double[] base = lspecial$baseMotion.computeIfAbsent(projectile, p -> new double[]{p.motionX, p.motionY, p.motionZ});
         double progress = Math.min(1.0D, projectile.getDistance(shooter) / 8.0D);
         double speed = 1.0D - 0.9D * progress;
         projectile.motionX = base[0] * speed;
