@@ -41,11 +41,10 @@ public abstract class MixinWeaponSecondary {
     /** handles crouch-secondary ammo cycling, the Lag's self-kill action, and double-barrel grappling. */
     @Inject(method = "handleKeybind(Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/inventory/IInventory;Lnet/minecraft/item/ItemStack;Lcom/hbm/handler/HbmKeybinds$EnumKeybind;Z)V", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory, ItemStack stack, HbmKeybinds.EnumKeybind keybind, boolean newState, CallbackInfo callback) {
-        if (!(entity instanceof EntityPlayer) || stack == null || stack.isEmpty() || keybind == null) {
+        if (!(entity instanceof EntityPlayer player) || stack == null || stack.isEmpty() || keybind == null) {
             return;
         }
 
-        EntityPlayer player = (EntityPlayer) entity;
         String itemId = lspecial$registryId(stack);
         if (itemId == null) return;
 
@@ -284,8 +283,7 @@ public abstract class MixinWeaponSecondary {
     /** swaps each distinct magazine on single and akimbo weapons without changing NTM's firing pipeline. */
     @Unique
     private static boolean lspecial$cycleSupportedAmmo(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
-        if (!(stack.getItem() instanceof ItemGunBaseNT)) return false;
-        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        if (!(stack.getItem() instanceof ItemGunBaseNT gun)) return false;
         List<BulletConfig> alternateCalibers = lspecial$getAlternateCalibers(itemId);
         if (lspecial$isMinigun(itemId)) {
             for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
@@ -357,9 +355,8 @@ public abstract class MixinWeaponSecondary {
                                                      IMagazine magazine, List<BulletConfig> alternateCalibers) {
         IMagazine original = lspecial$unwrapMagazine(magazine);
         if (original instanceof MagazineBelt) return false;
-        if (!(original instanceof MagazineSingleTypeBase)) return false;
+        if (!(original instanceof MagazineSingleTypeBase single)) return false;
 
-        MagazineSingleTypeBase single = (MagazineSingleTypeBase) original;
         List<BulletConfig> accepted = single.acceptedBullets;
         if (accepted == null || accepted.isEmpty()) return false;
         for (BulletConfig config : alternateCalibers) {
@@ -367,9 +364,8 @@ public abstract class MixinWeaponSecondary {
         }
 
         Object currentObject = single.getType(stack, null);
-        if (!(currentObject instanceof BulletConfig)) return false;
-        BulletConfig current = (BulletConfig) currentObject;
-        BulletConfig defaultAmmo = accepted.get(0);
+        if (!(currentObject instanceof BulletConfig current)) return false;
+        BulletConfig defaultAmmo = accepted.getFirst();
         List<BulletConfig> alternateOptions = new java.util.ArrayList<>();
         for (BulletConfig config : alternateCalibers) {
             if (config != null && config != defaultAmmo && !alternateOptions.contains(config)) alternateOptions.add(config);
@@ -380,9 +376,9 @@ public abstract class MixinWeaponSecondary {
         if (lspecial$isStarF(lspecial$registryId(stack))) {
             // Star F switches between the original .22 group and the BMG group,
             // rather than cycling every individual BMG projectile configuration.
-            target = currentAlternate < 0 ? alternateOptions.get(0) : defaultAmmo;
+            target = currentAlternate < 0 ? alternateOptions.getFirst() : defaultAmmo;
         } else if (currentAlternate < 0) {
-            target = alternateOptions.get(0);
+            target = alternateOptions.getFirst();
         } else if (currentAlternate + 1 < alternateOptions.size()) {
             target = alternateOptions.get(currentAlternate + 1);
         } else {
@@ -417,17 +413,17 @@ public abstract class MixinWeaponSecondary {
 
         net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
         int currentId = tag != null && tag.hasKey("LSPECIALSelectedBeltCaliber")
-                ? tag.getInteger("LSPECIALSelectedBeltCaliber") : accepted.get(0).id;
+                ? tag.getInteger("LSPECIALSelectedBeltCaliber") : accepted.getFirst().id;
         BulletConfig current = lspecial$findBulletConfig(currentId);
         List<BulletConfig> modes = lspecial$getEnergyCapacitors();
         int currentIndex = modes.indexOf(current);
         BulletConfig target;
         if (currentIndex < 0) {
-            target = modes.get(0);
+            target = modes.getFirst();
         } else if (currentIndex + 1 < modes.size()) {
             target = modes.get(currentIndex + 1);
         } else {
-            target = accepted.get(0);
+            target = accepted.getFirst();
         }
 
         if (target == null || target == current) {
@@ -440,7 +436,7 @@ public abstract class MixinWeaponSecondary {
         if (!stack.hasTagCompound()) {
             stack.setTagCompound(new net.minecraft.nbt.NBTTagCompound());
         }
-        if (target == accepted.get(0)) {
+        if (target == accepted.getFirst()) {
             stack.getTagCompound().removeTag("LSPECIALSelectedBeltCaliber");
         } else {
             stack.getTagCompound().setInteger("LSPECIALSelectedBeltCaliber", target.id);
@@ -511,8 +507,7 @@ public abstract class MixinWeaponSecondary {
 
     @Unique
     private static void lspecial$setSecondaryForAllConfigs(ItemStack stack, boolean pressed) {
-        if (!(stack.getItem() instanceof ItemGunBaseNT)) return;
-        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        if (!(stack.getItem() instanceof ItemGunBaseNT gun)) return;
         for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
             ItemGunBaseNT.setSecondary(stack, configIndex, pressed);
         }
@@ -521,11 +516,10 @@ public abstract class MixinWeaponSecondary {
     /** sets native primary input while the secondary button is held for alternate-fire modes. */
     @Unique
     private static void lspecial$setPrimaryForAllConfigs(ItemStack stack, boolean pressed) {
-        if (!(stack.getItem() instanceof ItemGunBaseNT)) {
+        if (!(stack.getItem() instanceof ItemGunBaseNT gun)) {
             return;
         }
 
-        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
         for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
             ItemGunBaseNT.setPrimary(stack, configIndex, pressed);
         }

@@ -162,8 +162,7 @@ public final class TF2AmmoOverlay {
     }
 
     private static int getLoadedAmmo(ItemStack stack, EntityPlayer player) {
-        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT)) return -1;
-        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return -1;
         for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
             GunConfig config;
             try {

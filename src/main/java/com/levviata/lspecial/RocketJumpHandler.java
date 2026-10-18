@@ -158,16 +158,14 @@ public final class RocketJumpHandler {
         }
 
         boolean refunded = false;
-        if (launcher.getItem() instanceof ItemGunBase) {
-            ItemGunBase legacyGun = (ItemGunBase) launcher.getItem();
+        if (launcher.getItem() instanceof ItemGunBase legacyGun) {
             int current = ItemGunBase.getMag(launcher);
             int capacity = legacyGun.mainConfig == null ? 1 : Math.max(1, legacyGun.mainConfig.ammoCap);
             if (current < capacity) {
                 ItemGunBase.setMag(launcher, current + 1);
                 refunded = true;
             }
-        } else if (launcher.getItem() instanceof ItemGunBaseNT) {
-            ItemGunBaseNT gun = (ItemGunBaseNT) launcher.getItem();
+        } else if (launcher.getItem() instanceof ItemGunBaseNT gun) {
             for (int configIndex = 0; configIndex < gun.getConfigCount() && !refunded; configIndex++) {
                 GunConfig config;
                 try { config = gun.getConfig(launcher, configIndex); }

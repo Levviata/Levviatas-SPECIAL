@@ -180,8 +180,7 @@ public final class SPECIALGameplayHandler {
 
     /** sets the native primary-fire state for each NTM configuration on the locked stack. */
     private static void lspecial$setRapidFire(ItemStack stack, boolean firing) {
-        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT)) return;
-        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return;
         for (int config = 0; config < gun.getConfigCount(); config++) {
             ItemGunBaseNT.setPrimary(stack, config, firing);
         }
@@ -190,12 +189,10 @@ public final class SPECIALGameplayHandler {
     /** Snapshots native Sedna projectiles and queues two matching follow-up shots 0.4 seconds apart. */
     @SubscribeEvent
     public void onBurstProjectileSpawn(EntityJoinWorldEvent event) {
-        if (event.getWorld().isRemote || !(event.getEntity() instanceof EntityBulletBaseMK4)) return;
-        EntityBulletBaseMK4 bullet = (EntityBulletBaseMK4) event.getEntity();
+        if (event.getWorld().isRemote || !(event.getEntity() instanceof EntityBulletBaseMK4 bullet)) return;
         if (bullet.getEntityData().getBoolean("LSPECIALBurstClone") || bullet.getBulletConfig() == null) return;
         EntityLivingBase owner = bullet.getThrower();
-        if (!(owner instanceof EntityPlayer)) return;
-        EntityPlayer player = (EntityPlayer) owner;
+        if (!(owner instanceof EntityPlayer player)) return;
         ItemStack held = player.getHeldItemMainhand();
         if (held.isEmpty() || held.getItem().getRegistryName() == null || !held.hasTagCompound()
                 || !held.getTagCompound().getBoolean("LSPECIALSecondaryMode")) return;
@@ -281,8 +278,7 @@ public final class SPECIALGameplayHandler {
 
     /** plays the gun's native fire sound and consumes one loaded round for the final cue. */
     private static void lspecial$playLagFireCue(EntityPlayer player, ItemStack stack) {
-        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT)) return;
-        ItemGunBaseNT gun = (ItemGunBaseNT) stack.getItem();
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return;
         GunConfig config = gun.getConfig(stack, 0);
         if (config == null) return;
         Receiver[] receivers = config.getReceivers(stack);
@@ -324,9 +320,8 @@ public final class SPECIALGameplayHandler {
         if (luck < LSPECIALConfig.luckArmorFailsafeLevel) return;
 
         for (ItemStack stack : player.inventory.armorInventory) {
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered)) continue;
+            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) continue;
 
-            ArmorFSBPowered poweredArmor = (ArmorFSBPowered) stack.getItem();
             long maxCharge = poweredArmor.getMaxCharge(stack);
             if (maxCharge <= 0L) continue;
 

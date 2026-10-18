@@ -146,9 +146,8 @@ public class StatsLogic {
         }
 
         if (!heldStack.isEmpty() && heldStack.getItem() != Items.AIR) {
-            if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT) {
+            if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT gun) {
                 if (!state.modified || state.modifiedStackRef != heldStack) {
-                    ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
                     int configs = gun.getConfigCount();
                     // restore the previous item once before applying changes to a newly held stack.
                     if (state.modified) {
@@ -190,8 +189,7 @@ public class StatsLogic {
 
         if (state.modifiedReceiver.getMagazine(heldStack) == null) return;
         Object ammoType = state.modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
-        if (!(ammoType instanceof BulletConfig)) return;
-        BulletConfig bConfig = (BulletConfig) ammoType;
+        if (!(ammoType instanceof BulletConfig bConfig)) return;
 
         setOriginalValues(bConfig, state.modifiedReceiver, heldStack, state);
 
@@ -207,18 +205,17 @@ public class StatsLogic {
     }
 
     private void processReceiver(Receiver recIn, float ogDmg, ItemStack heldStack, EntityPlayer player, PlayerState state) {
-        recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD), "originalDamage", (double)ogDmg) : 0)));
+        recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD), "originalDamage", ogDmg) : 0)));
 
         if (recIn.getMagazine(heldStack) == null) {
             return;
         }
 
         Object ammoType = recIn.getMagazine(heldStack).getType(heldStack, player.inventory);
-        if (!(ammoType instanceof BulletConfig)) {
+        if (!(ammoType instanceof BulletConfig bC)) {
             return;
         }
 
-        BulletConfig bC = (BulletConfig) ammoType;
         if (LSPECIALConfig.perception && LSPECIALConfig.perceptionArmorThresholdNegation && inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD) > LSPECIALConfig.perceptionArmorThresholdNegationLevel) {
             double addedNegation = (inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD) - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
             bC.armorThresholdNegation = (float)Math.min(1.0, state.originalArmorThresholdNegation + addedNegation);
@@ -331,8 +328,7 @@ public class StatsLogic {
         }
 
         if ("INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode)
-                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5 && heldStack.getItem() instanceof ItemGunBaseNT) {
-            ItemGunBaseNT gun = (ItemGunBaseNT) heldStack.getItem();
+                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5 && heldStack.getItem() instanceof ItemGunBaseNT gun) {
             for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
                 ItemGunBaseNT.setWear(heldStack, configIndex, 0);
             }

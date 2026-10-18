@@ -40,11 +40,9 @@ public class CommandSetFlySpeed extends CommandBase {
     public void execute(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender, @Nonnull String[] args) throws CommandException {
 
         // players only
-        if (!(sender instanceof EntityPlayer)) {
+        if (!(sender instanceof EntityPlayer player)) {
             throw new CommandException("This command can only be used by players.");
         }
-
-        EntityPlayer player = (EntityPlayer) sender;
 
         // get this player's agility score
         int maxSpeed = inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
