@@ -6,8 +6,10 @@ import com.levviata.lspecial.network.RequestSPECIALStatsPacket;
 import com.levviata.lspecial.network.SyncSPECIALStatsPacket;
 import com.levviata.lspecial.potion.PotionAmplifiedRegeneration;
 import com.levviata.lspecial.proxy.CommonProxy;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.potion.Potion;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
@@ -48,6 +50,14 @@ public class LSPECIALMod {
     public static void logError(String message, Object... params) {
         if (LSPECIALConfig.loggingError) {
             LOGGER.error(message, params);
+        }
+    }
+
+    public static void playerLog(EntityPlayer player, String message) {
+        if (player != null) {
+            player.sendMessage(new TextComponentString(
+                    "[LSPECIAL] " + message
+            ));
         }
     }
 
@@ -112,10 +122,21 @@ public class LSPECIALMod {
     }
 
     public static void syncStats(EntityPlayerMP player) {
-        NETWORK.sendTo(new SyncSPECIALStatsPacket(inst.getStrengthScore().getScorePoints(), inst.getPerceptionScore().getScorePoints(), inst.getEnduranceScore().getScorePoints(),
-                inst.getEnduranceBonusScore().getScorePoints(), inst.getCharismaScore().getScorePoints(), inst.getCharismaBonusScore().getScorePoints(),
-                inst.getIntelligenceScore().getScorePoints(), inst.getAgilityScore().getScorePoints(), inst.getLuckScore().getScorePoints(),
-                inst.getLimitScore().getScorePoints()), player);
+        NETWORK.sendTo(
+                new SyncSPECIALStatsPacket(
+                        inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD),
+                        inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD),
+                        inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD),
+                        inst.getPlayerScorePoints(player, inst.ENDURANCE_BONUS_BOARD),
+                        inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD),
+                        inst.getPlayerScorePoints(player, inst.CHARISMA_BONUS_BOARD),
+                        inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD),
+                        inst.getPlayerScorePoints(player, inst.AGILITY_BOARD),
+                        inst.getPlayerScorePoints(player, inst.LUCK_BOARD),
+                        inst.getPlayerScorePoints(player, inst.LIMIT_BOARD)
+                ),
+                player
+        );
     }
 /*
 

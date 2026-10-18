@@ -22,9 +22,6 @@ public class RequestSPECIALStatsPacket implements IMessage {
         public IMessage onMessage(RequestSPECIALStatsPacket message, MessageContext ctx) {
             EntityPlayerMP player = ctx.getServerHandler().player;
             player.getServerWorld().addScheduledTask(() -> {
-                SPECIALScoreboard.inst.scoreboard = player.world.getScoreboard();
-                SPECIALScoreboard.inst.startBoards();
-                SPECIALScoreboard.inst.startScores(player);
                 LSPECIALMod.syncStats(player);
             });
             return null;
