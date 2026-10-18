@@ -10,7 +10,9 @@ import com.levviata.lspecial.LSPECIALExpression;
 import com.levviata.lspecial.LSPECIALSounds;
 import com.levviata.lspecial.ReceiverStateAccess;
 import com.levviata.lspecial.SPECIALScoreboard;
+import com.levviata.lspecial.SPECIALPlayerContext;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.MathHelper;
@@ -93,8 +95,11 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     /** returns the player's Intelligence score, or zero when the scoreboard is not ready. */
     @Unique
     private static int lspecial$getIntelligence() {
-        return SPECIALScoreboard.inst == null || SPECIALScoreboard.inst.getIntelligenceScore() == null
-                ? 0 : SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints();
+        EntityPlayer player = SPECIALPlayerContext.getPlayer();
+        if (SPECIALScoreboard.inst == null || player == null) {
+            return 0;
+        }
+        return SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD);
     }
 
     /** checks the selected ammunition configuration rather than any matching item in the inventory. */
@@ -210,10 +215,11 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     /** checks that the stack is the Carbine and the higher Intelligence perk is active. */
     @Unique
     private static boolean lspecial$isCarbineHigherPerk(ItemStack stack) {
+        EntityPlayer player = SPECIALPlayerContext.getPlayer();
         return stack != null && !stack.isEmpty() && LSPECIALConfig.intelligence
-                && LSPECIALConfig.revolverPerk && SPECIALScoreboard.inst != null
-                && SPECIALScoreboard.inst.getIntelligenceScore() != null
-                && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= 15
+                && LSPECIALConfig.revolverPerk && SPECIALScoreboard.inst != null && player != null
+                && SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) != null
+                && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= 15
                 && "hbm:gun_carbine".equals(lspecial$registryId(stack));
     }
 
@@ -248,11 +254,12 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     /** checks the shared SPECIAL score safely because NTM can query receiver values on either side. */
     @Unique
     private static boolean lspecial$hasIntelligence(int level) {
+        EntityPlayer player = SPECIALPlayerContext.getPlayer();
         return LSPECIALConfig.intelligence
                 && (level >= 15 ? LSPECIALConfig.revolverPerk : LSPECIALConfig.pepperboxPerk)
-                && SPECIALScoreboard.inst != null
-                && SPECIALScoreboard.inst.getIntelligenceScore() != null
-                && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= level;
+                && SPECIALScoreboard.inst != null && player != null
+                && SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) != null
+                && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= level;
     }
 
     /** checks the NTM per-config secondary input state stored on the weapon stack. */

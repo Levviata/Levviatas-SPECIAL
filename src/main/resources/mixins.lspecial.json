@@ -18,6 +18,7 @@
     "MixinEntityRocket",
     "MixinEntityVillager",
     "MixinLightRevolverRapidFire",
+    "MixinItemGunBaseNT",
     "MixinMagazineBelt",
     "MixinMagazineFluid",
     "MixinMagazineSingleTypeBase",

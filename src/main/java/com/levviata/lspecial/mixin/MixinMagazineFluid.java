@@ -3,7 +3,9 @@ package com.levviata.lspecial.mixin;
 import com.hbm.items.weapon.sedna.mags.MagazineFluid;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.SPECIALScoreboard;
+import com.levviata.lspecial.SPECIALPlayerContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.entity.player.EntityPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -21,9 +23,10 @@ public abstract class MixinMagazineFluid {
             return;
         }
 
-        if (SPECIALScoreboard.inst == null
-                || SPECIALScoreboard.inst.getIntelligenceScore() == null
-                || SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() < 15) {
+        EntityPlayer player = SPECIALPlayerContext.getPlayer();
+        if (SPECIALScoreboard.inst == null || player == null
+                || SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null
+                || SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) < 15) {
             return;
         }
 

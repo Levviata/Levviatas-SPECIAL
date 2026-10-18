@@ -7,7 +7,9 @@ import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
 import com.levviata.lspecial.AMATRailgun;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.SPECIALScoreboard;
+import com.levviata.lspecial.SPECIALPlayerContext;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import org.spongepowered.asm.mixin.Mixin;
@@ -192,8 +194,11 @@ public abstract class MixinMagazineSingleTypeBase {
 
         if (!LSPECIALConfig.intelligence || !LSPECIALConfig.revolverPerk) return;
 
-        if (SPECIALScoreboard.inst == null || SPECIALScoreboard.inst.getIntelligenceScore() == null
-                || SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() < 15 || stack.getItem().getRegistryName() == null) {
+        EntityPlayer player = SPECIALPlayerContext.getPlayer();
+        if (SPECIALScoreboard.inst == null || player == null
+                || SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null
+                || SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) < 15
+                || stack.getItem().getRegistryName() == null) {
             return;
         }
 
@@ -205,7 +210,8 @@ public abstract class MixinMagazineSingleTypeBase {
         } else if (LSPECIALConfig.carbineHigherPerkCapacity && "hbm:gun_carbine".equals(registryName)) {
             callback.setReturnValue(LSPECIALConfig.carbineMagazineCapacity);
         } else if (("hbm:gun_star_f".equals(registryName) || "hbm:gun_star_f_akimbo".equals(registryName))
-                && LSPECIALConfig.modifyGuns && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= 15) {
+                && LSPECIALConfig.modifyGuns && SPECIALScoreboard.inst.getPlayerScorePoints(
+                    player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= 15) {
             callback.setReturnValue(LSPECIALConfig.starFCapacity);
         }
     }
