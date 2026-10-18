@@ -72,11 +72,14 @@ public abstract class MixinEntityPlayerLuckArmor {
         if (LSPECIALConfig.luck && LSPECIALConfig.luckArmorDurabilityProtection && luck > 0) {
             double chance = Math.min(LSPECIALConfig.luckArmorDurabilityChanceCap,
                     Math.max(0.0D, luck * LSPECIALConfig.luckArmorDurabilityChancePerPoint));
-            if (player.getRNG().nextDouble() < chance) {
-                LSPECIALMod.info("[LuckArmor] PROTECTED {} durability (player={}, luck={}, chance={}, amount={})",
-                        stack.getItem().getRegistryName(), player.getName(), luck, chance, amount);
-                return;
+            for (int i = 0; i < amount; i++) {
+                if (player.getRNG().nextDouble() < chance) {
+                    // dont damage it
+                } else {
+                    stack.damageItem(1, entity);
+                }
             }
+            return;
         }
 
         stack.damageItem(amount, entity);
