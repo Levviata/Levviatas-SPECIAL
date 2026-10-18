@@ -2,6 +2,7 @@ package com.levviata.lspecial;
 
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraftforge.client.event.GuiOpenEvent;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import java.lang.reflect.Field;
@@ -29,7 +30,7 @@ public class LSplashText {
         }
 
         try {
-            Field field = ReflectionHelper.findField(GuiMainMenu.class, "splashText", "field_73975_c");
+            Field field = ObfuscationReflectionHelper.findField(GuiMainMenu.class, "field_73975_c");
             field.setAccessible(true);
 
             String splash = CUSTOM_SPLASHES[RANDOM.nextInt(CUSTOM_SPLASHES.length)];
