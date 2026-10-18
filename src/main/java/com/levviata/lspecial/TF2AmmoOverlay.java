@@ -46,7 +46,7 @@ public final class TF2AmmoOverlay {
         lspecial$renderEvents++;
         if (!lspecial$loggedOverlayReady) {
             lspecial$loggedOverlayReady = true;
-            LSPECIALMod.logWarn("[TF2AmmoGUI] render hook active: event={}, side=client", event.getType());
+           // LSPECIALMod.logWarn("[TF2AmmoGUI] render hook active: event={}, side=client", event.getType());
         }
         Minecraft mc = Minecraft.getMinecraft();
         EntityPlayer player = mc.player;
@@ -54,19 +54,19 @@ public final class TF2AmmoOverlay {
         ItemStack held = player.getHeldItemMainhand();
         if (!isConfiguredWeapon(held)) {
             if (held != null && !held.isEmpty() && lspecial$renderEvents % 200 == 1) {
-                LSPECIALMod.logWarn("[TF2AmmoGUI] held item not allowlisted: item={}, configuredList={}",
-                        held.getItem().getRegistryName(), LSPECIALConfig.tf2AmmoGuiWeaponList);
+                /*LSPECIALMod.logWarn("[TF2AmmoGUI] held item not allowlisted: item={}, configuredList={}",
+                        held.getItem().getRegistryName(), LSPECIALConfig.tf2AmmoGuiWeaponList);*/
             }
             return;
         }
         if (!lspecial$loggedWeapon) {
             lspecial$loggedWeapon = true;
-            LSPECIALMod.logWarn("[TF2AmmoGUI] allowlisted weapon detected: item={}", held.getItem().getRegistryName());
+            //LSPECIALMod.logWarn("[TF2AmmoGUI] allowlisted weapon detected: item={}", held.getItem().getRegistryName());
         }
 
         int ammo = getLoadedAmmo(held, player);
         if (ammo < 0) {
-            if (lspecial$renderEvents % 200 == 1) LSPECIALMod.logWarn("[TF2AmmoGUI] ammo lookup failed for item={} (not an ItemGunBaseNT or no receiver magazine)", held.getItem().getRegistryName());
+            //if (lspecial$renderEvents % 200 == 1) LSPECIALMod.logWarn("[TF2AmmoGUI] ammo lookup failed for item={} (not an ItemGunBaseNT or no receiver magazine)", held.getItem().getRegistryName());
             return;
         }
         if (ammo != lastAmmo || ammoTexture == null
@@ -152,8 +152,8 @@ public final class TF2AmmoOverlay {
         }
         GlStateManager.disableBlend();
         if (lspecial$renderEvents % 200 == 1) {
-            LSPECIALMod.logWarn("[TF2AmmoGUI] rendered: ammo={}, screen={}x{}, badge={}x{} at {},{} scale={} preset={}",
-                    ammo, screenWidth, screenHeight, badgeWidth, badgeHeight, left, top, uiScale, position);
+            /*LSPECIALMod.logWarn("[TF2AmmoGUI] rendered: ammo={}, screen={}x{}, badge={}x{} at {},{} scale={} preset={}",
+                    ammo, screenWidth, screenHeight, badgeWidth, badgeHeight, left, top, uiScale, position);*/
         }
     }
 
