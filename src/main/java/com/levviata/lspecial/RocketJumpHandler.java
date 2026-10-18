@@ -59,6 +59,7 @@ public final class RocketJumpHandler {
 
         // Only replace vanilla propulsion when the owner is inside the effective blast radius.
         if (distanceToBlast > blastRadius) {
+            clearPendingRocketReward(player);
             LSPECIALMod.info("[RocketDebug] impulse skipped outside-radius player={} distance={} radius={} explosion=({}, {}, {}) playerPos=({}, {}, {})",
                     player.getName(), distanceToBlast, blastRadius, explosionX, explosionY, explosionZ,
                     player.posX, player.posY, player.posZ);
@@ -120,6 +121,11 @@ public final class RocketJumpHandler {
                 player.getName(), distanceToBlast, blastRadius, LSPECIALConfig.rocketJumpStrength, falloff, impulse,
                 dx, dy, dz, previousMotionX, previousMotionY, previousMotionZ,
                 player.motionX, player.motionY, player.motionZ);
+    }
+
+    /** clears the armed reward when the next rocket attempt fails to launch the player. */
+    private static void clearPendingRocketReward(EntityPlayer player) {
+        player.getEntityData().removeTag(REWARD_PENDING);
     }
 
     /** consumes the previous jump's one-shot reward on this jump, then arms the next reward. */
