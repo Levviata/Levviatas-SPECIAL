@@ -11,6 +11,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.potion.Potion;
@@ -125,7 +126,9 @@ public class StatsLogic {
 
         ItemStack heldStack = player.getHeldItemMainhand();
         if (!heldStack.isEmpty() && heldStack.isItemStackDamageable()) {
-            boolean perkActive = LSPECIALConfig.infiniteItemDurability && LSPECIALConfig.intelligence && inst.getIntelligenceScore().getScorePoints() >= 5;
+            boolean perkActive = LSPECIALConfig.infiniteItemDurability && LSPECIALConfig.intelligence
+                    && inst.getIntelligenceScore().getScorePoints() >= 5
+                    && !(heldStack.getItem() instanceof ItemArmor);
             if (perkActive) {
                 if (!heldStack.hasTagCompound()) heldStack.setTagCompound(new NBTTagCompound());
                 NBTTagCompound tag = heldStack.getTagCompound();
