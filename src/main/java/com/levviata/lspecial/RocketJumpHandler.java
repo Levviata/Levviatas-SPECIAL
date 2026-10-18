@@ -28,7 +28,7 @@ public final class RocketJumpHandler {
     /** checks the Intelligence 5 lesser-perk gate for the supplied player's own scoreboard. */
     public static boolean isPerkActive(EntityPlayer player) {
         if (player == null || SPECIALScoreboard.inst == null
-                || SPECIALScoreboard.inst.getIntelligenceScore() == null) return false;
+                || SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null) return false;
         int intelligence = SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD);
         boolean active = LSPECIALConfig.intelligence && LSPECIALConfig.rocketJumpLesserPerk
                 && intelligence >= LSPECIALConfig.rocketJumpLesserPerkLevel;

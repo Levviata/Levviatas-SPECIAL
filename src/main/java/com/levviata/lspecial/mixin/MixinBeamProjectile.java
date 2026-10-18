@@ -59,8 +59,8 @@ public abstract class MixinBeamProjectile {
                 || ((EntityBulletBeamBase) (Object) this).world.isRemote || !LSPECIALConfig.tauSecondaryDamageBonus
                 || config != XFactoryAccelerator.tau_uranium_charge || !(thrower instanceof EntityPlayer)
                 || !LSPECIALConfig.intelligence || !LSPECIALConfig.pepperboxPerk
-                || SPECIALScoreboard.inst == null || SPECIALScoreboard.inst.getIntelligenceScore() == null
-                || SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() < 5) {
+                || SPECIALScoreboard.inst == null || SPECIALScoreboard.inst.getPlayerScore((EntityPlayer) thrower, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null
+                || SPECIALScoreboard.inst.getPlayerScorePoints((EntityPlayer) thrower, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) < 5) {
             return;
         }
 

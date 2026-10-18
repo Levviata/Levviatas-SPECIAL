@@ -46,7 +46,7 @@ public final class GrappleOverlayHandler {
     public void onCrosshair(RenderGameOverlayEvent.Pre event) {
         if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) return;
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.player == null || mc.player.getHeldItemMainhand().isEmpty() || !isDoubleBarrel(mc.player.getHeldItemMainhand()) || !isEnabled()) return;
+        if (mc.player == null || mc.player.getHeldItemMainhand().isEmpty() || !isDoubleBarrel(mc.player.getHeldItemMainhand()) || !isEnabled(mc.player)) return;
         event.setCanceled(true);
     }
 
@@ -60,7 +60,7 @@ public final class GrappleOverlayHandler {
         }
 
         ItemStack held = player.getHeldItemMainhand();
-        if (!isEnabled() || held.isEmpty() || !isDoubleBarrel(held)) {
+        if (!isEnabled(player) || held.isEmpty() || !isDoubleBarrel(held)) {
             reset();
             return;
         }
@@ -313,12 +313,13 @@ public final class GrappleOverlayHandler {
         return closest;
     }
 
-    private static boolean isEnabled() {
+    private static boolean isEnabled(EntityPlayer player) {
         return LSPECIALConfig.modifyGuns && LSPECIALConfig.doubleBarrelGrappleVisuals
                 && LSPECIALConfig.doubleBarrelGrapple && LSPECIALConfig.intelligence
                 && LSPECIALConfig.revolverPerk && SPECIALScoreboard.inst != null
-                && SPECIALScoreboard.inst.getIntelligenceScore() != null
-                && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= 15;
+                && player != null
+                && SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) != null
+                && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= 15;
     }
 
     private static boolean isDoubleBarrel(ItemStack stack) {

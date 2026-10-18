@@ -43,7 +43,7 @@ public class CommandSetSpeed extends CommandBase {
         EntityPlayer player = (EntityPlayer) sender;
 
         // get this player's agility score
-        int maxSpeed = inst.getAgilityScore().getScorePoints();
+        int maxSpeed = inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
 
         // no argument
         if (args.length != 1) {

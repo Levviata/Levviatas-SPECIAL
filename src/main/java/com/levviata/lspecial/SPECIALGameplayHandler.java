@@ -160,8 +160,8 @@ public final class SPECIALGameplayHandler {
         return player != null && !player.isDead && LSPECIALConfig.modifyGuns
                 && LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk
                 && LSPECIALConfig.lightRevolverRapidFirePerk && inst != null
-                && inst.getIntelligenceScore() != null
-                && inst.getIntelligenceScore().getScorePoints() >= 5;
+                && inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD) != null
+                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5;
     }
 
     /** identifies the NTM light revolver without relying on its translated name. */
@@ -210,7 +210,7 @@ public final class SPECIALGameplayHandler {
             enabled = LSPECIALConfig.henryLincolnSecondaryBurst;
         } else return;
         if (!enabled || !LSPECIALConfig.modifyGuns || !LSPECIALConfig.intelligence || inst == null
-                || inst.getIntelligenceScore() == null
+                || inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD) == null
                 || inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) < requiredLevel) return;
 
         List<PendingProjectile> pending = pendingProjectileBursts.get(player);
@@ -242,7 +242,7 @@ public final class SPECIALGameplayHandler {
         if (player == null || player.world.isRemote || player.isDead || stack == null || stack.isEmpty()
                 || player.getHeldItemMainhand() != stack
                 || !LSPECIALConfig.modifyGuns || !LSPECIALConfig.lagSecondarySelfKill
-                || !lspecial$isLag(stack) || !lspecial$hasLagSelfKillPerk()) return false;
+                || !lspecial$isLag(stack) || !lspecial$hasLagSelfKillPerk(player)) return false;
 
         pendingSelfKills.put(player, new PendingSelfKill(stack, 20));
         if (stack.getItem() instanceof ItemGunBaseNT) {
@@ -252,9 +252,10 @@ public final class SPECIALGameplayHandler {
     }
 
     /** checks the Lag's Intelligence requirement using the same lesser-perk setting as its other actions. */
-    private static boolean lspecial$hasLagSelfKillPerk() {
+    private static boolean lspecial$hasLagSelfKillPerk(EntityPlayer player) {
         return LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst != null
-                && inst.getIntelligenceScore() != null && inst.getIntelligenceScore().getScorePoints() >= 5;
+                && inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD) != null
+                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5;
     }
 
     /** identifies the Lag by registry id rather than its translated item name. */
@@ -323,7 +324,7 @@ public final class SPECIALGameplayHandler {
         if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe
                 || player.ticksExisted % 6000 != 0) return;
 
-        int luck = inst.getLuckScore().getScorePoints();
+        int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
         if (luck < LSPECIALConfig.luckArmorFailsafeLevel) return;
 
         for (ItemStack stack : player.inventory.armorInventory) {

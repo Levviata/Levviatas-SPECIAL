@@ -2,6 +2,7 @@ package com.levviata.lspecial;
 
 import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.input.Keyboard;
+import net.minecraft.client.Minecraft;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -173,7 +174,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
             return 0;
         }
 
-        int charisma = inst.getCharismaScore().getScorePoints();
+        int charisma = inst.getPlayerScorePoints(Minecraft.getMinecraft().player, inst.CHARISMA_BOARD);
 
         if (charisma < LSPECIALConfig.charismaVillagerDiscountLevel) {
             return 0;

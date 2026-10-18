@@ -84,7 +84,8 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
             return;
         }
 
-        int luck = LSPECIALConfig.luck ? inst.getLuckScore().getScorePoints() : 0;
+        EntityPlayer player = ((InventoryPlayer) inventory).player;
+        int luck = LSPECIALConfig.luck ? inst.getPlayerScorePoints(player, inst.LUCK_BOARD) : 0;
         Map<String, Double> variables = new HashMap<>();
         variables.put("luck", (double) luck);
         double chance = LSPECIALExpression.eval(LSPECIALConfig.refundAmmoFormula, variables, Math.min(luck * 0.05, 0.5));
@@ -95,7 +96,6 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
             return;
         }
 
-        EntityPlayer player = ((InventoryPlayer) inventory).player;
         ItemStack refund = selectedConfig.ammo.getStack().copy();
         refund.setCount(ammoDebt);
         player.inventory.addItemStackToInventory(refund);

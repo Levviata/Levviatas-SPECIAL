@@ -201,8 +201,8 @@ public abstract class MixinWeaponSecondary {
         return LSPECIALConfig.intelligence
                 && (level >= 15 ? LSPECIALConfig.revolverPerk : LSPECIALConfig.pepperboxPerk)
                 && SPECIALScoreboard.inst != null
-                && SPECIALScoreboard.inst.getIntelligenceScore() != null
-                && SPECIALScoreboard.inst.getIntelligenceScore().getScorePoints() >= level;
+                && SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) != null
+                && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= level;
     }
 
     /** returns the registry identifier used to match a weapon without relying on its display name. */

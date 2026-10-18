@@ -30,7 +30,7 @@ public abstract class MixinEntityPlayerLuckArmor {
         if (stack == null || stack.isEmpty()) return;
         if (amount <= 0) return;
 
-        int luck = inst.getLuckScore().getScorePoints();
+        int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
 
         // NTM powered armor maps ItemStack damage into battery energy consumption.
         if (stack.getItem() instanceof ArmorFSBPowered) {
