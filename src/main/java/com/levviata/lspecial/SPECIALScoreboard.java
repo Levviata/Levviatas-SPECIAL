@@ -42,12 +42,31 @@ public class SPECIALScoreboard {
     private int clientLimit;
 
     public int getPlayerScorePoints(EntityPlayer player, String boardName) {
-        if (player == null || player.getEntityWorld() == null || boardName == null) {
+        if (player == null) {
+            LSPECIALMod.logWarn("getPlayerScorePoints(): player is null. Board: " + boardName);
+            return 0;
+        }
+
+        if (player.getEntityWorld() == null) {
+            LSPECIALMod.logWarn("getPlayerScorePoints(): player world is null. Player: "
+                    + player.getName() + ", Board: " + boardName);
+            return 0;
+        }
+
+        if (boardName == null) {
+            LSPECIALMod.logWarn("getPlayerScorePoints(): boardName is null. Player: "
+                    + player.getName());
             return 0;
         }
 
         // 1. get player's current scoreboard
         Scoreboard playerScoreboard = player.getEntityWorld().getScoreboard();
+
+        if (playerScoreboard == null) {
+            LSPECIALMod.logError("getPlayerScorePoints(): player's scoreboard is null. Player: "
+                    + player.getName() + ", Board: " + boardName);
+            return 0;
+        }
 
         // 2. start player's board if null
         if (playerScoreboard.getObjective(boardName) == null) {
@@ -57,19 +76,26 @@ public class SPECIALScoreboard {
         // 3. get the player's objective off the board
         ScoreObjective objective = playerScoreboard.getObjective(boardName);
 
-        // 4. check if he has the objective or not
+        // 4. check if objective exists
         if (objective == null) {
+            LSPECIALMod.logError("getPlayerScorePoints(): failed to obtain objective after creation. "
+                    + "Player: " + player.getName() + ", Board: " + boardName);
             return 0;
         }
 
-        // 5. if limit board, and player doesn't have objective, set it to 10, otherwise, get or create it as normal
+        // 5. if limit board, and player doesn't have objective, set it to 10,
+        // otherwise, get or create it as normal
         if (boardName.equals(LIMIT_BOARD)) {
             if (!playerScoreboard.entityHasObjective(player.getName(), objective)) {
+                LSPECIALMod.info("getPlayerScorePoints(): player '" + player.getName()
+                        + "' has no LIMIT score. Initializing to 10.");
+
                 limitScore = playerScoreboard.getOrCreateScore(player.getName(), objective);
                 limitScore.setScorePoints(10);
             } else {
                 limitScore = playerScoreboard.getOrCreateScore(player.getName(), objective);
             }
+
             return limitScore.getScorePoints();
         }
 
@@ -82,29 +108,55 @@ public class SPECIALScoreboard {
         return playerScoreboard.getOrCreateScore(player.getName(), objective).getScorePoints();
     }
 
+
     public Score getPlayerScore(EntityPlayer player, String boardName) {
-        // todo add logging in each null check
-        if (player == null || player.getEntityWorld() == null || boardName == null) {
+        // 1. validate player
+        if (player == null) {
+            LSPECIALMod.logWarn("getPlayerScore(): player is null. Board: " + boardName);
             return null;
         }
 
-        // 1. get player's current scoreboard
+        // 2. validate world
+        if (player.getEntityWorld() == null) {
+            LSPECIALMod.logWarn("getPlayerScore(): player world is null. Player: "
+                    + player.getName() + ", Board: " + boardName);
+            return null;
+        }
+
+        // 3. validate board name
+        if (boardName == null) {
+            LSPECIALMod.logWarn("getPlayerScore(): boardName is null. Player: "
+                    + player.getName());
+            return null;
+        }
+
+        // 4. get player's current scoreboard
         Scoreboard playerScoreboard = player.getEntityWorld().getScoreboard();
 
-        // 2. start player's board if null
+        if (playerScoreboard == null) {
+            LSPECIALMod.logError("getPlayerScore(): player's scoreboard is null. Player: "
+                    + player.getName() + ", Board: " + boardName);
+            return null;
+        }
+
+        // 5. start player's board if null
         if (playerScoreboard.getObjective(boardName) == null) {
+            LSPECIALMod.info("getPlayerScore(): objective '" + boardName
+                    + "' does not exist. Creating it for player: " + player.getName());
+
             playerScoreboard.addScoreObjective(boardName, IScoreCriteria.DUMMY);
         }
 
-        // 3. get the player's objective off the board
+        // 6. get the player's objective off the board
         ScoreObjective objective = playerScoreboard.getObjective(boardName);
 
-        // 4. check if he has the objective or not
         if (objective == null) {
+            LSPECIALMod.logError("getPlayerScore(): failed to obtain objective after creation. "
+                    + "Player: " + player.getName() + ", Board: " + boardName);
             return null;
         }
 
-        // 5. get or create the score for the player
+        // 7. get or create the score for the player
         return playerScoreboard.getOrCreateScore(player.getName(), objective);
     }
 
