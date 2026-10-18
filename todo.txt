@@ -2,3 +2,5 @@ missing:
 
 light revolver rapid fire
 heretic scoping
+
+make item hud text scale in proportion to health to avoid clipping
