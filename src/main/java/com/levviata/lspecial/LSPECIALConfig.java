@@ -134,10 +134,6 @@ public final class LSPECIALConfig {
     public static String tf2AmmoGuiPosition = "BOTTOM_RIGHT";
     public static double tf2AmmoGuiScale = 1.0D;
     public static String tf2AmmoGuiWeaponList = "hbm:gun_flamer,hbm:gun_flamer_topaz,hbm:gun_chemthrower,hbm:gun_drill";
-    public static int tf2AmmoGuiBackgroundRed = 0;
-    public static int tf2AmmoGuiBackgroundGreen = 0;
-    public static int tf2AmmoGuiBackgroundBlue = 0;
-    public static int tf2AmmoGuiBackgroundAlpha = 0;
     public static int tf2AmmoGuiShadowOffsetX = 10;
     public static int tf2AmmoGuiShadowOffsetY = 10;
     public static int starFCapacity = 30;
@@ -374,10 +370,6 @@ public final class LSPECIALConfig {
         tf2AmmoGuiPosition = s(CLIENT, "tf2AmmoGuiPosition", "BOTTOM_RIGHT", "Ammo GUI anchor: BOTTOM_RIGHT, BOTTOM_CENTER, BOTTOM_LEFT, CENTER_LEFT, CENTER_RIGHT, TOP_LEFT, TOP_CENTER, or TOP_RIGHT");
         tf2AmmoGuiScale = d(CLIENT, "tf2AmmoGuiScale", 1.0D, 0.25D, 3.0D, "Ammo GUI scale before screen-fit constraints");
         tf2AmmoGuiWeaponList = s(CLIENT, "tf2AmmoGuiWeaponList", "hbm:gun_flamer,hbm:gun_flamer_topaz,hbm:gun_chemthrower,hbm:gun_drill", "Comma-separated registry IDs allowed to show the ammo GUI; no Intelligence limit is applied");
-        tf2AmmoGuiBackgroundRed = i(CLIENT, "tf2AmmoGuiBackgroundRed", 0, 0, 255, "Ammo GUI background red channel");
-        tf2AmmoGuiBackgroundGreen = i(CLIENT, "tf2AmmoGuiBackgroundGreen", 0, 0, 255, "Ammo GUI background green channel");
-        tf2AmmoGuiBackgroundBlue = i(CLIENT, "tf2AmmoGuiBackgroundBlue", 0, 0, 255, "Ammo GUI background blue channel");
-        tf2AmmoGuiBackgroundAlpha = i(CLIENT, "tf2AmmoGuiBackgroundAlpha", 0, 0, 255, "Ammo GUI background alpha; 0 is transparent and 255 is opaque");
         tf2AmmoGuiShadowOffsetX = i(CLIENT, "tf2AmmoGuiShadowOffsetX", 10, -32, 32, "Ammo number shadow horizontal offset in texture pixels");
         tf2AmmoGuiShadowOffsetY = i(CLIENT, "tf2AmmoGuiShadowOffsetY", 10, -32, 32, "Ammo number shadow vertical offset in texture pixels");
         starFCapacity = i(GUNS, "starFCapacity", 30, 1, 1000, "Star-F magazine capacity at Intelligence 15");

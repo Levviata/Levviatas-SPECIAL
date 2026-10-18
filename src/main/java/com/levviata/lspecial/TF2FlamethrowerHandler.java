@@ -21,32 +21,51 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+// todo
 /** TF2-style secondary airblast for NTM's standard Sedna flamethrower. */
 public final class TF2FlamethrowerHandler {
     private static final int AIRBLAST_AMMO_COST = 20;
     private static final double AIRBLAST_RANGE = 5.0D;
     private static final double AIRBLAST_CONE_DOT = 0.45D;
 
-    /** Matches MixinTF2FlameProjectile's hard 8-block range and the ~5s growth curve in TF2FlameRenderer. */
-    private static final float LSPECIAL_FLAME_VELOCITY = 0.2F;
-    /** Generous backstop so NTM's native BulletConfig#expires never cuts the flame off before it
-     *  either reaches 8 blocks (handled by MixinTF2FlameProjectile) or finishes its 5s growth. */
-    private static final int LSPECIAL_FLAME_EXPIRES = 140;
+    /** The only knob to turn for flame speed - everything else below derives from it, see {@link #ticksToReachRange}. */
+    private static final float LSPECIAL_FLAME_VELOCITY = 0.8F;
+    /** Hard flame range in blocks - must match the "8.0D" literals in MixinTF2FlameProjectile. */
+    public static final double LSPECIAL_FLAME_RANGE_BLOCKS = 8.0D;
+    /** Extra ticks of headroom tacked onto the computed range-time before it's used as the expires floor. */
+    private static final int LSPECIAL_FLAME_EXPIRES_MARGIN = 20;
+
+    /**
+     * Ticks it takes a flame to decelerate from 100% to 10% speed across {@link #LSPECIAL_FLAME_RANGE_BLOCKS},
+     * i.e. how long it takes to (almost) reach the hard range cutoff in MixinTF2FlameProjectile. Solving
+     * dx/dt = v*(1 - 0.9*x/range) for x(t)=range gives t = range*ln(10)/(0.9*v); this is a continuous
+     * approximation but lines up with the real discrete tick simulation to within ~1%.
+     * <p>
+     * TF2FlameRenderer uses this (with the live {@code BulletConfig#velocity}) to size its 40%->120% growth
+     * curve, so it always finishes growing right around when the flame reaches 8 blocks - whatever velocity
+     * is actually configured. That means {@link #LSPECIAL_FLAME_VELOCITY} is a single-number knob: change it
+     * here and the growth curve, the speed curve (already distance-based, not velocity-based) and the
+     * expires floor below all re-sync automatically, nothing else needs touching.
+     */
+    public static int ticksToReachRange(float velocity) {
+        if (velocity <= 0.0001F) return 100; // guard against a misconfigured/zero velocity
+        return (int) Math.ceil(LSPECIAL_FLAME_RANGE_BLOCKS * Math.log(10.0D) / (0.9D * velocity));
+    }
 
     /**
      * Re-tunes the four standard flamer BulletConfigs so the TF2-style rework (no gravity, distance-based
      * speed/size/color curve capped at 8 blocks) has room to actually play out.
      * <p>
      * Native NTM speeds (velocity=1F) cover 8 blocks in roughly a second, which finishes the flight long
-     * before the 5-second size-growth curve in {@link com.levviata.lspecial.client.render.TF2FlameRenderer}
-     * completes, so the flame would always disappear tiny instead of reaching its full 120% size. Slowing
-     * the base velocity down syncs the two: at {@code LSPECIAL_FLAME_VELOCITY}, decelerating from 100% to
-     * 10% speed over the 8-block range takes ~100 ticks (5s), matching the growth curve almost exactly.
+     * before a flame could ever visibly grow, so it'd always disappear tiny. Slowing the base velocity down
+     * via {@code LSPECIAL_FLAME_VELOCITY} fixes that - see {@link #ticksToReachRange} for how
+     * {@link com.levviata.lspecial.client.render.TF2FlameRenderer} derives its growth-curve length from
+     * this same velocity, so the two always stay in sync no matter what it's set to.
      * <p>
      * Native per-config lifetimes also differ wildly (flame_gas expires after just 10 ticks), which would
-     * kill that ammo type's flame almost immediately regardless of the above; bumping every standard config
-     * to the same generous {@code LSPECIAL_FLAME_EXPIRES} makes the 8-block distance check (and not NTM's
-     * built-in timer) the thing that actually ends the flame's life in practice.
+     * kill that ammo type's flame almost immediately regardless of the above; bumping every standard config's
+     * expires to {@code ticksToReachRange(LSPECIAL_FLAME_VELOCITY) + LSPECIAL_FLAME_EXPIRES_MARGIN} makes the
+     * 8-block distance check (and not NTM's built-in timer) the thing that actually ends the flame's life.
      * <p>
      * Must run after {@code XFactoryFlamer.init()} (i.e. after all mods' init phase), so this is called from
      * {@link com.levviata.lspecial.LSPECIALMod#postInit}. Dragon's Fury (gun_flamer_topaz) uses its own
@@ -63,7 +82,8 @@ public final class TF2FlamethrowerHandler {
     private static void lspecial$tuneFlame(BulletConfig config) {
         if (config == null) return;
         config.setVel(LSPECIAL_FLAME_VELOCITY);
-        config.setLife(Math.max(config.expires, LSPECIAL_FLAME_EXPIRES));
+        int neededTicks = ticksToReachRange(LSPECIAL_FLAME_VELOCITY) + LSPECIAL_FLAME_EXPIRES_MARGIN;
+        config.setLife(Math.max(config.expires, neededTicks));
     }
 
     /** Called on the server from the Sedna secondary-key hook. */

@@ -1,6 +1,7 @@
 package com.levviata.lspecial.client.render;
 
 import com.hbm.entity.projectile.EntityBulletBaseMK4;
+import com.levviata.lspecial.TF2FlamethrowerHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.world.World;
@@ -26,9 +27,16 @@ public final class TF2FlameRenderer {
         if (state[0] == bullet.ticksExisted) return;
         state[0] = bullet.ticksExisted;
 
+        // read the live, tuned velocity off the bullet's own config instead of a hardcoded number, so
+        // retuning TF2FlamethrowerHandler.LSPECIAL_FLAME_VELOCITY is a one-place change (see ticksToReachRange)
+        float configVelocity = (bullet.config != null && bullet.config.velocity > 0.0001F) ? bullet.config.velocity : 0.2F;
+
         EntityLivingBase shooter = bullet.getThrower();
-        // ~0.08 blocks/tick average covers 8 blocks in ~100 ticks (5s) at the tuned flame velocity (see TF2FlamethrowerHandler.initFlameTuning)
-        double distance = shooter == null ? Math.min(8.0D, bullet.ticksExisted * 0.08D) : bullet.getDistance(shooter);
+        // no shooter to measure real distance against: approximate using the average of the 100%->10%
+        // decel curve (~55% of the base velocity) over elapsed ticks
+        double distance = shooter == null
+                ? Math.min(TF2FlamethrowerHandler.LSPECIAL_FLAME_RANGE_BLOCKS, bullet.ticksExisted * configVelocity * 0.55D)
+                : bullet.getDistance(shooter);
         float r, g, b;
         // bands match the spec exactly: near 0-2 blocks (blue), mid 2-5 blocks (yellow), far 5-8 blocks (white)
         if (distance < 2.0D) {
@@ -44,7 +52,10 @@ public final class TF2FlameRenderer {
         g = clamp((luminance + (g-luminance)*saturation) * state[1]/100.0F);
         b = clamp((luminance + (b-luminance)*saturation) * state[1]/100.0F);
 
-        float growth = Math.min(1.0F, bullet.ticksExisted / 100.0F);
+        // growth duration tracks whatever velocity the flame is actually tuned to, so it always finishes
+        // growing right around when the flame reaches its hard range - see TF2FlamethrowerHandler.ticksToReachRange
+        int growthTicks = TF2FlamethrowerHandler.ticksToReachRange(configVelocity);
+        float growth = Math.min(1.0F, bullet.ticksExisted / (float) growthTicks);
         float coreScale = 2.4F + 4.8F * growth;
         // overlap several large sprites so the trail reads as one flame instead of isolated dots
         for (int i = 0; i < 7; i++) {

@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-// ass
+// todo
 // rationale: NTM's confirmed renderer delegates visuals to BulletConfig.renderer, but standard flamer configs leave it null. On the client only, clone each standard flame config once and assign a dedicated renderer to the clone; do not change shared NTM configs or the synced config ID. This avoids global gameplay changes and keeps NTM's push/pop matrix path intact. The clone is cached per original config to avoid unbounded registration; client-only config registration is local and never written to the entity data manager.
 @Mixin(value = RenderBulletMK4.class, remap = false)
 public abstract class MixinTF2FlameRender {

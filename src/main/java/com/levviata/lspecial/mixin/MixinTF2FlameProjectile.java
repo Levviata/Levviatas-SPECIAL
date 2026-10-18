@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-// ass
+// todo
 // rationale: NTM's onUpdate owns collision and movement, so this mixin adjusts the velocity after each normal tick instead of cancelling or replacing that tick. It caches the initial velocity, applies a distance-based 100%-to-10% speed curve, and kills only standard flamer projectiles at 8 blocks. The render mixin supplies the enlarged visual flame. Other projectile configs are untouched; conflicts are avoidable if NTM adds native per-config speed, gravity and range settings.
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)
 public abstract class MixinTF2FlameProjectile {

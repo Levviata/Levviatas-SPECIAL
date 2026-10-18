@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// ass
+// todo
 // rationale: this client-only mixin adds the changing color and size trail because vanilla flame particles cannot be tinted or scaled per shot. It only adds particles and leaves NTM collision and damage intact; it may conflict with other trail-rendering mixins. Avoidable if NTM exposes a configurable projectile trail.
 @SideOnly(Side.CLIENT)
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)

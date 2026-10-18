@@ -21,7 +21,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
-
+// todo
 /** TF2-style loaded-ammo counter for configured NTM weapons. */
 public final class TF2AmmoOverlay {
     private static final ResourceLocation BADGE = new ResourceLocation("lspecial", "textures/gui/gui_badge.png");
@@ -128,10 +128,10 @@ public final class TF2AmmoOverlay {
         int textY = clamp(top + badgeHeight - textHeight - (int) Math.round(7.0D * uiScale), top,
                 Math.max(top, top + badgeHeight - textHeight));
 
-        int background = (LSPECIALConfig.tf2AmmoGuiBackgroundAlpha << 24)
+       /* int background = (LSPECIALConfig.tf2AmmoGuiBackgroundAlpha << 24)
                 | (LSPECIALConfig.tf2AmmoGuiBackgroundRed << 16)
                 | (LSPECIALConfig.tf2AmmoGuiBackgroundGreen << 8)
-                | LSPECIALConfig.tf2AmmoGuiBackgroundBlue;
+                | LSPECIALConfig.tf2AmmoGuiBackgroundBlue;*/
         mc.getTextureManager().bindTexture(BADGE);
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
@@ -140,11 +140,11 @@ public final class TF2AmmoOverlay {
                 BADGE_TEXTURE_WIDTH, BADGE_TEXTURE_HEIGHT);
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 
-        if (LSPECIALConfig.tf2AmmoGuiBackgroundAlpha > 0) {
+       /* if (LSPECIALConfig.tf2AmmoGuiBackgroundAlpha > 0) {
             Gui.drawRect(Math.max(0, textX - 2), Math.max(0, textY - 2),
                     Math.min(screenWidth, textX + textWidth + 2),
                     Math.min(screenHeight, textY + textHeight + 2), background);
-        }
+        }*/
         if (ammoTexture != null && textWidth > 0 && textHeight > 0) {
             mc.getTextureManager().bindTexture(ammoTexture);
             Gui.drawModalRectWithCustomSizedTexture(textX, textY, 0, 0,
