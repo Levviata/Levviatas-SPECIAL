@@ -102,5 +102,13 @@
         "stream": false
       }
     ]
+  },
+  "armor_failsafe_powered": {
+    "sounds": [
+      {
+        "name": "lspecial:armor_failsafe_powered",
+        "stream": false
+      }
+    ]
   }
 }

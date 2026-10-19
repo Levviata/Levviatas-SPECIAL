@@ -6,6 +6,7 @@ import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -33,6 +34,30 @@ public final class TooltipAdder {
         minigunTooltips(tooltipStack, event);
 
         strengthTooltip(tooltipStack, event);
+
+        armorFailsafeTooltip(tooltipStack, event);
+    }
+
+    private void armorFailsafeTooltip(ItemStack stack, ItemTooltipEvent event) {
+        if (stack.isEmpty() || !stack.hasTagCompound()) {
+            return;
+        }
+
+        NBTTagCompound tag = stack.getTagCompound();
+
+        if (!tag.getBoolean("LSPECIALArmorFailsafe")) {
+            return;
+        }
+
+        int savedDamage = tag.getInteger("LSPECIALArmorFailsafeDamage");
+
+        if (stack.getItemDamage() != savedDamage) {
+            tag.removeTag("LSPECIALArmorFailsafe");
+            tag.removeTag("LSPECIALArmorFailsafeDamage");
+            return;
+        }
+
+        event.getToolTip().add("§aSaved!");
     }
 
     private void strengthTooltip(ItemStack stack, ItemTooltipEvent event) {

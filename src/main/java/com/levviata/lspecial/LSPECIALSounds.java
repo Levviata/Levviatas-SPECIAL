@@ -24,6 +24,7 @@ public final class LSPECIALSounds {
     public static SoundEvent GRAPPLE_OUT;
     public static SoundEvent GRAPPLE_RESET;
     public static SoundEvent GRAPPLE_RESETCLINK;
+    public static SoundEvent ARMOR_FAILSAFE_POWERED;
 
     private LSPECIALSounds() {
     }
@@ -43,6 +44,7 @@ public final class LSPECIALSounds {
         GRAPPLE_OUT = register(event, "grapple_out");
         GRAPPLE_RESET = register(event, "grapple_reset");
         GRAPPLE_RESETCLINK = register(event, "grapple_resetclink");
+        ARMOR_FAILSAFE_POWERED = register(event, "armor_failsafe_powered");
     }
 
     private static SoundEvent register(RegistryEvent.Register<SoundEvent> event, String name) {
