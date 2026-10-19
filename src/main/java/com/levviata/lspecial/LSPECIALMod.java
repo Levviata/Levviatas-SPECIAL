@@ -109,7 +109,6 @@ public class LSPECIALMod {
         MinecraftForge.EVENT_BUS.register(new BobbleheadUse());
         MinecraftForge.EVENT_BUS.register(new StatsLogic());
         MinecraftForge.EVENT_BUS.register(new SPECIALGameplayHandler());
-        MinecraftForge.EVENT_BUS.register(new SPECIALRenamer());
         MinecraftForge.EVENT_BUS.register(new BobbleheadRecipeManager());
         MinecraftForge.EVENT_BUS.register(new LSPECIALContainerOpenHandler());
 
