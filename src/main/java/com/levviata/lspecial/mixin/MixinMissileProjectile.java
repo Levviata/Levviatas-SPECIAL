@@ -43,7 +43,7 @@ public abstract class MixinMissileProjectile {
     private double lspecial$fallbackMotionZ;
 
     @Unique
-    private static String registryName(net.minecraft.item.ItemStack stack) {
+    private static String lspecial$registryName(net.minecraft.item.ItemStack stack) {
         return stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null
                 ? "empty" : stack.getItem().getRegistryName().toString();
     }
@@ -74,8 +74,8 @@ public abstract class MixinMissileProjectile {
         EntityBulletBaseNT projectile = (EntityBulletBaseNT) (Object) this;
         if (weapon == null) {
             LSPECIALMod.info("[RocketDebug] BulletNT launcher-record FAILED path={} player={} mainhand={} offhand={} projectileId={} config={}",
-                    path, player.getName(), registryName(player.getHeldItemMainhand()),
-                    registryName(player.getHeldItemOffhand()), projectile.getEntityId(), projectile.getConfig());
+                    path, player.getName(), lspecial$registryName(player.getHeldItemMainhand()),
+                    lspecial$registryName(player.getHeldItemOffhand()), projectile.getEntityId(), projectile.getConfig());
             return;
         }
         projectile.getEntityData().setUniqueId("LSPECIALShooterUUID", player.getUniqueID());
