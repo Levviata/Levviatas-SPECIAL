@@ -186,28 +186,68 @@ public final class SPECIALGameplayHandler {
     }
 
     /**
-     * Restores equipped NTM power armor after each five-minute interval when its charge is nearly depleted.
+     * Restores all equipped NTM power armor to 50% when one piece reaches 1% charge.
      */
     private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
         if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe
-                || player.ticksExisted % 6000 != 0) return;
+                || player.ticksExisted % 6000 != 0) {
+            return;
+        }
 
         int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
-        if (luck < LSPECIALConfig.luckArmorFailsafeLevel) return;
+        if (luck < LSPECIALConfig.luckArmorFailsafeLevel) {
+            return;
+        }
+
+        boolean recoveryTriggered = false;
 
         for (ItemStack stack : player.inventory.armorInventory) {
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) continue;
+            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+                continue;
+            }
 
             long maxCharge = poweredArmor.getMaxCharge(stack);
-            if (maxCharge <= 0L) continue;
+            if (maxCharge <= 0L) {
+                continue;
+            }
+
+            if (poweredArmor.getCharge(stack) <= maxCharge * 0.01D) {
+                recoveryTriggered = true;
+                break;
+            }
+        }
+
+        if (!recoveryTriggered) {
+            return;
+        }
+
+        boolean recovered = false;
+
+        for (ItemStack stack : player.inventory.armorInventory) {
+            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+                continue;
+            }
+
+            long maxCharge = poweredArmor.getMaxCharge(stack);
+            if (maxCharge <= 0L) {
+                continue;
+            }
 
             long charge = poweredArmor.getCharge(stack);
-            if (charge <= maxCharge * 0.01D) {
-                long restoredCharge = maxCharge / 2L;
-                poweredArmor.setCharge(stack, restoredCharge);
-                LSPECIALMod.info("LuckArmor", "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
-                        stack.getItem().getRegistryName(), player.getName(), luck, charge, maxCharge, restoredCharge);
+            if (charge >= maxCharge * 0.50D) {
+                continue;
             }
+
+            long restoredCharge = maxCharge / 2L;
+            poweredArmor.setCharge(stack, restoredCharge);
+            recovered = true;
+
+            LSPECIALMod.info("LuckArmor", "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
+                    stack.getItem().getRegistryName(), player.getName(), luck, charge, maxCharge, restoredCharge);
+        }
+
+        if (recovered) {
+            player.playSound(LSPECIALSounds.ARMOR_FAILSAFE_POWERED, 1.0F, 1.0F);
         }
     }
 

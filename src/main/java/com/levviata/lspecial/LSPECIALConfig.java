@@ -331,7 +331,7 @@ public final class LSPECIALConfig {
         luckArmorDurabilityProtection = b(STATS, "luckArmorDurabilityProtection", true, "Luck can prevent armor durability loss when hurt");
         luckArmorDurabilityChancePerPoint = d(STATS, "luckArmorDurabilityChancePerPoint", 0.00025, 0, 1, "Chance per Luck point to prevent armor durability loss (0.00025 = 0.025%)");
         luckArmorDurabilityChanceCap = d(STATS, "luckArmorDurabilityChanceCap", 0.05, 0, 1, "Maximum armor durability protection chance");
-        luckArmorFailsafe = b(STATS, "luckArmorFailsafe", true, "Luck can unequip regular armor before it breaks and periodically restore powered armor from 1% to 50% energy");
+        luckArmorFailsafe = b(STATS, "luckArmorFailsafe", true, "Luck can protect regular armor from breaking and restore all powered armor below 50% when one reaches 1% energy");
         luckArmorFailsafeLevel = i(STATS, "luckArmorFailsafeLevel", 5, 1, 100, "Minimum Luck level required for armor failsafe and powered-armor energy recovery");
         perceptionArmorThresholdNegation = b(STATS, "perceptionArmorThresholdNegation", true, "Perception adds armor-threshold negation to supported NTM bullets");
         perceptionArmorThresholdNegationPerPoint = d(STATS, "perceptionArmorThresholdNegationPerPoint", 0.01, 0, 1, "Armor-threshold negation added per Perception point above threshold");

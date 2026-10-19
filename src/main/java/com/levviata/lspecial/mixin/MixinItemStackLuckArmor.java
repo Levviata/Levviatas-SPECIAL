@@ -9,7 +9,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.NonNullList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,47 +19,15 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
 // AI IS FREE SLAVERY
 /*
- * ItemStack.damageItem() is the confirmed armor damage path.
- * HEAD handles the failsafe before damage is applied.
- * TAIL handles the Luck durability/energy bonus after vanilla damage.
+ * itemstack.damageItem() is the confirmed armor damage path.
+ * head handles the failsafe before damage is applied.
+ * tail handles the Luck durability bonus after vanilla damage.
  */
 @Mixin(ItemStack.class)
 public abstract class MixinItemStackLuckArmor {
 
     @Unique
     private boolean lspecial$armorDamageCall;
-
-    @Unique
-    private boolean lspecial$poweredArmor;
-
-    @Unique
-    private long lspecial$poweredChargeBefore;
-
-    @Unique
-    private static boolean lspecial$unequipArmor(EntityPlayer player, ItemStack stack) {
-        NonNullList<ItemStack> armorInventory = player.inventory.armorInventory;
-        for (int slot = 0; slot < armorInventory.size(); slot++) {
-            if (armorInventory.get(slot) != stack) continue;
-
-            armorInventory.set(slot, ItemStack.EMPTY);
-            if (!player.inventory.addItemStackToInventory(stack)) {
-                player.dropItem(stack, false);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    @Unique
-    private static void lspecial$markFailsafe(ItemStack stack) {
-        if (!stack.hasTagCompound()) {
-            stack.setTagCompound(new NBTTagCompound());
-        }
-
-        NBTTagCompound tag = stack.getTagCompound();
-        tag.setBoolean("LSPECIALArmorFailsafe", true);
-        tag.setInteger("LSPECIALArmorFailsafeDamage", stack.getItemDamage());
-    }
 
     @Unique
     private static double lspecial$getChance(int luck) {
@@ -73,16 +40,18 @@ public abstract class MixinItemStackLuckArmor {
         ItemStack stack = (ItemStack) (Object) this;
 
         lspecial$armorDamageCall = false;
-        lspecial$poweredArmor = false;
-        lspecial$poweredChargeBefore = 0L;
-
-        if (!(entity instanceof EntityPlayer player)) return;
-        if (stack.isEmpty() || !(stack.getItem() instanceof ItemArmor)) return;
-        if (amount <= 0) return;
+        if (!(entity instanceof EntityPlayer player)) {
+            return;
+        }
+        if (stack.isEmpty() || !(stack.getItem() instanceof ItemArmor)) {
+            return;
+        }
+        if (amount <= 0) {
+            return;
+        }
 
         if (stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALArmorFailsafe")) {
             int savedDamage = stack.getTagCompound().getInteger("LSPECIALArmorFailsafeDamage");
-
             if (stack.getItemDamage() == savedDamage) {
                 return;
             }
@@ -98,117 +67,90 @@ public abstract class MixinItemStackLuckArmor {
                 stack.getItem().getRegistryName(), player.getName(), amount,
                 stack.getItemDamage(), stack.getMaxDamage(), luck);
 
-        if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe) return;
-        if (luck < LSPECIALConfig.luckArmorFailsafeLevel) return;
-
-        // NTM powered armor maps ItemStack damage into battery energy consumption.
-        if (stack.getItem() instanceof ArmorFSBPowered poweredArmor) {
-            lspecial$poweredArmor = true;
-            lspecial$poweredChargeBefore = poweredArmor.getCharge(stack);
-
-            long requiredEnergy = (long) amount * poweredArmor.consumption;
-
-            if (lspecial$poweredChargeBefore < requiredEnergy) {
-                if (lspecial$unequipArmor(player, stack)) {
-                    lspecial$markFailsafe(stack);
-
-                    player.playSound(
-                            LSPECIALSounds.ARMOR_FAILSAFE_POWERED,
-                            1.0F,
-                            1.0F
-                    );
-
-                    LSPECIALMod.info("LuckArmor",
-                            "POWER_ARMOR_FAILSAFE unequipped {} (player={}, luck={}, charge={}, requiredEnergy={})",
-                            stack.getItem().getRegistryName(), player.getName(), luck,
-                            lspecial$poweredChargeBefore, requiredEnergy);
-
-                    ci.cancel();
-                }
-            }
-
+        if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe) {
+            return;
+        }
+        if (luck < LSPECIALConfig.luckArmorFailsafeLevel) {
             return;
         }
 
-        if (!stack.isItemStackDamageable()) return;
+        if (stack.getItem() instanceof ArmorFSBPowered) {
+            return;
+        }
+
+        if (!stack.isItemStackDamageable()) {
+            return;
+        }
 
         int remainingDurability = stack.getMaxDamage() - stack.getItemDamage();
 
-        if (amount >= remainingDurability) {
-            if (lspecial$unequipArmor(player, stack)) {
-                lspecial$markFailsafe(stack);
-
-                if (stack.getItem() instanceof ItemArmor armor) {
-                    player.playSound(
-                            armor.getArmorMaterial().getSoundEvent(),
-                            1.0F,
-                            1.0F
-                    );
-                }
-
-                LSPECIALMod.info("LuckArmor",
-                        "FAILSAFE unequipped {} before break (player={}, luck={}, incomingDurabilityDamage={}, remainingDurability={})",
-                        stack.getItem().getRegistryName(), player.getName(), luck,
-                        amount, remainingDurability);
-
-                ci.cancel();
-                return;
-            }
+        if (amount < remainingDurability) {
+            lspecial$armorDamageCall = true;
+            return;
         }
 
-        lspecial$armorDamageCall = true;
+        if (!stack.hasTagCompound()) {
+            stack.setTagCompound(new NBTTagCompound());
+        }
+
+        NBTTagCompound tag = stack.getTagCompound();
+        tag.setBoolean("LSPECIALArmorFailsafe", true);
+        tag.setInteger("LSPECIALArmorFailsafeDamage", stack.getItemDamage());
+
+        if (stack.getItem() instanceof ItemArmor armor) {
+            player.playSound(armor.getArmorMaterial().getSoundEvent(), 1.0F, 1.0F);
+        }
+
+        LSPECIALMod.info("LuckArmor",
+                "FAILSAFE protected {} from breaking (player={}, luck={}, incomingDurabilityDamage={}, remainingDurability={})",
+                stack.getItem().getRegistryName(), player.getName(), luck,
+                amount, remainingDurability);
+
+        ci.cancel();
     }
 
     @Inject(method = "damageItem(ILnet/minecraft/entity/EntityLivingBase;)V", at = @At("TAIL"))
     private void lspecial$luckArmorBonus(int amount, EntityLivingBase entity, CallbackInfo ci) {
         ItemStack stack = (ItemStack) (Object) this;
 
-        if (!(entity instanceof EntityPlayer player)) return;
-        if (!lspecial$armorDamageCall && !lspecial$poweredArmor) return;
-        if (stack.isEmpty() || !(stack.getItem() instanceof ItemArmor)) return;
-        if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorDurabilityProtection) return;
+        if (!(entity instanceof EntityPlayer player)) {
+            return;
+        }
+        if (!lspecial$armorDamageCall) {
+            return;
+        }
+        if (stack.isEmpty() || !(stack.getItem() instanceof ItemArmor)) {
+            return;
+        }
+        if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorDurabilityProtection) {
+            return;
+        }
 
         int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
-        if (luck <= 0) return;
+        if (luck <= 0) {
+            return;
+        }
 
         double chance = lspecial$getChance(luck);
-        if (chance <= 0.0D) return;
+        if (chance <= 0.0D) {
+            return;
+        }
 
         LSPECIALMod.info("LuckArmor",
                 "damageItem TAIL item={} player={} amount={} luck={} chance={}",
                 stack.getItem().getRegistryName(), player.getName(), amount, luck, chance);
 
-        // NTM powered armor maps ItemStack damage into battery energy consumption.
-        if (stack.getItem() instanceof ArmorFSBPowered poweredArmor) {
-            int successfulRolls = 0;
-
-            for (int i = 0; i < amount; i++) {
-                if (player.getRNG().nextDouble() < chance) {
-                    poweredArmor.chargeBattery(stack, poweredArmor.consumption);
-                    successfulRolls++;
-                }
-            }
-
-            if (successfulRolls > 0) {
-                long energyRefunded = (long) successfulRolls * poweredArmor.consumption;
-
-                LSPECIALMod.info("LuckArmor",
-                        "POWER_ARMOR_ENERGY_REFUNDED item={} player={} luck={} chance={} energyRefunded={} chargeBefore={} chargeAfter={}",
-                        stack.getItem().getRegistryName(), player.getName(), luck, chance,
-                        energyRefunded, lspecial$poweredChargeBefore,
-                        poweredArmor.getCharge(stack));
-            }
-
+        if (!stack.isItemStackDamageable()) {
             return;
         }
-
-        if (!stack.isItemStackDamageable()) return;
 
         int damageBefore = stack.getItemDamage();
         int restored = 0;
 
         for (int i = 0; i < amount; i++) {
-            if (stack.getItemDamage() <= 0) break;
+            if (stack.getItemDamage() <= 0) {
+                break;
+            }
 
             if (player.getRNG().nextDouble() < chance) {
                 stack.setItemDamage(stack.getItemDamage() - 1);
@@ -223,4 +165,5 @@ public abstract class MixinItemStackLuckArmor {
                     restored, damageBefore, stack.getItemDamage());
         }
     }
+
 }
