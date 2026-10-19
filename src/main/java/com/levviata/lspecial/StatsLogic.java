@@ -487,14 +487,16 @@ public class StatsLogic {
         double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD)) : 0.0;
 
         double newDamage = baseHeldDamage + strengthBonus;
+        AttributeModifier strengthModifier = strength.getModifier(ATTACK_DAMAGE_UUID);
+        boolean hasStrengthModifier = strengthModifier != null;
 
-        if (Double.isNaN(state.previouStrengthDamage)
-                || Math.abs(strengthBonus - state.previouStrengthDamage) > 0.000001D) {
-            //LSPECIALMod.info("applying strength modifier");
+        if (!hasStrengthModifier
+                || Double.isNaN(state.previouStrengthDamage)
+                || Math.abs(newDamage - state.previouStrengthDamage) > 0.000001D) {
             strength.removeModifier(ATTACK_DAMAGE_UUID);
             strength.applyModifier(new AttributeModifier(ATTACK_DAMAGE_UUID, nameIn, newDamage, 0));
 
-            state.previouStrengthDamage = strengthBonus;
+            state.previouStrengthDamage = newDamage;
         }
 
         // endurance

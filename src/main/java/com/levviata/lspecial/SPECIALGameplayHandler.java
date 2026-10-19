@@ -186,9 +186,34 @@ public final class SPECIALGameplayHandler {
     }
 
     /**
-     * Restores all equipped NTM power armor to 50% when one piece reaches 1% charge.
+     * Restores all equipped NTM power armor below 50% when one piece reaches 1% charge.
      */
     private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
+        for (ItemStack stack : player.inventory.armorInventory) {
+            if (stack.isEmpty() || !stack.hasTagCompound()) {
+                continue;
+            }
+
+            NBTTagCompound tag = stack.getTagCompound();
+            int cooldown = tag.getInteger("LSPECIALArmorRechargeCooldown");
+            if (cooldown > 0) {
+                tag.setInteger("LSPECIALArmorRechargeCooldown", cooldown - 1);
+            }
+
+            if (tag.getBoolean("LSPECIALArmorRecharged")
+                    && stack.getItem() instanceof ArmorFSBPowered poweredArmor) {
+                long savedCharge = tag.getLong("LSPECIALArmorRechargedCharge");
+                long maxCharge = tag.getLong("LSPECIALArmorRechargedMaxCharge");
+                long charge = poweredArmor.getCharge(stack);
+
+                if (maxCharge > 0L && Math.abs(charge - savedCharge) >= maxCharge * 0.20D) {
+                    tag.removeTag("LSPECIALArmorRecharged");
+                    tag.removeTag("LSPECIALArmorRechargedCharge");
+                    tag.removeTag("LSPECIALArmorRechargedMaxCharge");
+                }
+            }
+        }
+
         if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe
                 || player.ticksExisted % 6000 != 0) {
             return;
@@ -240,6 +265,16 @@ public final class SPECIALGameplayHandler {
 
             long restoredCharge = maxCharge / 2L;
             poweredArmor.setCharge(stack, restoredCharge);
+
+            if (!stack.hasTagCompound()) {
+                stack.setTagCompound(new NBTTagCompound());
+            }
+
+            NBTTagCompound tag = stack.getTagCompound();
+            tag.setBoolean("LSPECIALArmorRecharged", true);
+            tag.setLong("LSPECIALArmorRechargedCharge", restoredCharge);
+            tag.setLong("LSPECIALArmorRechargedMaxCharge", maxCharge);
+            tag.setInteger("LSPECIALArmorRechargeCooldown", 6000);
             recovered = true;
 
             LSPECIALMod.info("LuckArmor", "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",

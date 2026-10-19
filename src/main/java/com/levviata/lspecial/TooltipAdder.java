@@ -45,19 +45,43 @@ public final class TooltipAdder {
 
         NBTTagCompound tag = stack.getTagCompound();
 
-        if (!tag.getBoolean("LSPECIALArmorFailsafe")) {
-            return;
+        if (tag.getBoolean("LSPECIALArmorFailsafe")) {
+            int savedDamage = tag.getInteger("LSPECIALArmorFailsafeDamage");
+
+            if (stack.getItemDamage() != savedDamage) {
+                tag.removeTag("LSPECIALArmorFailsafe");
+                tag.removeTag("LSPECIALArmorFailsafeDamage");
+            } else {
+                event.getToolTip().add("§7(Luck Lesser perk)");
+                event.getToolTip().add("§aSaved!");
+            }
         }
 
-        int savedDamage = tag.getInteger("LSPECIALArmorFailsafeDamage");
+        if (tag.getBoolean("LSPECIALArmorRecharged")) {
+            long savedCharge = tag.getLong("LSPECIALArmorRechargedCharge");
+            long maxCharge = tag.getLong("LSPECIALArmorRechargedMaxCharge");
 
-        if (stack.getItemDamage() != savedDamage) {
-            tag.removeTag("LSPECIALArmorFailsafe");
-            tag.removeTag("LSPECIALArmorFailsafeDamage");
-            return;
+            if (maxCharge > 0L && Math.abs(getPoweredArmorCharge(stack) - savedCharge) >= maxCharge * 0.20D) {
+                tag.removeTag("LSPECIALArmorRecharged");
+                tag.removeTag("LSPECIALArmorRechargedCharge");
+                tag.removeTag("LSPECIALArmorRechargedMaxCharge");
+            } else {
+                event.getToolTip().add("§7(Luck Lesser perk)");
+                event.getToolTip().add("§aRecharged!");
+            }
         }
 
-        event.getToolTip().add("§aSaved!");
+        int cooldown = tag.getInteger("LSPECIALArmorRechargeCooldown");
+        if (cooldown > 0) {
+            event.getToolTip().add("§cCooldown: " + ((cooldown + 19) / 20));
+        }
+    }
+
+    private long getPoweredArmorCharge(ItemStack stack) {
+        if (!(stack.getItem() instanceof com.hbm.items.armor.ArmorFSBPowered poweredArmor)) {
+            return Long.MIN_VALUE;
+        }
+        return poweredArmor.getCharge(stack);
     }
 
     private void strengthTooltip(ItemStack stack, ItemTooltipEvent event) {

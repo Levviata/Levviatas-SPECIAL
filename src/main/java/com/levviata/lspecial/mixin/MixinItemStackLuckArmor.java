@@ -1,6 +1,5 @@
 package com.levviata.lspecial.mixin;
 
-import com.hbm.items.armor.ArmorFSBPowered;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.LSPECIALSounds;
@@ -28,6 +27,22 @@ public abstract class MixinItemStackLuckArmor {
 
     @Unique
     private boolean lspecial$armorDamageCall;
+
+    @Unique
+    private static boolean lspecial$unequipArmor(EntityPlayer player, ItemStack stack) {
+        for (int slot = 0; slot < player.inventory.armorInventory.size(); slot++) {
+            if (player.inventory.armorInventory.get(slot) != stack) {
+                continue;
+            }
+
+            player.inventory.armorInventory.set(slot, ItemStack.EMPTY);
+            if (!player.inventory.addItemStackToInventory(stack)) {
+                player.dropItem(stack, false);
+            }
+            return true;
+        }
+        return false;
+    }
 
     @Unique
     private static double lspecial$getChance(int luck) {
@@ -74,15 +89,16 @@ public abstract class MixinItemStackLuckArmor {
             return;
         }
 
-        if (stack.getItem() instanceof ArmorFSBPowered) {
-            return;
-        }
-
         if (!stack.isItemStackDamageable()) {
             return;
         }
 
-        int remainingDurability = stack.getMaxDamage() - stack.getItemDamage();
+        int currentDamage = stack.getItemDamage();
+        int remainingDurability = stack.getMaxDamage() - currentDamage;
+
+        if (remainingDurability <= 0 || amount <= 0) {
+            return;
+        }
 
         if (amount < remainingDurability) {
             lspecial$armorDamageCall = true;
@@ -95,14 +111,14 @@ public abstract class MixinItemStackLuckArmor {
 
         NBTTagCompound tag = stack.getTagCompound();
         tag.setBoolean("LSPECIALArmorFailsafe", true);
-        tag.setInteger("LSPECIALArmorFailsafeDamage", stack.getItemDamage());
+        tag.setInteger("LSPECIALArmorFailsafeDamage", currentDamage);
 
-        if (stack.getItem() instanceof ItemArmor armor) {
+        if (lspecial$unequipArmor(player, stack) && stack.getItem() instanceof ItemArmor armor) {
             player.playSound(armor.getArmorMaterial().getSoundEvent(), 1.0F, 1.0F);
         }
 
         LSPECIALMod.info("LuckArmor",
-                "FAILSAFE protected {} from breaking (player={}, luck={}, incomingDurabilityDamage={}, remainingDurability={})",
+                "FAILSAFE unequipped {} before breaking (player={}, luck={}, incomingDurabilityDamage={}, remainingDurability={})",
                 stack.getItem().getRegistryName(), player.getName(), luck,
                 amount, remainingDurability);
 
