@@ -1,8 +1,6 @@
 package com.levviata.lspecial.proxy;
 
 import com.levviata.lspecial.*;
-import com.levviata.lspecial.network.SyncSPECIALStatsPacket;
-import com.levviata.lspecial.network.SyncSPECIALStatsSetter;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
