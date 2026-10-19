@@ -472,7 +472,7 @@ public class StatsLogic {
         // strength
         IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
 
-        Collection<AttributeModifier> damageCollection = heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
+        Collection<AttributeModifier> damageCollection = heldStack.isEmpty() ? null : heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
 
         double baseHeldDamage = 0.0;
 
@@ -490,7 +490,12 @@ public class StatsLogic {
         AttributeModifier strengthModifier = strength.getModifier(ATTACK_DAMAGE_UUID);
         boolean hasStrengthModifier = strengthModifier != null;
 
-        if (!hasStrengthModifier
+        if (!LSPECIALConfig.strength) {
+            if (hasStrengthModifier) {
+                strength.removeModifier(ATTACK_DAMAGE_UUID);
+            }
+            state.previouStrengthDamage = Double.NaN;
+        } else if (!hasStrengthModifier
                 || Double.isNaN(state.previouStrengthDamage)
                 || Math.abs(newDamage - state.previouStrengthDamage) > 0.000001D) {
             strength.removeModifier(ATTACK_DAMAGE_UUID);
