@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.levviata.lspecial.LSPECIALMod.syncStats;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 import static com.levviata.lspecial.command.CommandSetFlySpeed.getPlayerFlySpeed;
 import static com.levviata.lspecial.command.CommandSetSpeed.getPlayerSpeed;
@@ -33,7 +34,7 @@ import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED
 
 public class StatsLogic {
     //vanilla uuids
-    private static final UUID ATTACK_DAMAGE_UUID = UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
+    public static final UUID ATTACK_DAMAGE_UUID = UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
     //private static final UUID ATTACK_SPEED_UUID = UUID.fromString("FA233E1C-4180-4865-B01B-BCCE9785ACA3");
     // randomized uuids, same UUIDs as my mod Attribute Modifier
     private static final UUID MAX_HEALTH_UUID = UUID.fromString("5b94c2f0-6a6e-4b7d-9f6f-8d2a4d7c1e01");
@@ -46,7 +47,17 @@ public class StatsLogic {
     //private static final UUID LUCK_UUID = UUID.fromString("18b4f6d0-8ec1-4cba-a57e-52d6f83a7808");
     private static final String nameIn = "Lev Attribute Modifier";
 
-    private final Map<UUID, PlayerState> playerStates = new HashMap<>();
+    private static final Map<UUID, PlayerState> playerStates = new HashMap<>();
+
+    public static PlayerState getPlayerstate(EntityPlayer player) {
+        PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), id -> new PlayerState());
+        for (UUID u : playerStates.keySet()) {
+            if (u == player.getUniqueID()) {
+                return playerStates.get(u);
+            }
+        }
+        return state;
+    }
 
     private static final List<Item> g = new ArrayList<>();
     private static final List<String> r = new ArrayList<>();
@@ -386,54 +397,6 @@ public class StatsLogic {
         return LSPECIALExpression.eval(formula, vars, value);
     }
 
-    private static class PlayerState {
-        private int previousEndurance = -1;
-        private float previousMaxHealth = Float.NaN;
-        private int previousCharisma = -1;
-        private int previousAgility = -1;
-        private double previouStrengthDamage = Double.NaN;
-        private ItemStack previouStrengthStack = ItemStack.EMPTY;
-        private boolean previousEnduranceEnabled = true;
-        private boolean previousCharismaEnabled = true;
-        private boolean previousAgilityEnabled = true;
-
-        private ItemStack modifiedStackRef = ItemStack.EMPTY;
-        private Receiver modifiedReceiver;
-        private boolean modified;
-        private boolean installedMagazine;
-        private float originalDamage;
-        private int originalProjectileAmount;
-        private float originalAmmoPiercing;
-        private float originalArmorThresholdNegation;
-        private float previousFlySpeed = Float.NaN;
-        private float originalWear;
-        private IMagazine originalMagazine;
-        private final List<GunState> gunStates = new ArrayList<>();
-
-        private ItemStack wearTrackedStack;
-        private float previousObservedWear = Float.NaN;
-
-        private int gunIndex = -1;
-
-        private ItemStack loggedSednaGun = ItemStack.EMPTY;
-    }
-
-    @Desugar
-    private record GunState(int index,
-                            Receiver receiver,
-                            BulletConfig bulletConfig,
-                            float damage,
-                            boolean refireOnHold,
-                            boolean refireAfterDry,
-                            boolean doesPenetrate,
-                            float headshotMultiplier,
-                            int rounds,
-                            IMagazine magazine,
-                            float wear,
-                            float armorPiercing,
-                            float armorThresholdNegation) {
-    }
-
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         EntityPlayer player = event.player;
@@ -476,7 +439,7 @@ public class StatsLogic {
         ItemStack heldStack = player.getHeldItemMainhand();
 
         // Send the player's SPECIAL data to their client.
-        LSPECIALMod.syncStats((EntityPlayerMP) player);
+        syncStats((EntityPlayerMP) player);
 
         // Apply the player's attributes immediately.
         updatePlayerAttributes(player, heldStack, state);
@@ -499,7 +462,11 @@ public class StatsLogic {
         double baseHeldDamage = 0.0;
 
         if (damageCollection != null && !damageCollection.isEmpty()) {
-            baseHeldDamage = damageCollection.iterator().next().getAmount();
+            for (AttributeModifier modifier : damageCollection) {
+                if (ATTACK_DAMAGE_UUID.equals(modifier.getID())) {
+                    baseHeldDamage += modifier.getAmount();
+                }
+            }
         }
 
         double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD)) : 0.0;
@@ -507,14 +474,12 @@ public class StatsLogic {
         double newDamage = baseHeldDamage + strengthBonus;
 
         if (Double.isNaN(state.previouStrengthDamage)
-                || Math.abs(newDamage - state.previouStrengthDamage) > 0.000001D
-                || !ItemStack.areItemStacksEqual(heldStack, state.previouStrengthStack)) {
-
+                || Math.abs(strengthBonus - state.previouStrengthDamage) > 0.000001D) {
+            //LSPECIALMod.info("applying strength modifier");
             strength.removeModifier(ATTACK_DAMAGE_UUID);
             strength.applyModifier(new AttributeModifier(ATTACK_DAMAGE_UUID, nameIn, newDamage, 0));
 
-            state.previouStrengthDamage = newDamage;
-            state.previouStrengthStack = heldStack.copy();
+            state.previouStrengthDamage = strengthBonus;
         }
 
         // endurance
@@ -630,6 +595,53 @@ public class StatsLogic {
                 player.sendPlayerAbilities();
             }
         }
+    }
+
+    public static class PlayerState {
+        int previousEndurance = -1;
+        float previousMaxHealth = Float.NaN;
+        int previousCharisma = -1;
+        int previousAgility = -1;
+        double previouStrengthDamage = Double.NaN;
+        boolean previousEnduranceEnabled = true;
+        boolean previousCharismaEnabled = true;
+        boolean previousAgilityEnabled = true;
+
+        ItemStack modifiedStackRef = ItemStack.EMPTY;
+        Receiver modifiedReceiver;
+        boolean modified;
+        boolean installedMagazine;
+        float originalDamage;
+        int originalProjectileAmount;
+        float originalAmmoPiercing;
+        float originalArmorThresholdNegation;
+        float previousFlySpeed = Float.NaN;
+        float originalWear;
+        IMagazine originalMagazine;
+        final List<GunState> gunStates = new ArrayList<>();
+
+        ItemStack wearTrackedStack;
+        float previousObservedWear = Float.NaN;
+
+        int gunIndex = -1;
+
+        ItemStack loggedSednaGun = ItemStack.EMPTY;
+    }
+
+    @Desugar
+    private record GunState(int index,
+                            Receiver receiver,
+                            BulletConfig bulletConfig,
+                            float damage,
+                            boolean refireOnHold,
+                            boolean refireAfterDry,
+                            boolean doesPenetrate,
+                            float headshotMultiplier,
+                            int rounds,
+                            IMagazine magazine,
+                            float wear,
+                            float armorPiercing,
+                            float armorThresholdNegation) {
     }
 
     public static List<UUID> getUUIDs() {

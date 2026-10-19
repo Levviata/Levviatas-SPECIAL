@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
 
@@ -16,15 +17,14 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
+import static com.levviata.lspecial.StatsLogic.*;
 
 @SideOnly(Side.CLIENT)
 public final class TooltipAdder {
-    private static final UUID STRENGTH_MODIFIER = UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
     private static final DecimalFormat FORMAT = new DecimalFormat("0.##");
     private static final Pattern DAMAGE_VALUE = Pattern.compile("[+-]?\\d+(?:\\.\\d+)?");
 
@@ -43,8 +43,7 @@ public final class TooltipAdder {
         }
 
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.player == null
-                || !ItemStack.areItemsEqual(stack, mc.player.getHeldItemMainhand())) {
+        if (mc.player == null || !ItemStack.areItemsEqual(stack, mc.player.getHeldItemMainhand())) {
             return;
         }
 
@@ -56,9 +55,9 @@ public final class TooltipAdder {
             return;
         }
 
-        double original = 1.0;
+        double original = 0.0;
         for (AttributeModifier modifier : modifiers) {
-            if (!STRENGTH_MODIFIER.equals(modifier.getID())) {
+            if (ATTACK_DAMAGE_UUID.equals(modifier.getID())) {
                 original += modifier.getAmount();
             }
         }
