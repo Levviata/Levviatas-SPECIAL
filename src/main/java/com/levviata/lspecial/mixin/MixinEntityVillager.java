@@ -28,6 +28,28 @@ public abstract class MixinEntityVillager {
     @Shadow
     private MerchantRecipeList buyingList;
 
+    @Unique
+    private static void lspecial$discountCost(ItemStack cost, int charisma) {
+        if (cost == null || cost.isEmpty() || cost.getCount() <= 1) return;
+
+        Map<String, Double> variables = new HashMap<>();
+        variables.put("charisma", (double) charisma);
+        double fraction = LSPECIALExpression.eval(
+                LSPECIALConfig.charismaVillagerDiscountFormula, variables, 0.0D);
+        fraction = Math.max(0.0D, Math.min(0.75D, fraction));
+        int reducedCount = Math.max(1, (int) Math.ceil(cost.getCount() * (1.0D - fraction)));
+        cost.setCount(reducedCount);
+    }
+
+    @Unique
+    private static boolean lspecial$sameStackIgnoringCount(ItemStack first, ItemStack second) {
+        if (first == null || first.isEmpty()) return second == null || second.isEmpty();
+        if (second == null || second.isEmpty()) return false;
+        return first.getItem() == second.getItem()
+                && first.getMetadata() == second.getMetadata()
+                && ItemStack.areItemStackTagsEqual(first, second);
+    }
+
     @Inject(method = "getRecipes(Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/village/MerchantRecipeList;",
             at = @At("RETURN"), cancellable = true)
     private void lspecial$makePlayerSpecificTrades(EntityPlayer player,
@@ -73,27 +95,5 @@ public abstract class MixinEntityVillager {
                 return;
             }
         }
-    }
-
-    @Unique
-    private static void lspecial$discountCost(ItemStack cost, int charisma) {
-        if (cost == null || cost.isEmpty() || cost.getCount() <= 1) return;
-
-        Map<String, Double> variables = new HashMap<>();
-        variables.put("charisma", (double) charisma);
-        double fraction = LSPECIALExpression.eval(
-                LSPECIALConfig.charismaVillagerDiscountFormula, variables, 0.0D);
-        fraction = Math.max(0.0D, Math.min(0.75D, fraction));
-        int reducedCount = Math.max(1, (int) Math.ceil(cost.getCount() * (1.0D - fraction)));
-        cost.setCount(reducedCount);
-    }
-
-    @Unique
-    private static boolean lspecial$sameStackIgnoringCount(ItemStack first, ItemStack second) {
-        if (first == null || first.isEmpty()) return second == null || second.isEmpty();
-        if (second == null || second.isEmpty()) return false;
-        return first.getItem() == second.getItem()
-                && first.getMetadata() == second.getMetadata()
-                && ItemStack.areItemStackTagsEqual(first, second);
     }
 }

@@ -1,8 +1,8 @@
 package com.levviata.lspecial.mixin;
 
+import com.hbm.tileentity.machine.storage.TileEntityCrateBase;
 import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.LSPECIALNTMLootHandler;
-import com.hbm.tileentity.machine.storage.TileEntityCrateBase;
 import net.minecraft.entity.player.EntityPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

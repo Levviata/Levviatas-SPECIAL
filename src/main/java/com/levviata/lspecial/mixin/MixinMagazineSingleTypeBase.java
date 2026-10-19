@@ -3,13 +3,17 @@ package com.levviata.lspecial.mixin;
 import com.hbm.items.ModItems;
 import com.hbm.items.tool.ItemAmmoBag;
 import com.hbm.items.weapon.sedna.BulletConfig;
+import com.hbm.items.weapon.sedna.factory.XFactory10ga;
+import com.hbm.items.weapon.sedna.factory.XFactory44;
+import com.hbm.items.weapon.sedna.factory.XFactory50;
+import com.hbm.items.weapon.sedna.factory.XFactory556mm;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
 import com.levviata.lspecial.AMATRailgun;
 import com.levviata.lspecial.LSPECIALConfig;
-import com.levviata.lspecial.SPECIALScoreboard;
 import com.levviata.lspecial.SPECIALPlayerContext;
-import net.minecraft.inventory.IInventory;
+import com.levviata.lspecial.SPECIALScoreboard;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,7 +23,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import com.hbm.items.weapon.sedna.factory.*;
 
 import java.util.List;
 

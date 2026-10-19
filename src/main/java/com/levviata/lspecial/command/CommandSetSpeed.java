@@ -18,6 +18,11 @@ public class CommandSetSpeed extends CommandBase {
     // each player has their own speed value
     public static final Map<UUID, Integer> playerSpeeds = new HashMap<>();
 
+    // helper method for getting a player's speed
+    public static int getPlayerSpeed(EntityPlayer player) {
+        return playerSpeeds.getOrDefault(player.getUniqueID(), -1);
+    }
+
     @Override
     @Nonnull
     public String getName() {
@@ -111,10 +116,5 @@ public class CommandSetSpeed extends CommandBase {
     @Override
     public boolean checkPermission(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender) {
         return sender instanceof EntityPlayer;
-    }
-
-    // helper method for getting a player's speed
-    public static int getPlayerSpeed(EntityPlayer player) {
-        return playerSpeeds.getOrDefault(player.getUniqueID(), -1);
     }
 }

@@ -16,6 +16,12 @@ public final class RocketJumpPhysicsHandler {
     private static final double SOURCE_GRAVITY_COMPENSATION = 0.03D;
     private static final double MOMENTUM_RETENTION = 1.005D;
 
+    public static void begin(EntityPlayer player) {
+        if (player == null || player.world.isRemote) return;
+        player.getEntityData().setInteger(ACTIVE_TICKS, MAX_TRACK_TICKS);
+        player.getEntityData().setBoolean("LSPECIALRocketJumping", true);
+    }
+
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || event.player.world.isRemote
@@ -47,16 +53,12 @@ public final class RocketJumpPhysicsHandler {
 
     @SubscribeEvent
     public void onRocketJumpFallDamage(LivingHurtEvent event) {
-        if (!(event.getEntityLiving() instanceof EntityPlayer player) || !"fall".equals(event.getSource().damageType)) return;
+        if (!(event.getEntityLiving() instanceof EntityPlayer player) || !"fall".equals(event.getSource().damageType)) {
+            return;
+        }
         if (player.getEntityData().getBoolean("LSPECIALRocketJumping")) {
             player.fallDistance = 0.0F;
             event.setCanceled(true);
         }
-    }
-
-    public static void begin(EntityPlayer player) {
-        if (player == null || player.world.isRemote) return;
-        player.getEntityData().setInteger(ACTIVE_TICKS, MAX_TRACK_TICKS);
-        player.getEntityData().setBoolean("LSPECIALRocketJumping", true);
     }
 }

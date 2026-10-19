@@ -1,17 +1,15 @@
 package com.levviata.lspecial;
 
-import com.levviata.lspecial.entity.EntityGrappleChain;
-import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.GunConfig;
+import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
-import net.minecraft.item.ItemStack;
+import com.levviata.lspecial.entity.EntityGrappleChain;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
-import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -28,37 +26,6 @@ public final class GrappleController {
     private static final Map<UUID, State> ACTIVE = new HashMap<>();
     private static final Map<UUID, Long> COOLDOWN_UNTIL = new HashMap<>();
     private static final Map<UUID, PendingKill> PENDING_KILLS = new HashMap<>();
-
-    private static final class PendingKill {
-        final Entity target;
-        final boolean pullTarget;
-        final long createdAt;
-        long groundGraceUntil;
-
-        PendingKill(Entity target, boolean pullTarget, long createdAt) {
-            this.target = target;
-            this.pullTarget = pullTarget;
-            this.createdAt = createdAt;
-            this.groundGraceUntil = -1L;
-        }
-    }
-
-    private static final class State {
-        final int targetId;
-        final Entity targetEntity;
-        final boolean pullTarget;
-        final double speed;
-        EntityGrappleChain chain;
-        long targetDeathGraceUntil;
-        boolean killRewardGranted;
-
-        State(Entity target, boolean pullTarget, double speed) {
-            this.targetId = target.getEntityId();
-            this.targetEntity = target;
-            this.pullTarget = pullTarget;
-            this.speed = speed;
-        }
-    }
 
     public GrappleController() {
     }
@@ -104,6 +71,35 @@ public final class GrappleController {
             }
             if (state.chain != null) state.chain.setDead();
             LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-1, false), player);
+        }
+    }
+
+    private static void grantKillRewards(EntityPlayerMP player, Entity target) {
+        COOLDOWN_UNTIL.remove(player.getUniqueID());
+        LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-3, false), player);
+        lspecial$refillDoubleBarrel(player);
+    }
+
+    /**
+     * Refills the held double-barrel magazine after killing an entity while pulling the player toward it.
+     */
+    private static void lspecial$refillDoubleBarrel(EntityPlayerMP player) {
+        ItemStack stack = player.getHeldItemMainhand();
+        if (stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)
+                || !"hbm:gun_double_barrel".equals(stack.getItem().getRegistryName().toString())) return;
+        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+            GunConfig config = gun.getConfig(stack, configIndex);
+            if (config == null) continue;
+            Receiver[] receivers = config.getReceivers(stack);
+            if (receivers == null) continue;
+            for (Receiver receiver : receivers) {
+                if (receiver == null) continue;
+                IMagazine magazine = receiver.getMagazine(stack);
+                if (magazine != null) {
+                    magazine.setAmount(stack, magazine.getCapacity(stack));
+                    return;
+                }
+            }
         }
     }
 
@@ -214,35 +210,6 @@ public final class GrappleController {
         }
     }
 
-    private static void grantKillRewards(EntityPlayerMP player, Entity target) {
-        COOLDOWN_UNTIL.remove(player.getUniqueID());
-        LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-3, false), player);
-        lspecial$refillDoubleBarrel(player);
-    }
-
-    /**
-     * Refills the held double-barrel magazine after killing an entity while pulling the player toward it.
-     */
-    private static void lspecial$refillDoubleBarrel(EntityPlayerMP player) {
-        ItemStack stack = player.getHeldItemMainhand();
-        if (stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)
-                || !"hbm:gun_double_barrel".equals(stack.getItem().getRegistryName().toString())) return;
-        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
-            GunConfig config = gun.getConfig(stack, configIndex);
-            if (config == null) continue;
-            Receiver[] receivers = config.getReceivers(stack);
-            if (receivers == null) continue;
-            for (Receiver receiver : receivers) {
-                if (receiver == null) continue;
-                IMagazine magazine = receiver.getMagazine(stack);
-                if (magazine != null) {
-                    magazine.setAmount(stack, magazine.getCapacity(stack));
-                    return;
-                }
-            }
-        }
-    }
-
     @SubscribeEvent
     public void onLivingFall(LivingFallEvent event) {
         if (event.getEntityLiving() instanceof EntityPlayerMP player) {
@@ -251,6 +218,37 @@ public final class GrappleController {
                 player.fallDistance = 0.0F;
                 if (player.onGround) player.getEntityData().setBoolean("LSPECIALGrappleFallSafe", false);
             }
+        }
+    }
+
+    private static final class PendingKill {
+        final Entity target;
+        final boolean pullTarget;
+        final long createdAt;
+        long groundGraceUntil;
+
+        PendingKill(Entity target, boolean pullTarget, long createdAt) {
+            this.target = target;
+            this.pullTarget = pullTarget;
+            this.createdAt = createdAt;
+            this.groundGraceUntil = -1L;
+        }
+    }
+
+    private static final class State {
+        final int targetId;
+        final Entity targetEntity;
+        final boolean pullTarget;
+        final double speed;
+        EntityGrappleChain chain;
+        long targetDeathGraceUntil;
+        boolean killRewardGranted;
+
+        State(Entity target, boolean pullTarget, double speed) {
+            this.targetId = target.getEntityId();
+            this.targetEntity = target;
+            this.pullTarget = pullTarget;
+            this.speed = speed;
         }
     }
 }

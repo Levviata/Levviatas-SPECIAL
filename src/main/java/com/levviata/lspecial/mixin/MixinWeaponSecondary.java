@@ -1,19 +1,15 @@
 package com.levviata.lspecial.mixin;
 
 import com.hbm.handler.HbmKeybinds;
-import com.hbm.lib.HBMSoundHandler;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
-import com.hbm.items.weapon.sedna.factory.XFactory10ga;
-import com.hbm.items.weapon.sedna.factory.XFactory44;
-import com.hbm.items.weapon.sedna.factory.XFactory50;
-import com.hbm.items.weapon.sedna.factory.XFactory556mm;
-import com.hbm.items.weapon.sedna.factory.XFactoryEnergy;
+import com.hbm.items.weapon.sedna.factory.*;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.items.weapon.sedna.mags.MagazineBelt;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
+import com.hbm.lib.HBMSoundHandler;
 import com.levviata.lspecial.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -28,176 +24,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Adds server-authoritative secondary-fire actions while retaining NTM's native gun implementation.
  */
 @Mixin(value = ItemGunBaseNT.class, remap = false)
 public abstract class MixinWeaponSecondary {
-
-    /**
-     * Handles crouch-secondary ammo cycling, the Lag's self-kill action, and double-barrel grappling.
-     */
-    @Inject(method = "handleKeybind(Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/inventory/IInventory;Lnet/minecraft/item/ItemStack;Lcom/hbm/handler/HbmKeybinds$EnumKeybind;Z)V", at = @At("HEAD"), cancellable = true, remap = false)
-    private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory, ItemStack stack, HbmKeybinds.EnumKeybind keybind, boolean newState, CallbackInfo callback) {
-        if (!(entity instanceof EntityPlayer player) || stack == null || stack.isEmpty() || keybind == null) {
-            return;
-        }
-
-        String itemId = lspecial$registryId(stack);
-        if (itemId == null) return;
-
-        /* todo
-        if ("hbm:gun_flamer_topaz".equals(itemId) && keybind.name().contains("PRIMARY")
-                && stack.hasTagCompound()
-                && stack.getTagCompound().getInteger("LSPECIALDragonsFuryPressureLock") > 0) {
-            callback.cancel();
-            return;
-        }*/
-
-        if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
-                && !player.isSneaking() && keybind.name().contains("SECONDARY") && newState
-                && lspecial$hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
-            net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
-            if (tag == null) {
-                tag = new net.minecraft.nbt.NBTTagCompound();
-                stack.setTagCompound(tag);
-            }
-            boolean mode = !tag.getBoolean("LSPECIALSecondaryMode");
-            tag.setBoolean("LSPECIALSecondaryMode", mode);
-            player.world.playSound(null, player.getPosition(),
-                    mode ? HBMSoundHandler.switchmode2 : HBMSoundHandler.switchmode1,
-                    SoundCategory.PLAYERS, 1.0F, 1.0F);
-            lspecial$setSecondaryForAllConfigs(stack, mode);
-            callback.cancel();
-            return;
-        }
-
-        if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
-                && keybind.name().contains("PRIMARY")) {
-            boolean mode = stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALSecondaryMode");
-            lspecial$setSecondaryForAllConfigs(stack, mode);
-        }
-
-        // Route the double-barrel grapple through NTM's tertiary/scope key.
-        // Cancel the native tertiary action for this weapon so it cannot scope.
-        if (keybind.name().contains("TERTIARY") && "hbm:gun_double_barrel".equals(itemId)
-                && LSPECIALConfig.doubleBarrelGrapple && newState
-                && lspecial$hasIntelligence(player, 15)) {
-            if (player.world.isRemote) {
-                if (LSPECIALConfig.doubleBarrelGrappleVisuals) {
-                    net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
-                    if (tag == null) {
-                        tag = new net.minecraft.nbt.NBTTagCompound();
-                        stack.setTagCompound(tag);
-                    }
-                    tag.setInteger("LSPECIALGrappleVisualTicks", LSPECIALConfig.doubleBarrelGrappleVisualTicks);
-                }
-            } else {
-                if (player.isSneaking()) {
-                    lspecial$pullTargetTowardPlayer(player, LSPECIALConfig.doubleBarrelGrappleRange,
-                            LSPECIALConfig.doubleBarrelGrapplePullSpeed);
-                } else {
-                    lspecial$pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
-                            LSPECIALConfig.doubleBarrelGrapplePullSpeed);
-                }
-            }
-            callback.cancel();
-            return;
-        }
-
-        if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
-
-        // Both flame weapons use TF2 airblast on secondary fire; Dragon's Fury shares its pressure lock.
-        /* todo
-        if (("hbm:gun_flamer".equals(itemId) && LSPECIALConfig.flamethrowerPerk)
-                || ("hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryPerk)) {
-            if (newState && !player.world.isRemote) {
-                TF2FlamethrowerHandler.airblast(player, stack);
-            }
-            callback.cancel();
-            return;
-        }*/
-
-        boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && lspecial$hasIntelligence(player, 15);
-        boolean lagSecondary = "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(player, 5);
-        boolean lincolnSecondary = "hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(player, 15);
-        boolean tauSecondary = "hbm:gun_tau".equals(itemId) && LSPECIALConfig.tauSecondaryDamageBonus && lspecial$hasIntelligence(player, 5);
-        boolean lightRevolverSecondary = "hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk && lspecial$hasIntelligence(player, 5);
-        if (carbineSecondary || lagSecondary || lincolnSecondary
-                || tauSecondary || lightRevolverSecondary) {
-            // NTM reads the secondary state for the modified mode, but still needs primary input to run its firing pipeline.
-            lspecial$setPrimaryForAllConfigs(stack, newState);
-        }
-
-        if (!newState) return;
-
-        if (player.world.isRemote) {
-            boolean lightRevolverTrigger = "hbm:gun_light_revolver".equals(itemId)
-                    && LSPECIALConfig.lightRevolverRapidFirePerk && lspecial$hasIntelligence(player, 5);
-            if (lightRevolverTrigger && SPECIALGameplayHandler.startLightRevolverRapidFire(player, stack)) {
-                callback.cancel();
-                return;
-            }
-
-            boolean isSpecialAction = (player.isSneaking() && "hbm:gun_lag".equals(itemId)
-                    && LSPECIALConfig.lagSecondarySelfKill && lspecial$hasIntelligence(player, 5))
-                    || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
-                    && lspecial$hasIntelligence(player, 5) && lspecial$supportsAmmoCycling(itemId)
-                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATRailgunProjectile && lspecial$hasIntelligence(player, 15))))
-                    || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
-                    && LSPECIALConfig.doubleBarrelGrapple && lspecial$hasIntelligence(player, 15));
-            if (isSpecialAction) {
-                if (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
-                        && LSPECIALConfig.doubleBarrelGrappleVisuals) {
-                    net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
-                    if (tag == null) {
-                        tag = new net.minecraft.nbt.NBTTagCompound();
-                        stack.setTagCompound(tag);
-                    }
-                    tag.setInteger("LSPECIALGrappleVisualTicks", LSPECIALConfig.doubleBarrelGrappleVisualTicks);
-                }
-                callback.cancel();
-            }
-            return;
-        }
-        if (!lspecial$hasIntelligence(player, 5)) return;
-
-        if (!player.isSneaking() && "hbm:gun_light_revolver".equals(itemId)
-                && LSPECIALConfig.lightRevolverRapidFirePerk
-                && SPECIALGameplayHandler.startLightRevolverRapidFire(player, stack)) {
-            callback.cancel();
-            return;
-        }
-
-        if (player.isSneaking() && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondarySelfKill
-                && SPECIALGameplayHandler.startLagSelfKill(player, stack)) {
-            callback.cancel();
-            return;
-        }
-
-        if (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
-                && lspecial$hasIntelligence(player, 5) && lspecial$supportsAmmoCycling(itemId)
-                && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATRailgunProjectile && lspecial$hasIntelligence(player, 15)))
-                && lspecial$cycleSupportedAmmo(player, stack, inventory, itemId)) {
-            net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
-            if (tag == null) {
-                tag = new net.minecraft.nbt.NBTTagCompound();
-                stack.setTagCompound(tag);
-            }
-            boolean mode = !tag.getBoolean("LSPECIALTertiaryMode");
-            tag.setBoolean("LSPECIALTertiaryMode", mode);
-            player.world.playSound(null, player.getPosition(),
-                    mode ? HBMSoundHandler.switchmode2 : HBMSoundHandler.switchmode1,
-                    SoundCategory.PLAYERS, 1.0F, 1.0F);
-            callback.cancel();
-        }
-    }
 
     /**
      * Returns whether the player's current Intelligence score meets the requested perk level.
@@ -227,7 +60,6 @@ public abstract class MixinWeaponSecondary {
         return "hbm:gun_pepperbox".equals(itemId) || lspecial$isStarF(itemId) || lspecial$isUzi(itemId)
                 || lspecial$isG3(itemId) || "hbm:gun_amat".equals(itemId);
     }
-
 
     @Unique
     private static boolean lspecial$isStarF(String itemId) {
@@ -530,7 +362,6 @@ public abstract class MixinWeaponSecondary {
         return true;
     }
 
-
     /**
      * Identifies weapons with implemented alternate fire that can be selected as a persistent mode.
      */
@@ -599,6 +430,165 @@ public abstract class MixinWeaponSecondary {
                     return look.dotProduct(direction) >= 0.94D;
                 })
                 .min(Comparator.comparingDouble(player::getDistanceSq)).orElse(null);
+    }
+
+    /**
+     * Handles crouch-secondary ammo cycling, the Lag's self-kill action, and double-barrel grappling.
+     */
+    @Inject(method = "handleKeybind(Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/inventory/IInventory;Lnet/minecraft/item/ItemStack;Lcom/hbm/handler/HbmKeybinds$EnumKeybind;Z)V", at = @At("HEAD"), cancellable = true, remap = false)
+    private void lspecial$handleSecondaryPerks(EntityLivingBase entity, IInventory inventory, ItemStack stack, HbmKeybinds.EnumKeybind keybind, boolean newState, CallbackInfo callback) {
+        if (!(entity instanceof EntityPlayer player) || stack == null || stack.isEmpty() || keybind == null) {
+            return;
+        }
+
+        String itemId = lspecial$registryId(stack);
+        if (itemId == null) return;
+
+        /* todo
+        if ("hbm:gun_flamer_topaz".equals(itemId) && keybind.name().contains("PRIMARY")
+                && stack.hasTagCompound()
+                && stack.getTagCompound().getInteger("LSPECIALDragonsFuryPressureLock") > 0) {
+            callback.cancel();
+            return;
+        }*/
+
+        if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
+                && !player.isSneaking() && keybind.name().contains("SECONDARY") && newState
+                && lspecial$hasIntelligence(player, lspecial$toggleRequiredLevel(itemId))) {
+            net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+            if (tag == null) {
+                tag = new net.minecraft.nbt.NBTTagCompound();
+                stack.setTagCompound(tag);
+            }
+            boolean mode = !tag.getBoolean("LSPECIALSecondaryMode");
+            tag.setBoolean("LSPECIALSecondaryMode", mode);
+            player.world.playSound(null, player.getPosition(),
+                    mode ? HBMSoundHandler.switchmode2 : HBMSoundHandler.switchmode1,
+                    SoundCategory.PLAYERS, 1.0F, 1.0F);
+            lspecial$setSecondaryForAllConfigs(stack, mode);
+            callback.cancel();
+            return;
+        }
+
+        if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
+                && keybind.name().contains("PRIMARY")) {
+            boolean mode = stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALSecondaryMode");
+            lspecial$setSecondaryForAllConfigs(stack, mode);
+        }
+
+        // Route the double-barrel grapple through NTM's tertiary/scope key.
+        // Cancel the native tertiary action for this weapon so it cannot scope.
+        if (keybind.name().contains("TERTIARY") && "hbm:gun_double_barrel".equals(itemId)
+                && LSPECIALConfig.doubleBarrelGrapple && newState
+                && lspecial$hasIntelligence(player, 15)) {
+            if (player.world.isRemote) {
+                if (LSPECIALConfig.doubleBarrelGrappleVisuals) {
+                    net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+                    if (tag == null) {
+                        tag = new net.minecraft.nbt.NBTTagCompound();
+                        stack.setTagCompound(tag);
+                    }
+                    tag.setInteger("LSPECIALGrappleVisualTicks", LSPECIALConfig.doubleBarrelGrappleVisualTicks);
+                }
+            } else {
+                if (player.isSneaking()) {
+                    lspecial$pullTargetTowardPlayer(player, LSPECIALConfig.doubleBarrelGrappleRange,
+                            LSPECIALConfig.doubleBarrelGrapplePullSpeed);
+                } else {
+                    lspecial$pullPlayerTowardTarget(player, LSPECIALConfig.doubleBarrelGrappleRange,
+                            LSPECIALConfig.doubleBarrelGrapplePullSpeed);
+                }
+            }
+            callback.cancel();
+            return;
+        }
+
+        if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
+
+        // Both flame weapons use TF2 airblast on secondary fire; Dragon's Fury shares its pressure lock.
+        /* todo
+        if (("hbm:gun_flamer".equals(itemId) && LSPECIALConfig.flamethrowerPerk)
+                || ("hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryPerk)) {
+            if (newState && !player.world.isRemote) {
+                TF2FlamethrowerHandler.airblast(player, stack);
+            }
+            callback.cancel();
+            return;
+        }*/
+
+        boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && lspecial$hasIntelligence(player, 15);
+        boolean lagSecondary = "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(player, 5);
+        boolean lincolnSecondary = "hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(player, 15);
+        boolean tauSecondary = "hbm:gun_tau".equals(itemId) && LSPECIALConfig.tauSecondaryDamageBonus && lspecial$hasIntelligence(player, 5);
+        boolean lightRevolverSecondary = "hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk && lspecial$hasIntelligence(player, 5);
+        if (carbineSecondary || lagSecondary || lincolnSecondary
+                || tauSecondary || lightRevolverSecondary) {
+            // NTM reads the secondary state for the modified mode, but still needs primary input to run its firing pipeline.
+            lspecial$setPrimaryForAllConfigs(stack, newState);
+        }
+
+        if (!newState) return;
+
+        if (player.world.isRemote) {
+            boolean lightRevolverTrigger = "hbm:gun_light_revolver".equals(itemId)
+                    && LSPECIALConfig.lightRevolverRapidFirePerk && lspecial$hasIntelligence(player, 5);
+            if (lightRevolverTrigger && SPECIALGameplayHandler.startLightRevolverRapidFire(player, stack)) {
+                callback.cancel();
+                return;
+            }
+
+            boolean isSpecialAction = (player.isSneaking() && "hbm:gun_lag".equals(itemId)
+                    && LSPECIALConfig.lagSecondarySelfKill && lspecial$hasIntelligence(player, 5))
+                    || (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
+                    && lspecial$hasIntelligence(player, 5) && lspecial$supportsAmmoCycling(itemId)
+                    && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATRailgunProjectile && lspecial$hasIntelligence(player, 15))))
+                    || (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
+                    && LSPECIALConfig.doubleBarrelGrapple && lspecial$hasIntelligence(player, 15));
+            if (isSpecialAction) {
+                if (player.isSneaking() && "hbm:gun_double_barrel".equals(itemId)
+                        && LSPECIALConfig.doubleBarrelGrappleVisuals) {
+                    net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+                    if (tag == null) {
+                        tag = new net.minecraft.nbt.NBTTagCompound();
+                        stack.setTagCompound(tag);
+                    }
+                    tag.setInteger("LSPECIALGrappleVisualTicks", LSPECIALConfig.doubleBarrelGrappleVisualTicks);
+                }
+                callback.cancel();
+            }
+            return;
+        }
+        if (!lspecial$hasIntelligence(player, 5)) return;
+
+        if (!player.isSneaking() && "hbm:gun_light_revolver".equals(itemId)
+                && LSPECIALConfig.lightRevolverRapidFirePerk
+                && SPECIALGameplayHandler.startLightRevolverRapidFire(player, stack)) {
+            callback.cancel();
+            return;
+        }
+
+        if (player.isSneaking() && "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondarySelfKill
+                && SPECIALGameplayHandler.startLagSelfKill(player, stack)) {
+            callback.cancel();
+            return;
+        }
+
+        if (player.isSneaking() && LSPECIALConfig.weaponSecondaryAmmoCycling
+                && lspecial$hasIntelligence(player, 5) && lspecial$supportsAmmoCycling(itemId)
+                && (!"hbm:gun_amat".equals(itemId) || (LSPECIALConfig.AMATRailgunProjectile && lspecial$hasIntelligence(player, 15)))
+                && lspecial$cycleSupportedAmmo(player, stack, inventory, itemId)) {
+            net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
+            if (tag == null) {
+                tag = new net.minecraft.nbt.NBTTagCompound();
+                stack.setTagCompound(tag);
+            }
+            boolean mode = !tag.getBoolean("LSPECIALTertiaryMode");
+            tag.setBoolean("LSPECIALTertiaryMode", mode);
+            player.world.playSound(null, player.getPosition(),
+                    mode ? HBMSoundHandler.switchmode2 : HBMSoundHandler.switchmode1,
+                    SoundCategory.PLAYERS, 1.0F, 1.0F);
+            callback.cancel();
+        }
     }
 
 }

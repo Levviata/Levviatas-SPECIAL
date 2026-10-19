@@ -1,25 +1,25 @@
 package com.levviata.lspecial;
 
+import com.hbm.blocks.ModBlocks;
+import com.hbm.capability.HbmLivingCapability;
+import com.hbm.capability.HbmLivingProps;
+import com.hbm.entity.effect.EntityFireLingering;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.GunConfig;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
 import com.hbm.items.weapon.sedna.factory.XFactoryFlamer;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
-import com.hbm.blocks.ModBlocks;
-import com.hbm.capability.HbmLivingCapability;
-import com.hbm.capability.HbmLivingProps;
-import com.hbm.entity.effect.EntityFireLingering;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.init.Blocks;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 // todo
 
@@ -27,18 +27,17 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
  * TF2-style secondary airblast for NTM's standard Sedna flamethrower.
  */
 public final class TF2FlamethrowerHandler {
-    private static final int AIRBLAST_AMMO_COST = 20;
-    private static final double AIRBLAST_RANGE = 5.0D;
-    private static final double AIRBLAST_CONE_DOT = 0.45D;
-
-    /**
-     * The only knob to turn for flame speed - everything else below derives from it, see {@link #ticksToReachRange}.
-     */
-    private static final float LSPECIAL_FLAME_VELOCITY = 0.8F;
     /**
      * Hard flame range in blocks - must match the "8.0D" literals in MixinTF2FlameProjectile.
      */
     public static final double LSPECIAL_FLAME_RANGE_BLOCKS = 8.0D;
+    private static final int AIRBLAST_AMMO_COST = 20;
+    private static final double AIRBLAST_RANGE = 5.0D;
+    private static final double AIRBLAST_CONE_DOT = 0.45D;
+    /**
+     * The only knob to turn for flame speed - everything else below derives from it, see {@link #ticksToReachRange}.
+     */
+    private static final float LSPECIAL_FLAME_VELOCITY = 0.8F;
     /**
      * Extra ticks of headroom tacked onto the computed range-time before it's used as the expires floor.
      */
@@ -270,15 +269,6 @@ public final class TF2FlamethrowerHandler {
         return false;
     }
 
-    @SubscribeEvent
-    public void tickPressureLocks(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.player.world.isRemote) return;
-        EntityPlayer player = event.player;
-        for (ItemStack stack : player.inventory.mainInventory) lspecial$tickPressure(stack);
-        for (ItemStack stack : player.inventory.armorInventory) lspecial$tickPressure(stack);
-        lspecial$tickPressure(player.getHeldItemOffhand());
-    }
-
     private static void lspecial$tickPressure(ItemStack stack) {
         if (stack == null || stack.isEmpty() || !stack.hasTagCompound()
                 || stack.getItem().getRegistryName() == null
@@ -287,7 +277,6 @@ public final class TF2FlamethrowerHandler {
         int lock = tag.getInteger("LSPECIALDragonsFuryPressureLock");
         if (lock > 0) tag.setInteger("LSPECIALDragonsFuryPressureLock", lock - 1);
     }
-
 
     private static void lspecial$redirectProjectileOwner(Entity projectile, EntityPlayer player) {
         try {
@@ -314,5 +303,14 @@ public final class TF2FlamethrowerHandler {
                 }
             }
         }
+    }
+
+    @SubscribeEvent
+    public void tickPressureLocks(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || event.player.world.isRemote) return;
+        EntityPlayer player = event.player;
+        for (ItemStack stack : player.inventory.mainInventory) lspecial$tickPressure(stack);
+        for (ItemStack stack : player.inventory.armorInventory) lspecial$tickPressure(stack);
+        lspecial$tickPressure(player.getHeldItemOffhand());
     }
 }

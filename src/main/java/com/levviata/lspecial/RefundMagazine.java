@@ -1,9 +1,9 @@
 package com.levviata.lspecial;
 
-import com.hbm.items.weapon.sedna.BulletConfig;
-import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.items.ModItems;
 import com.hbm.items.tool.ItemAmmoBag;
+import com.hbm.items.weapon.sedna.BulletConfig;
+import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.particle.SpentCasing;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -21,6 +21,30 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
 
     public RefundMagazine(IMagazine<BulletConfig> original) {
         this.original = original;
+    }
+
+    /**
+     * Counts only the selected ammunition, including stacks stored inside NTM ammo bags.
+     */
+    private static int countAmmo(IInventory inventory, BulletConfig config) {
+        if (inventory == null || config == null || config.ammo == null) return 0;
+        int count = 0;
+        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
+            ItemStack stack = inventory.getStackInSlot(slot);
+            if (stack.isEmpty()) continue;
+            if (config.ammo.matchesRecipe(stack, true)) {
+                count += stack.getCount();
+            } else if (stack.getItem() == ModItems.ammo_bag || stack.getItem() == ModItems.ammo_bag_infinite) {
+                ItemAmmoBag.InventoryAmmoBag bag = new ItemAmmoBag.InventoryAmmoBag(stack);
+                for (int bagSlot = 0; bagSlot < bag.getSlots(); bagSlot++) {
+                    ItemStack bagStack = bag.getStackInSlot(bagSlot);
+                    if (!bagStack.isEmpty() && config.ammo.matchesRecipe(bagStack, true)) {
+                        count += bagStack.getCount();
+                    }
+                }
+            }
+        }
+        return count;
     }
 
     public IMagazine<BulletConfig> getOriginalMagazine() {
@@ -102,30 +126,6 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
         if (!refund.isEmpty()) {
             player.dropItem(refund, false);
         }
-    }
-
-    /**
-     * Counts only the selected ammunition, including stacks stored inside NTM ammo bags.
-     */
-    private static int countAmmo(IInventory inventory, BulletConfig config) {
-        if (inventory == null || config == null || config.ammo == null) return 0;
-        int count = 0;
-        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
-            ItemStack stack = inventory.getStackInSlot(slot);
-            if (stack.isEmpty()) continue;
-            if (config.ammo.matchesRecipe(stack, true)) {
-                count += stack.getCount();
-            } else if (stack.getItem() == ModItems.ammo_bag || stack.getItem() == ModItems.ammo_bag_infinite) {
-                ItemAmmoBag.InventoryAmmoBag bag = new ItemAmmoBag.InventoryAmmoBag(stack);
-                for (int bagSlot = 0; bagSlot < bag.getSlots(); bagSlot++) {
-                    ItemStack bagStack = bag.getStackInSlot(bagSlot);
-                    if (!bagStack.isEmpty() && config.ammo.matchesRecipe(bagStack, true)) {
-                        count += bagStack.getCount();
-                    }
-                }
-            }
-        }
-        return count;
     }
 
     @Override

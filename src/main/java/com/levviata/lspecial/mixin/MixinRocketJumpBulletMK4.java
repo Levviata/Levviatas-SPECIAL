@@ -45,6 +45,12 @@ public abstract class MixinRocketJumpBulletMK4 {
     @Unique
     private double lspecial$fallbackMotionZ;
 
+    @Unique
+    private static String lspecial$registryName(net.minecraft.item.ItemStack stack) {
+        return stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null
+                ? "empty" : stack.getItem().getRegistryName().toString();
+    }
+
     @Inject(method = "<init>(Lnet/minecraft/world/World;Lnet/minecraft/entity/EntityLivingBase;Lcom/hbm/items/weapon/sedna/BulletConfig;FFDDDDDD)V",
             at = @At("RETURN"), remap = false)
     private void lspecial$recordWorldShooterConstructor(net.minecraft.world.World world, EntityLivingBase shooter, com.hbm.items.weapon.sedna.BulletConfig config, float yaw, float pitch,
@@ -76,12 +82,6 @@ public abstract class MixinRocketJumpBulletMK4 {
         bullet.getEntityData().setString("LSPECIALShooterWeapon", weapon);
         LSPECIALMod.info("[RocketDebug] BulletMK4 launcher-recorded path={} player={} weapon={} projectileId={} config={}",
                 path, player.getName(), weapon, bullet.getEntityId(), bullet.getBulletConfig());
-    }
-
-    @Unique
-    private static String lspecial$registryName(net.minecraft.item.ItemStack stack) {
-        return stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null
-                ? "empty" : stack.getItem().getRegistryName().toString();
     }
 
     @Inject(method = "onImpact(Lnet/minecraft/util/math/RayTraceResult;)V", at = @At("HEAD"), remap = false)

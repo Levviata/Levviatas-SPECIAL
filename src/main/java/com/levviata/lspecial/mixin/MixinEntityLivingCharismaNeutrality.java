@@ -8,10 +8,10 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.scoreboard.ScoreObjective;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.nbt.NBTTagCompound;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,59 +23,6 @@ public abstract class MixinEntityLivingCharismaNeutrality {
 
     @Unique
     private static final String LSPECIAL_RETALIATION_TARGET = "LSPECIALRetaliationTarget";
-
-    @Inject(method = "setAttackTarget(Lnet/minecraft/entity/EntityLivingBase;)V",
-            at = @At("HEAD"), cancellable = true)
-    private void lspecial$applyCharismaNeutrality(EntityLivingBase target, CallbackInfo ci) {
-        if (!(target instanceof EntityPlayer player)) {
-            return;
-        }
-
-        EntityLiving mob = (EntityLiving) (Object) this;
-        if (mob.world.isRemote) {
-            return;
-        }
-
-        ResourceLocation registryKey = EntityList.getKey(mob);
-        String entityId = registryKey == null ? "<unregistered>" : registryKey.toString();
-        String mode = LSPECIALConfig.charismaNeutralRetaliationMode == null
-                ? "NORMAL" : LSPECIALConfig.charismaNeutralRetaliationMode.trim().toUpperCase();
-
-        if (!LSPECIALConfig.charisma || !LSPECIALConfig.charismaNeutralMobs) {
-            LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=ALLOW reason=feature_disabled charismaEnabled={} neutralityEnabled={}",
-                    entityId, player.getName(), LSPECIALConfig.charisma, LSPECIALConfig.charismaNeutralMobs);
-            return;
-        }
-
-        int charisma = lspecial$getCharisma(player);
-        if (charisma < LSPECIALConfig.charismaNeutralLevel) {
-            LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=ALLOW reason=below_threshold charisma={} required={}",
-                    entityId, player.getName(), charisma, LSPECIALConfig.charismaNeutralLevel);
-            return;
-        }
-
-        boolean configured = lspecial$isConfiguredNeutralMob(mob, entityId);
-        if (!configured) {
-            LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=ALLOW reason=not_in_neutral_list mode={} list={}",
-                    entityId, player.getName(), mode, LSPECIALConfig.charismaNeutralEntityList);
-            return;
-        }
-
-        boolean retaliationAllowed = lspecial$isRetaliatingAgainst(mob, player, mode);
-        if (retaliationAllowed) {
-            LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=ALLOW reason=retaliation mode={} revengeTarget={} storedTarget={}",
-                    entityId, player.getName(), mode,
-                    mob.getRevengeTarget() == null ? "<none>" : mob.getRevengeTarget().getName(),
-                    lspecial$getStoredRetaliationTarget(mob));
-            return;
-        }
-
-        LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=CANCEL reason=neutral charisma={} required={} mode={} revengeTarget={} storedTarget={}",
-                entityId, player.getName(), charisma, LSPECIALConfig.charismaNeutralLevel, mode,
-                mob.getRevengeTarget() == null ? "<none>" : mob.getRevengeTarget().getName(),
-                lspecial$getStoredRetaliationTarget(mob));
-        ci.cancel();
-    }
 
     @Unique
     private static int lspecial$getCharisma(EntityPlayer player) {
@@ -156,5 +103,58 @@ public abstract class MixinEntityLivingCharismaNeutrality {
         }
         regex.append('$');
         return value.matches(regex.toString());
+    }
+
+    @Inject(method = "setAttackTarget(Lnet/minecraft/entity/EntityLivingBase;)V",
+            at = @At("HEAD"), cancellable = true)
+    private void lspecial$applyCharismaNeutrality(EntityLivingBase target, CallbackInfo ci) {
+        if (!(target instanceof EntityPlayer player)) {
+            return;
+        }
+
+        EntityLiving mob = (EntityLiving) (Object) this;
+        if (mob.world.isRemote) {
+            return;
+        }
+
+        ResourceLocation registryKey = EntityList.getKey(mob);
+        String entityId = registryKey == null ? "<unregistered>" : registryKey.toString();
+        String mode = LSPECIALConfig.charismaNeutralRetaliationMode == null
+                ? "NORMAL" : LSPECIALConfig.charismaNeutralRetaliationMode.trim().toUpperCase();
+
+        if (!LSPECIALConfig.charisma || !LSPECIALConfig.charismaNeutralMobs) {
+            LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=ALLOW reason=feature_disabled charismaEnabled={} neutralityEnabled={}",
+                    entityId, player.getName(), LSPECIALConfig.charisma, LSPECIALConfig.charismaNeutralMobs);
+            return;
+        }
+
+        int charisma = lspecial$getCharisma(player);
+        if (charisma < LSPECIALConfig.charismaNeutralLevel) {
+            LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=ALLOW reason=below_threshold charisma={} required={}",
+                    entityId, player.getName(), charisma, LSPECIALConfig.charismaNeutralLevel);
+            return;
+        }
+
+        boolean configured = lspecial$isConfiguredNeutralMob(mob, entityId);
+        if (!configured) {
+            LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=ALLOW reason=not_in_neutral_list mode={} list={}",
+                    entityId, player.getName(), mode, LSPECIALConfig.charismaNeutralEntityList);
+            return;
+        }
+
+        boolean retaliationAllowed = lspecial$isRetaliatingAgainst(mob, player, mode);
+        if (retaliationAllowed) {
+            LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=ALLOW reason=retaliation mode={} revengeTarget={} storedTarget={}",
+                    entityId, player.getName(), mode,
+                    mob.getRevengeTarget() == null ? "<none>" : mob.getRevengeTarget().getName(),
+                    lspecial$getStoredRetaliationTarget(mob));
+            return;
+        }
+
+        LSPECIALMod.info("[CharismaNeutrality] entity={} target={} result=CANCEL reason=neutral charisma={} required={} mode={} revengeTarget={} storedTarget={}",
+                entityId, player.getName(), charisma, LSPECIALConfig.charismaNeutralLevel, mode,
+                mob.getRevengeTarget() == null ? "<none>" : mob.getRevengeTarget().getName(),
+                lspecial$getStoredRetaliationTarget(mob));
+        ci.cancel();
     }
 }

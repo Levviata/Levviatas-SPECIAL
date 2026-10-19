@@ -3,13 +3,11 @@ package com.levviata.lspecial.mixin;
 import com.hbm.entity.projectile.EntityThrowableNT;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.levviata.lspecial.StingerDamageHandler;
-
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;

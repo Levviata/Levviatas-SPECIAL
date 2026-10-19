@@ -1,12 +1,12 @@
 package com.levviata.lspecial.proxy;
 
 import com.levviata.lspecial.*;
+import com.levviata.lspecial.client.render.RenderGrappleChain;
+import com.levviata.lspecial.entity.EntityGrappleChain;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
-import com.levviata.lspecial.entity.EntityGrappleChain;
-import com.levviata.lspecial.client.render.RenderGrappleChain;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;

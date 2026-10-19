@@ -6,7 +6,6 @@ import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.ItemStack;
-
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -20,7 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
-import static com.levviata.lspecial.StatsLogic.*;
+import static com.levviata.lspecial.StatsLogic.ATTACK_DAMAGE_UUID;
 
 @SideOnly(Side.CLIENT)
 public final class TooltipAdder {

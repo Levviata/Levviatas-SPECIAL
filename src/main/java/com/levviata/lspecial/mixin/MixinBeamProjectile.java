@@ -3,16 +3,13 @@ package com.levviata.lspecial.mixin;
 import com.hbm.entity.projectile.EntityBulletBeamBase;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactoryAccelerator;
-
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.SPECIALScoreboard;
-
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.RayTraceResult;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;

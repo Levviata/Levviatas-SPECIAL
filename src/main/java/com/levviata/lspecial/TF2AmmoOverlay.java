@@ -5,20 +5,17 @@ import com.hbm.items.weapon.sedna.ItemGunBaseNT;
 import com.hbm.items.weapon.sedna.Receiver;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 // todo
@@ -32,15 +29,55 @@ public final class TF2AmmoOverlay {
     private static final int TEXTURE_HEIGHT = 384;
     private static final int BADGE_TEXTURE_WIDTH = 2088;
     private static final int BADGE_TEXTURE_HEIGHT = 1208;
-
+    private static int lspecial$renderEvents;
+    private static boolean lspecial$loggedOverlayReady;
+    private static boolean lspecial$loggedWeapon;
     private Font tf2Font;
     private int lastAmmo = Integer.MIN_VALUE;
     private int lastShadowOffsetX = Integer.MIN_VALUE;
     private int lastShadowOffsetY = Integer.MIN_VALUE;
     private ResourceLocation ammoTexture;
-    private static int lspecial$renderEvents;
-    private static boolean lspecial$loggedOverlayReady;
-    private static boolean lspecial$loggedWeapon;
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static int getLoadedAmmo(ItemStack stack, EntityPlayer player) {
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return -1;
+        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
+            GunConfig config;
+            try {
+                config = gun.getConfig(stack, configIndex);
+            } catch (RuntimeException ignored) {
+                continue;
+            }
+            if (config == null) continue;
+            Receiver[] receivers = config.getReceivers(stack);
+            if (receivers == null) continue;
+            for (Receiver receiver : receivers) {
+                if (receiver == null) continue;
+                IMagazine<?> magazine = receiver.getMagazine(stack);
+                if (magazine == null) continue;
+                try {
+                    return Math.max(0, magazine.getAmount(stack, player == null ? null : player.inventory));
+                } catch (RuntimeException ignored) {
+                    return -1;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isConfiguredWeapon(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) return false;
+        String id = stack.getItem().getRegistryName().toString();
+        String list = LSPECIALConfig.tf2AmmoGuiWeaponList;
+        if (list == null || list.trim().isEmpty()) return false;
+        for (String allowed : list.split(",")) {
+            if (id.equals(allowed.trim())) return true;
+        }
+        return false;
+    }
 
     @SubscribeEvent
     public void render(RenderGameOverlayEvent.Post event) {
@@ -158,47 +195,6 @@ public final class TF2AmmoOverlay {
             /*LSPECIALMod.logWarn("[TF2AmmoGUI] rendered: ammo={}, screen={}x{}, badge={}x{} at {},{} scale={} preset={}",
                     ammo, screenWidth, screenHeight, badgeWidth, badgeHeight, left, top, uiScale, position);*/
         }
-    }
-
-    private static int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
-    }
-
-    private static int getLoadedAmmo(ItemStack stack, EntityPlayer player) {
-        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return -1;
-        for (int configIndex = 0; configIndex < gun.getConfigCount(); configIndex++) {
-            GunConfig config;
-            try {
-                config = gun.getConfig(stack, configIndex);
-            } catch (RuntimeException ignored) {
-                continue;
-            }
-            if (config == null) continue;
-            Receiver[] receivers = config.getReceivers(stack);
-            if (receivers == null) continue;
-            for (Receiver receiver : receivers) {
-                if (receiver == null) continue;
-                IMagazine<?> magazine = receiver.getMagazine(stack);
-                if (magazine == null) continue;
-                try {
-                    return Math.max(0, magazine.getAmount(stack, player == null ? null : player.inventory));
-                } catch (RuntimeException ignored) {
-                    return -1;
-                }
-            }
-        }
-        return -1;
-    }
-
-    private static boolean isConfiguredWeapon(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) return false;
-        String id = stack.getItem().getRegistryName().toString();
-        String list = LSPECIALConfig.tf2AmmoGuiWeaponList;
-        if (list == null || list.trim().isEmpty()) return false;
-        for (String allowed : list.split(",")) {
-            if (id.equals(allowed.trim())) return true;
-        }
-        return false;
     }
 
     private void rebuildAmmoTexture(Minecraft mc, int ammo) {

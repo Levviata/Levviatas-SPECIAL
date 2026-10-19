@@ -14,6 +14,14 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 public final class PlayerModelScaleHandler {
     private boolean lspecial$matrixPushed;
 
+    /**
+     * Uses the client cache for the local player and the player's scoreboard for everyone else.
+     */
+    private static int lspecial$getEndurance(EntityPlayer player) {
+        if (player == Minecraft.getMinecraft().player && inst != null) return inst.getClientEndurance();
+        return inst == null ? 0 : inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);
+    }
+
     @SubscribeEvent
     public void onRenderPlayerPre(RenderPlayerEvent.Pre event) {
         lspecial$matrixPushed = false;
@@ -38,13 +46,5 @@ public final class PlayerModelScaleHandler {
             GlStateManager.popMatrix();
             lspecial$matrixPushed = false;
         }
-    }
-
-    /**
-     * Uses the client cache for the local player and the player's scoreboard for everyone else.
-     */
-    private static int lspecial$getEndurance(EntityPlayer player) {
-        if (player == Minecraft.getMinecraft().player && inst != null) return inst.getClientEndurance();
-        return inst == null ? 0 : inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);
     }
 }

@@ -1,11 +1,7 @@
 package com.levviata.lspecial.mixin;
 
 import com.hbm.entity.projectile.EntityBulletBaseNT;
-import com.levviata.lspecial.LSPECIALConfig;
-import com.levviata.lspecial.LSPECIALMod;
-import com.levviata.lspecial.RocketJumpHandler;
-import com.levviata.lspecial.StingerDamageHandler;
-import com.levviata.lspecial.SPECIALScoreboard;
+import com.levviata.lspecial.*;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -46,6 +42,12 @@ public abstract class MixinMissileProjectile {
     @Unique
     private double lspecial$fallbackMotionZ;
 
+    @Unique
+    private static String registryName(net.minecraft.item.ItemStack stack) {
+        return stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null
+                ? "empty" : stack.getItem().getRegistryName().toString();
+    }
+
     @Inject(method = "<init>(Lnet/minecraft/world/World;ILnet/minecraft/entity/EntityLivingBase;)V",
             at = @At("RETURN"), remap = false)
     private void lspecial$recordLauncherConstructor(net.minecraft.world.World world, int configId,
@@ -80,12 +82,6 @@ public abstract class MixinMissileProjectile {
         projectile.getEntityData().setString("LSPECIALShooterWeapon", weapon);
         LSPECIALMod.info("[RocketDebug] BulletNT launcher-recorded path={} player={} weapon={} projectileId={} config={}",
                 path, player.getName(), weapon, projectile.getEntityId(), projectile.getConfig());
-    }
-
-    @Unique
-    private static String registryName(net.minecraft.item.ItemStack stack) {
-        return stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null
-                ? "empty" : stack.getItem().getRegistryName().toString();
     }
 
     /**

@@ -1,6 +1,5 @@
 package com.levviata.lspecial.mixin;
 
-import com.hbm.capability.HbmLivingProps;
 import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.factory.XFactoryAccelerator;
@@ -14,7 +13,6 @@ import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -47,6 +45,33 @@ public abstract class MixinDragonsFuryProjectile {
     private double lspecial$dragonsFuryOriginY;
     @Unique
     private double lspecial$dragonsFuryOriginZ;
+
+    @Unique
+    private static ItemStack lspecial$getDragonsFuryStack(EntityLivingBase shooter) {
+        if (!(shooter instanceof EntityPlayer player)) return ItemStack.EMPTY;
+        ItemStack held = player.getHeldItemMainhand();
+        if (lspecial$isDragonsFuryWeapon(held)) return held;
+        held = player.getHeldItemOffhand();
+        if (lspecial$isDragonsFuryWeapon(held)) return held;
+        for (ItemStack candidate : player.inventory.mainInventory) {
+            if (lspecial$isDragonsFuryWeapon(candidate)) return candidate;
+        }
+        return ItemStack.EMPTY;
+    }
+
+    @Unique
+    private static boolean lspecial$isDragonsFuryWeapon(ItemStack stack) {
+        return stack != null && !stack.isEmpty() && stack.getItem().getRegistryName() != null
+                && "hbm:gun_flamer_topaz".equals(stack.getItem().getRegistryName().toString());
+    }
+
+    @Unique
+    private static boolean lspecial$isDragonsFuryFlame(BulletConfig bulletConfig) {
+        return bulletConfig != null && (bulletConfig == XFactoryFlamer.flame_topaz_diesel
+                || bulletConfig == XFactoryFlamer.flame_topaz_gas
+                || bulletConfig == XFactoryFlamer.flame_topaz_napalm
+                || bulletConfig == XFactoryFlamer.flame_topaz_balefire);
+    }
 
     @Inject(method = "onUpdate", at = @At("HEAD"), cancellable = true, remap = false)
     private void lspecial$limitDragonsFuryRange(CallbackInfo callback) {
@@ -197,32 +222,5 @@ public abstract class MixinDragonsFuryProjectile {
         if (held.isEmpty()) return;
         net.minecraft.nbt.NBTTagCompound tag = held.getTagCompound();
         if (tag != null) tag.setInteger("LSPECIALDragonsFuryHitStreak", 0);
-    }
-
-    @Unique
-    private static ItemStack lspecial$getDragonsFuryStack(EntityLivingBase shooter) {
-        if (!(shooter instanceof EntityPlayer player)) return ItemStack.EMPTY;
-        ItemStack held = player.getHeldItemMainhand();
-        if (lspecial$isDragonsFuryWeapon(held)) return held;
-        held = player.getHeldItemOffhand();
-        if (lspecial$isDragonsFuryWeapon(held)) return held;
-        for (ItemStack candidate : player.inventory.mainInventory) {
-            if (lspecial$isDragonsFuryWeapon(candidate)) return candidate;
-        }
-        return ItemStack.EMPTY;
-    }
-
-    @Unique
-    private static boolean lspecial$isDragonsFuryWeapon(ItemStack stack) {
-        return stack != null && !stack.isEmpty() && stack.getItem().getRegistryName() != null
-                && "hbm:gun_flamer_topaz".equals(stack.getItem().getRegistryName().toString());
-    }
-
-    @Unique
-    private static boolean lspecial$isDragonsFuryFlame(BulletConfig bulletConfig) {
-        return bulletConfig != null && (bulletConfig == XFactoryFlamer.flame_topaz_diesel
-                || bulletConfig == XFactoryFlamer.flame_topaz_gas
-                || bulletConfig == XFactoryFlamer.flame_topaz_napalm
-                || bulletConfig == XFactoryFlamer.flame_topaz_balefire);
     }
 }

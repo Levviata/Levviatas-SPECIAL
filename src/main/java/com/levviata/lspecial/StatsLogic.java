@@ -23,8 +23,6 @@ import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.levviata.lspecial.LSPECIALMod.syncStats;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
@@ -48,6 +46,9 @@ public class StatsLogic {
     private static final String nameIn = "Lev Attribute Modifier";
 
     private static final Map<UUID, PlayerState> playerStates = new HashMap<>();
+    private static final List<Item> g = new ArrayList<>();
+    private static final List<String> r = new ArrayList<>();
+    private static final List<UUID> uuids = new ArrayList<>();
 
     public static PlayerState getPlayerstate(EntityPlayer player) {
         PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), id -> new PlayerState());
@@ -58,10 +59,6 @@ public class StatsLogic {
         }
         return state;
     }
-
-    private static final List<Item> g = new ArrayList<>();
-    private static final List<String> r = new ArrayList<>();
-    private static final List<UUID> uuids = new ArrayList<>();
 
     public static void init() {
         g.clear();
@@ -89,6 +86,33 @@ public class StatsLogic {
                 r.add(raw.trim());
             }
         }
+    }
+
+    private static double expression(String formula, String key, double value) {
+        return expression(formula, key, value, null, 0);
+    }
+
+    private static double expression(String formula, String key, double value, String key2, double value2) {
+        Map<String, Double> vars = new HashMap<>();
+        vars.put(key, value);
+        if (key2 != null) vars.put(key2, value2);
+        return LSPECIALExpression.eval(formula, vars, value);
+    }
+
+    public static List<UUID> getUUIDs() {
+        if (uuids.isEmpty()) {
+            uuids.add(ATTACK_DAMAGE_UUID);
+            //uuids.add(ATTACK_SPEED_UUID);
+            uuids.add(MAX_HEALTH_UUID);
+            //uuids.add(FOLLOW_RANGE_UUID);
+            //uuids.add(KNOCKBACK_RESISTANCE_UUID);
+            uuids.add(MOVEMENT_SPEED_UUID);
+            //uuids.add(FLYING_SPEED_UUID);
+            uuids.add(ARMOR_UUID);
+            uuids.add(ARMOR_TOUGHNESS_UUID);
+            // uuids.add(LUCK_UUID);
+        }
+        return uuids;
     }
 
     @SubscribeEvent
@@ -388,17 +412,6 @@ public class StatsLogic {
         }
     }
 
-    private static double expression(String formula, String key, double value) {
-        return expression(formula, key, value, null, 0);
-    }
-
-    private static double expression(String formula, String key, double value, String key2, double value2) {
-        Map<String, Double> vars = new HashMap<>();
-        vars.put(key, value);
-        if (key2 != null) vars.put(key2, value2);
-        return LSPECIALExpression.eval(formula, vars, value);
-    }
-
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         EntityPlayer player = event.player;
@@ -600,6 +613,7 @@ public class StatsLogic {
     }
 
     public static class PlayerState {
+        final List<GunState> gunStates = new ArrayList<>();
         int previousEndurance = -1;
         float previousMaxHealth = Float.NaN;
         int previousCharisma = -1;
@@ -608,7 +622,6 @@ public class StatsLogic {
         boolean previousEnduranceEnabled = true;
         boolean previousCharismaEnabled = true;
         boolean previousAgilityEnabled = true;
-
         ItemStack modifiedStackRef = ItemStack.EMPTY;
         Receiver modifiedReceiver;
         boolean modified;
@@ -620,8 +633,6 @@ public class StatsLogic {
         float previousFlySpeed = Float.NaN;
         float originalWear;
         IMagazine originalMagazine;
-        final List<GunState> gunStates = new ArrayList<>();
-
         ItemStack wearTrackedStack;
         float previousObservedWear = Float.NaN;
 
@@ -644,21 +655,5 @@ public class StatsLogic {
                             float wear,
                             float armorPiercing,
                             float armorThresholdNegation) {
-    }
-
-    public static List<UUID> getUUIDs() {
-        if (uuids.isEmpty()) {
-            uuids.add(ATTACK_DAMAGE_UUID);
-            //uuids.add(ATTACK_SPEED_UUID);
-            uuids.add(MAX_HEALTH_UUID);
-            //uuids.add(FOLLOW_RANGE_UUID);
-            //uuids.add(KNOCKBACK_RESISTANCE_UUID);
-            uuids.add(MOVEMENT_SPEED_UUID);
-            //uuids.add(FLYING_SPEED_UUID);
-            uuids.add(ARMOR_UUID);
-            uuids.add(ARMOR_TOUGHNESS_UUID);
-            // uuids.add(LUCK_UUID);
-        }
-        return uuids;
     }
 }

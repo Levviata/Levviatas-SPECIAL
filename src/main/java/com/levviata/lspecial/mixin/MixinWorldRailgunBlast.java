@@ -26,6 +26,25 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(World.class)
 public abstract class MixinWorldRailgunBlast {
 
+    private static boolean lspecial$isAmatCapsuleShot(BulletConfig config, EntityLivingBase shooter) {
+        if (AMATRailgun.isRailgunConfig(config)) return true;
+
+        // Defensive fallback: some NTM magazine paths resolve the registered
+        // ammo config rather than returning the custom BulletConfig instance.
+        // Keep this fallback limited to the AMAT actually being held.
+        if (shooter == null || config == null || config.ammo == null) return false;
+        if (config.ammo.item != ModItems.charge_railgun) return false;
+        ItemStack main = shooter.getHeldItemMainhand();
+        ItemStack off = shooter.getHeldItemOffhand();
+        return lspecial$isAmat(main) || lspecial$isAmat(off);
+    }
+
+    private static boolean lspecial$isAmat(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        ResourceLocation id = stack.getItem().getRegistryName();
+        return id != null && "hbm".equals(id.getNamespace()) && "gun_amat".equals(id.getPath());
+    }
+
     @ModifyVariable(
             method = "spawnEntity(Lnet/minecraft/entity/Entity;)Z",
             at = @At("HEAD"),
@@ -79,24 +98,5 @@ public abstract class MixinWorldRailgunBlast {
         blast.rotationPitch = original.rotationPitch;
         blast.getEntityData().setBoolean("LSPECIAL_AMAT_RAILGUN", true);
         return blast;
-    }
-
-    private static boolean lspecial$isAmatCapsuleShot(BulletConfig config, EntityLivingBase shooter) {
-        if (AMATRailgun.isRailgunConfig(config)) return true;
-
-        // Defensive fallback: some NTM magazine paths resolve the registered
-        // ammo config rather than returning the custom BulletConfig instance.
-        // Keep this fallback limited to the AMAT actually being held.
-        if (shooter == null || config == null || config.ammo == null) return false;
-        if (config.ammo.item != ModItems.charge_railgun) return false;
-        ItemStack main = shooter.getHeldItemMainhand();
-        ItemStack off = shooter.getHeldItemOffhand();
-        return lspecial$isAmat(main) || lspecial$isAmat(off);
-    }
-
-    private static boolean lspecial$isAmat(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return false;
-        ResourceLocation id = stack.getItem().getRegistryName();
-        return id != null && "hbm".equals(id.getNamespace()) && "gun_amat".equals(id.getPath());
     }
 }

@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 // todo doesnt work
+
 /**
  * Marks discounted villager trade-cost counts in the inventory-style item overlay.
  */
@@ -20,6 +21,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinRenderItemOverlay {
     @Unique
     private ItemStack lspecial$currentOverlayStack;
+
+    @Unique
+    private static boolean lspecial$isDiscounted(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !stack.hasTagCompound()) return false;
+        NBTTagCompound tag = stack.getTagCompound();
+        return tag.hasKey("LSPECIALTradeDiscount");
+    }
 
     @Inject(method = "renderItemOverlayIntoGUI(Lnet/minecraft/client/gui/FontRenderer;Lnet/minecraft/client/renderer/texture/TextureManager;Lnet/minecraft/item/ItemStack;IILjava/lang/String;)V", at = @At("HEAD"), remap = false)
     private void lspecial$captureOverlayStack(FontRenderer fontRenderer, TextureManager textureManager, ItemStack stack, int x, int y, String text, CallbackInfo callback) {
@@ -41,12 +49,5 @@ public abstract class MixinRenderItemOverlay {
     @Inject(method = "renderItemOverlayIntoGUI(Lnet/minecraft/client/gui/FontRenderer;Lnet/minecraft/client/renderer/texture/TextureManager;Lnet/minecraft/item/ItemStack;IILjava/lang/String;)V", at = @At("RETURN"), remap = false)
     private void lspecial$clearOverlayStack(FontRenderer fontRenderer, TextureManager textureManager, ItemStack stack, int x, int y, String text, CallbackInfo callback) {
         lspecial$currentOverlayStack = null;
-    }
-
-    @Unique
-    private static boolean lspecial$isDiscounted(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || !stack.hasTagCompound()) return false;
-        NBTTagCompound tag = stack.getTagCompound();
-        return tag.hasKey("LSPECIALTradeDiscount");
     }
 }

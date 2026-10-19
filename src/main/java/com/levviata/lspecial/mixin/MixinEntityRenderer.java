@@ -2,11 +2,9 @@ package com.levviata.lspecial.mixin;
 
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.SPECIALScoreboard;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.entity.player.EntityPlayer;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;

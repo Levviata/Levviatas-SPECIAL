@@ -10,8 +10,8 @@ import net.minecraftforge.fml.common.gameevent.InputEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.levviata.lspecial.proxy.ClientProxy.toggleSpecial;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
+import static com.levviata.lspecial.proxy.ClientProxy.toggleSpecial;
 
 public class GuiSPECIAL extends GuiScreen {
 
@@ -337,10 +337,6 @@ public class GuiSPECIAL extends GuiScreen {
         drawClippedString(hint, hintX, footerY + 2, Math.max(1, panelLeft + panelWidth - hintX - 4), AMBER);
     }
 
-    @Desugar
-    private record StatRow(String name, int value, boolean enabled, String description) {
-    }
-
     @Override
     public boolean doesGuiPauseGame() {
         return false;
@@ -360,5 +356,9 @@ public class GuiSPECIAL extends GuiScreen {
             LSPECIALMod.NETWORK.sendToServer(new RequestSPECIALStatsPacket());
             minecraft.displayGuiScreen(new GuiSPECIAL());
         }
+    }
+
+    @Desugar
+    private record StatRow(String name, int value, boolean enabled, String description) {
     }
 }

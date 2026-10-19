@@ -1,12 +1,12 @@
 package com.levviata.lspecial.mixin;
 
-import com.levviata.lspecial.LSPECIALMod;
-import com.levviata.lspecial.LSPECIALNTMLootHandler;
 import com.hbm.blocks.generic.BlockWandLoot;
 import com.hbm.handler.WeightedRandomChestContentFrom1710;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.nbt.NBTTagCompound;
+import com.levviata.lspecial.LSPECIALMod;
+import com.levviata.lspecial.LSPECIALNTMLootHandler;
 import net.minecraft.block.Block;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;

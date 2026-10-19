@@ -19,10 +19,6 @@ import java.util.List;
 
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID, value = Side.CLIENT)
 public final class LSPECIALConfig {
-
-    private LSPECIALConfig() {
-    }
-
     public static Configuration config;
 
     public static boolean loggingInfo = false;
@@ -40,7 +36,6 @@ public final class LSPECIALConfig {
     private static final String ADV = "9_advanced";
     private static final String PERKS = "10_perks_gui";
     private static final String LOGGING = "11_logging";
-
     public static boolean strength = true;
     public static boolean perception = true;
     public static boolean endurance = true;
@@ -50,14 +45,12 @@ public final class LSPECIALConfig {
     public static boolean luck = true;
     public static boolean statLimit = true;
     public static boolean hideDisabledStats = true;
-
     public static int statsPerBobblehead = 1;
     public static int potionTimeTicks = 115;
     public static int charismaPotionAmplifier = 0;
     public static int endurancePotionAmplifier = 1;
-    //public static int bobbleheadusesPerConsumption = 1;
-
     public static boolean infiniteItemDurability = true;
+    //public static int bobbleheadusesPerConsumption = 1;
     public static boolean charismaBonus = true;
     public static boolean enduranceBonus = true;
     public static boolean amplifiedRegeneration = true;
@@ -127,7 +120,6 @@ public final class LSPECIALConfig {
     public static int starFFiftyBmgDelayTicks = 20;
     public static int uzi556DelayTicks = 2;
     public static int g3TenGaugeDelayTicks = 10;
-
     public static boolean secondaryFireToggle = true;
     public static int tf2AmmoGuiOffsetX = 8;
     public static int tf2AmmoGuiOffsetY = 8;
@@ -137,7 +129,6 @@ public final class LSPECIALConfig {
     public static int tf2AmmoGuiShadowOffsetX = 10;
     public static int tf2AmmoGuiShadowOffsetY = 10;
     public static int starFCapacity = 30;
-
     public static boolean doubleBarrelGrapple = true;
     public static boolean doubleBarrelGrappleVisuals = true;
     public static boolean doubleBarrelGrappleCamera = true;
@@ -149,20 +140,14 @@ public final class LSPECIALConfig {
     public static double doubleBarrelGrapplePullSpeed = 1.35;
     public static double doubleBarrelGrappleAcceleration = 0.32;
     public static double doubleBarrelGrappleAirStrafe = 0.16;
-
-
     public static boolean tauSecondaryDamageBonus = true;
     public static double tauSecondaryDamageMultiplier = 6.0;
-
     public static boolean lagSecondarySelfKill = true;
     public static boolean lagSecondaryBurst = true;
     public static boolean henryLincolnSecondaryBurst = true;
-
     public static boolean scopedSecondarySpread = true;
     public static double scopedSpreadMultiplier = 0.5;
-
     public static boolean AMATRailgunProjectile = true;
-
     public static boolean stingerSelfDamageProtection = true;
     public static boolean dragonsFuryPerk = false;
     public static boolean flamethrowerPerk = false;
@@ -240,6 +225,9 @@ public final class LSPECIALConfig {
             "bobblehead,hbm:cotton_candy,potion:swiftness|long_swiftness|strong_swiftness,minecraft:sugar",
             "bobblehead,ammo,luckyGem,luckAccessory"
     };
+
+    private LSPECIALConfig() {
+    }
 
     public static void init(File file) {
         config = new Configuration(file);

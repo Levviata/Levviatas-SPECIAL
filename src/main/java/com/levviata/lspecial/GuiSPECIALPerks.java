@@ -1,8 +1,8 @@
 package com.levviata.lspecial;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.input.Keyboard;
-import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,6 +29,31 @@ public final class GuiSPECIALPerks extends GuiScreen {
         this.parent = parent;
         this.stat = stat;
         populate();
+    }
+
+    private static int getVillagerDiscountPercent() {
+        if (!LSPECIALConfig.charisma || !LSPECIALConfig.charismaVillagerDiscount) {
+            return 0;
+        }
+
+        int charisma = inst.getPlayerScorePoints(Minecraft.getMinecraft().player, inst.CHARISMA_BOARD);
+
+        if (charisma < LSPECIALConfig.charismaVillagerDiscountLevel) {
+            return 0;
+        }
+
+        Map<String, Double> variables = new HashMap<>();
+        variables.put("charisma", (double) charisma);
+
+        double fraction = LSPECIALExpression.eval(
+                LSPECIALConfig.charismaVillagerDiscountFormula,
+                variables,
+                0.0D
+        );
+
+        fraction = Math.max(0.0D, Math.min(0.75D, fraction));
+
+        return (int) Math.round(fraction * 100.0D);
     }
 
     private void populate() {
@@ -193,30 +218,5 @@ public final class GuiSPECIALPerks extends GuiScreen {
     @Override
     public boolean doesGuiPauseGame() {
         return false;
-    }
-
-    private static int getVillagerDiscountPercent() {
-        if (!LSPECIALConfig.charisma || !LSPECIALConfig.charismaVillagerDiscount) {
-            return 0;
-        }
-
-        int charisma = inst.getPlayerScorePoints(Minecraft.getMinecraft().player, inst.CHARISMA_BOARD);
-
-        if (charisma < LSPECIALConfig.charismaVillagerDiscountLevel) {
-            return 0;
-        }
-
-        Map<String, Double> variables = new HashMap<>();
-        variables.put("charisma", (double) charisma);
-
-        double fraction = LSPECIALExpression.eval(
-                LSPECIALConfig.charismaVillagerDiscountFormula,
-                variables,
-                0.0D
-        );
-
-        fraction = Math.max(0.0D, Math.min(0.75D, fraction));
-
-        return (int) Math.round(fraction * 100.0D);
     }
 }

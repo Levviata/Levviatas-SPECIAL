@@ -20,10 +20,22 @@ import java.util.WeakHashMap;
 // rationale: NTM's onUpdate owns collision and movement, so this mixin adjusts the velocity after each normal tick instead of cancelling or replacing that tick. It caches the initial velocity, applies a distance-based 100%-to-10% speed curve, and kills only standard flamer projectiles at 8 blocks. The render mixin supplies the enlarged visual flame. Other projectile configs are untouched; conflicts are avoidable if NTM adds native per-config speed, gravity and range settings.
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)
 public abstract class MixinTF2FlameProjectile {
-    @Shadow
-    public BulletConfig config;
     @Unique
     private static final Map<EntityBulletBaseMK4, double[]> lspecial$baseMotion = new WeakHashMap<>();
+    @Shadow
+    public BulletConfig config;
+
+    @Unique
+    private static BulletConfig lspecial$getConfig(EntityBulletBaseMK4 projectile) {
+        return projectile.config != null ? projectile.config : projectile.getBulletConfig();
+    }
+
+    @Unique
+    private static boolean lspecial$isStandardFlame(BulletConfig active) {
+        return active != null && (active == XFactoryFlamer.flame_nograv || active == XFactoryFlamer.flame_diesel
+                || active == XFactoryFlamer.flame_gas || active == XFactoryFlamer.flame_napalm
+                || active == XFactoryFlamer.flame_balefire);
+    }
 
     @Inject(method = "getGravityVelocity()F", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$removeFlameGravity(CallbackInfoReturnable<Float> callback) {
@@ -60,17 +72,5 @@ public abstract class MixinTF2FlameProjectile {
         projectile.motionX = base[0] * speed;
         projectile.motionY = base[1] * speed;
         projectile.motionZ = base[2] * speed;
-    }
-
-    @Unique
-    private static BulletConfig lspecial$getConfig(EntityBulletBaseMK4 projectile) {
-        return projectile.config != null ? projectile.config : projectile.getBulletConfig();
-    }
-
-    @Unique
-    private static boolean lspecial$isStandardFlame(BulletConfig active) {
-        return active != null && (active == XFactoryFlamer.flame_nograv || active == XFactoryFlamer.flame_diesel
-                || active == XFactoryFlamer.flame_gas || active == XFactoryFlamer.flame_napalm
-                || active == XFactoryFlamer.flame_balefire);
     }
 }

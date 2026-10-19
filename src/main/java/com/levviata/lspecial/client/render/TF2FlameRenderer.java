@@ -7,8 +7,8 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.world.World;
 
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.Random;
+import java.util.WeakHashMap;
 
 /**
  * Renders a large, colored flame body through NTM's native BulletConfig renderer callback.

@@ -2,10 +2,10 @@ package com.levviata.lspecial.mixin;
 
 import com.hbm.items.weapon.sedna.mags.MagazineFluid;
 import com.levviata.lspecial.LSPECIALConfig;
-import com.levviata.lspecial.SPECIALScoreboard;
 import com.levviata.lspecial.SPECIALPlayerContext;
-import net.minecraft.item.ItemStack;
+import com.levviata.lspecial.SPECIALScoreboard;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

@@ -22,6 +22,13 @@ public abstract class MixinTF2FlameRender {
     @Unique
     private static final Map<BulletConfig, BulletConfig> lspecial$renderConfigs = new IdentityHashMap<>();
 
+    @Unique
+    private static boolean lspecial$isStandardFlame(BulletConfig active) {
+        return active == XFactoryFlamer.flame_nograv || active == XFactoryFlamer.flame_diesel
+                || active == XFactoryFlamer.flame_gas || active == XFactoryFlamer.flame_napalm
+                || active == XFactoryFlamer.flame_balefire;
+    }
+
     @Inject(method = "doRender(Lcom/hbm/entity/projectile/EntityBulletBaseMK4;DDDFF)V", at = @At("HEAD"), remap = false)
     private void lspecial$installDedicatedRenderer(EntityBulletBaseMK4 bullet, double x, double y, double z, float yaw, float partialTicks, CallbackInfo callback) {
         if (bullet.world == null || !bullet.world.isRemote) return;
@@ -38,12 +45,5 @@ public abstract class MixinTF2FlameRender {
             }
             bullet.config = renderConfig;
         }
-    }
-
-    @Unique
-    private static boolean lspecial$isStandardFlame(BulletConfig active) {
-        return active == XFactoryFlamer.flame_nograv || active == XFactoryFlamer.flame_diesel
-                || active == XFactoryFlamer.flame_gas || active == XFactoryFlamer.flame_napalm
-                || active == XFactoryFlamer.flame_balefire;
     }
 }

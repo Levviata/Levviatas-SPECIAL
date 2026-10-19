@@ -63,6 +63,26 @@ public final class GrappleClientHandler {
         if (id < 0) saved = false;
     }
 
+    private static void playOneShot(net.minecraft.util.SoundEvent sound, float volume, float pitch) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (sound != null && mc.player != null) mc.player.playSound(sound, volume, pitch);
+    }
+
+    private static void startCycleSound(Minecraft mc) {
+        stopCycleSound(mc);
+        if (mc.player == null || LSPECIALSounds.GRAPPLE_CYCLE == null) return;
+        cycleSound = new GrappleCycleSound(mc.player);
+        mc.getSoundHandler().playSound(cycleSound);
+    }
+
+    private static void stopCycleSound(Minecraft mc) {
+        if (cycleSound != null) {
+            cycleSound.setDonePlaying(true);
+            mc.getSoundHandler().stopSound(cycleSound);
+            cycleSound = null;
+        }
+    }
+
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -102,26 +122,6 @@ public final class GrappleClientHandler {
         mc.player.rotationYaw += MathHelper.wrapDegrees(yaw - mc.player.rotationYaw) * 0.22F;
         mc.player.rotationPitch += MathHelper.wrapDegrees(pitch - mc.player.rotationPitch) * 0.22F;
         mc.player.rotationPitch = MathHelper.clamp(mc.player.rotationPitch, -89.0F, 89.0F);
-    }
-
-    private static void playOneShot(net.minecraft.util.SoundEvent sound, float volume, float pitch) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (sound != null && mc.player != null) mc.player.playSound(sound, volume, pitch);
-    }
-
-    private static void startCycleSound(Minecraft mc) {
-        stopCycleSound(mc);
-        if (mc.player == null || LSPECIALSounds.GRAPPLE_CYCLE == null) return;
-        cycleSound = new GrappleCycleSound(mc.player);
-        mc.getSoundHandler().playSound(cycleSound);
-    }
-
-    private static void stopCycleSound(Minecraft mc) {
-        if (cycleSound != null) {
-            cycleSound.setDonePlaying(true);
-            mc.getSoundHandler().stopSound(cycleSound);
-            cycleSound = null;
-        }
     }
 
     private static final class GrappleCycleSound extends MovingSound {

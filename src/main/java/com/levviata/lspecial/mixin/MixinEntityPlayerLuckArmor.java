@@ -20,6 +20,30 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 @Mixin(EntityPlayer.class)
 public abstract class MixinEntityPlayerLuckArmor {
 
+    @Unique
+    private static long lspecial$refundPoweredArmorEnergy(ArmorFSBPowered poweredArmor, ItemStack stack,
+                                                          long chargeBefore) {
+        long chargeAfterDamage = poweredArmor.getCharge(stack);
+        long energySpent = Math.max(0L, chargeBefore - chargeAfterDamage);
+        if (energySpent > 0L) poweredArmor.chargeBattery(stack, energySpent);
+        return energySpent;
+    }
+
+    @Unique
+    private static boolean lspecial$unequipArmor(EntityPlayer player, ItemStack stack) {
+        NonNullList<ItemStack> armorInventory = player.inventory.armorInventory;
+        for (int slot = 0; slot < armorInventory.size(); slot++) {
+            if (armorInventory.get(slot) != stack) continue;
+
+            armorInventory.set(slot, ItemStack.EMPTY);
+            if (!player.inventory.addItemStackToInventory(stack)) {
+                player.dropItem(stack, false);
+            }
+            return true;
+        }
+        return false;
+    }
+
     @Redirect(
             method = "damageArmor(F)V",
             at = @At(
@@ -84,29 +108,5 @@ public abstract class MixinEntityPlayerLuckArmor {
         }
 
         stack.damageItem(amount, entity);
-    }
-
-    @Unique
-    private static long lspecial$refundPoweredArmorEnergy(ArmorFSBPowered poweredArmor, ItemStack stack,
-                                                          long chargeBefore) {
-        long chargeAfterDamage = poweredArmor.getCharge(stack);
-        long energySpent = Math.max(0L, chargeBefore - chargeAfterDamage);
-        if (energySpent > 0L) poweredArmor.chargeBattery(stack, energySpent);
-        return energySpent;
-    }
-
-    @Unique
-    private static boolean lspecial$unequipArmor(EntityPlayer player, ItemStack stack) {
-        NonNullList<ItemStack> armorInventory = player.inventory.armorInventory;
-        for (int slot = 0; slot < armorInventory.size(); slot++) {
-            if (armorInventory.get(slot) != stack) continue;
-
-            armorInventory.set(slot, ItemStack.EMPTY);
-            if (!player.inventory.addItemStackToInventory(stack)) {
-                player.dropItem(stack, false);
-            }
-            return true;
-        }
-        return false;
     }
 }

@@ -2,12 +2,12 @@ package com.levviata.lspecial.client.render;
 
 import com.levviata.lspecial.entity.EntityGrappleChain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.Vec3d;
@@ -29,14 +29,8 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
     private static final List<Vec3d> VERTICES = new ArrayList<>();
     private static final List<float[]> UVS = new ArrayList<>();
     private static final List<int[]> FACES = new ArrayList<>();
-    private static boolean modelLoaded;
     private static final java.util.Map<Integer, BendState> BEND_STATE = new java.util.HashMap<>();
-
-    private static final class BendState {
-        double bend;
-        double bendVelocity;
-        double previousSideSpeed;
-    }
+    private static boolean modelLoaded;
 
     public RenderGrappleChain(RenderManager manager) {
         super(manager);
@@ -80,6 +74,12 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
             result[i * 2 + 1] = pair.length > 1 && !pair[1].isEmpty() ? Integer.parseInt(pair[1]) - 1 : -1;
         }
         return result;
+    }
+
+    private static Vec3d interpolated(Entity entity, float partialTicks) {
+        return new Vec3d(entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks,
+                entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks,
+                entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks);
     }
 
     @Override
@@ -185,14 +185,14 @@ public class RenderGrappleChain extends Render<EntityGrappleChain> {
         GlStateManager.popMatrix();
     }
 
-    private static Vec3d interpolated(Entity entity, float partialTicks) {
-        return new Vec3d(entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks,
-                entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks,
-                entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks);
-    }
-
     @Override
     protected ResourceLocation getEntityTexture(EntityGrappleChain entity) {
         return TEXTURE;
+    }
+
+    private static final class BendState {
+        double bend;
+        double bendVelocity;
+        double previousSideSpeed;
     }
 }

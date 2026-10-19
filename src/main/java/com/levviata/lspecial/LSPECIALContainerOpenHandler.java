@@ -18,6 +18,38 @@ import java.util.Set;
  */
 public final class LSPECIALContainerOpenHandler {
 
+    /**
+     * Finds tile entities referenced directly by a container or through IInventory wrappers.
+     */
+    private static void collectTiles(Object value, Set<TileEntity> found, Set<Object> visited, int depth) {
+        if (value == null || depth > 3 || visited.contains(value)) return;
+        if (value instanceof TileEntity) {
+            found.add((TileEntity) value);
+            return;
+        }
+        if (!(value instanceof Container) && !(value instanceof IInventory)) return;
+        visited.add(value);
+
+        Class<?> type = value.getClass();
+        while (type != null && type != Object.class) {
+            for (Field field : type.getDeclaredFields()) {
+                try {
+                    field.setAccessible(true);
+                    Object nested = field.get(value);
+                    if (nested instanceof TileEntity) {
+                        found.add((TileEntity) nested);
+                    } else if (nested instanceof IInventory) {
+                        collectTiles(nested, found, visited, depth + 1);
+                    }
+                } catch (ReflectiveOperationException | RuntimeException exception) {
+                    LSPECIALMod.info("[LSPECIAL Loot] Could not inspect field {}.{} while resolving an opened container: {}",
+                            type.getName(), field.getName(), exception.toString());
+                }
+            }
+            type = type.getSuperclass();
+        }
+    }
+
     @SubscribeEvent
     public void onContainerOpened(PlayerContainerEvent.Open event) {
         if (event == null) return;
@@ -61,38 +93,6 @@ public final class LSPECIALContainerOpenHandler {
             }
             LSPECIALMod.logWarn("[LSPECIAL Loot] Server container-open event found no tagged tile for NTM container: player={} container={} candidates=[{}]",
                     player.getName(), container.getClass().getName(), found);
-        }
-    }
-
-    /**
-     * Finds tile entities referenced directly by a container or through IInventory wrappers.
-     */
-    private static void collectTiles(Object value, Set<TileEntity> found, Set<Object> visited, int depth) {
-        if (value == null || depth > 3 || visited.contains(value)) return;
-        if (value instanceof TileEntity) {
-            found.add((TileEntity) value);
-            return;
-        }
-        if (!(value instanceof Container) && !(value instanceof IInventory)) return;
-        visited.add(value);
-
-        Class<?> type = value.getClass();
-        while (type != null && type != Object.class) {
-            for (Field field : type.getDeclaredFields()) {
-                try {
-                    field.setAccessible(true);
-                    Object nested = field.get(value);
-                    if (nested instanceof TileEntity) {
-                        found.add((TileEntity) nested);
-                    } else if (nested instanceof IInventory) {
-                        collectTiles(nested, found, visited, depth + 1);
-                    }
-                } catch (ReflectiveOperationException | RuntimeException exception) {
-                    LSPECIALMod.info("[LSPECIAL Loot] Could not inspect field {}.{} while resolving an opened container: {}",
-                            type.getName(), field.getName(), exception.toString());
-                }
-            }
-            type = type.getSuperclass();
         }
     }
 }

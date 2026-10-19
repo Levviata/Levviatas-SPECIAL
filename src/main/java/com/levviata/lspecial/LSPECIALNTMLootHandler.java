@@ -4,16 +4,16 @@ import com.github.bsideup.jabel.Desugar;
 import com.hbm.handler.WeightedRandomChestContentFrom1710;
 import com.hbm.itempool.ItemPool;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.WeightedRandom;
-import net.minecraftforge.items.ItemHandlerHelper;
-import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandlerModifiable;
+import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
@@ -184,12 +184,62 @@ public final class LSPECIALNTMLootHandler {
     }
 
     /**
+     * Avoids ItemPool.getPool's fallback pool when a configured pool name is invalid.
+     */
+    private static boolean isValidPool(String name) {
+        if (name == null || name.trim().isEmpty() || ItemPool.pools == null) return false;
+        ItemPool pool = ItemPool.pools.get(name);
+        return pool != null && pool.pool != null && pool.pool.length > 0;
+    }
+
+    /**
+     * Generates NTM weighted items and inserts them safely without replacing existing inventory slots.
+     */
+    // i didnt intend to make the AI fill up the chest fully for luck plus perception bonus but its staying
+    private static boolean addPoolItems(IItemHandlerModifiable inventory, String poolName, int rolls, Random random, boolean fillUntilFull) {
+        if (!isValidPool(poolName) || inventory == null || rolls <= 0) {
+            return false;
+        }
+        WeightedRandomChestContentFrom1710[] pool = ItemPool.pools.get(poolName).pool;
+        int attempts = 0;
+        int remainingRolls = rolls;
+        boolean insertedAnyTotal = false;
+        while ((fillUntilFull || remainingRolls-- > 0) && attempts++ < 4096) {
+            if (isFull(inventory)) return insertedAnyTotal;
+            WeightedRandomChestContentFrom1710 entry = WeightedRandom.getRandomItem(random, Arrays.asList(pool));
+            if (entry == null) return insertedAnyTotal;
+            ItemStack[] stacks = entry.generateChestContent(random, inventory);
+            boolean insertedAny = false;
+            if (stacks != null) {
+                for (ItemStack stack : stacks) {
+                    if (stack == null || stack.isEmpty()) continue;
+                    ItemStack remainder = ItemHandlerHelper.insertItem(inventory, stack.copy(), false);
+                    if (remainder.getCount() < stack.getCount()) insertedAny = true;
+                }
+            }
+            if (insertedAny) insertedAnyTotal = true;
+            if (!insertedAny && !fillUntilFull) continue;
+            if (!insertedAny) return insertedAnyTotal;
+        }
+        return insertedAnyTotal;
+    }
+
+    private static boolean isFull(IItemHandlerModifiable inventory) {
+        for (int i = 0; i < inventory.getSlots(); i++) {
+            ItemStack stack = inventory.getStackInSlot(i);
+            if (stack.isEmpty() || stack.getCount() < Math.min(stack.getMaxStackSize(), inventory.getSlotLimit(i)))
+                return false;
+        }
+        return true;
+    }
+
+    /**
      * Bridges vanilla inventories to the item-handler API used by the loot insertion code.
      */
     @Desugar
     private record VanillaInventoryAdapter(IInventory inventory) implements IItemHandlerModifiable {
 
-    @Override
+        @Override
         public int getSlots() {
             return inventory.getSizeInventory();
         }
@@ -281,55 +331,5 @@ public final class LSPECIALNTMLootHandler {
             }
             inventory.markDirty();
         }
-    }
-
-    /**
-     * Avoids ItemPool.getPool's fallback pool when a configured pool name is invalid.
-     */
-    private static boolean isValidPool(String name) {
-        if (name == null || name.trim().isEmpty() || ItemPool.pools == null) return false;
-        ItemPool pool = ItemPool.pools.get(name);
-        return pool != null && pool.pool != null && pool.pool.length > 0;
-    }
-
-    /**
-     * Generates NTM weighted items and inserts them safely without replacing existing inventory slots.
-     */
-    // i didnt intend to make the AI fill up the chest fully for luck plus perception bonus but its staying
-    private static boolean addPoolItems(IItemHandlerModifiable inventory, String poolName, int rolls, Random random, boolean fillUntilFull) {
-        if (!isValidPool(poolName) || inventory == null || rolls <= 0) {
-            return false;
-        }
-        WeightedRandomChestContentFrom1710[] pool = ItemPool.pools.get(poolName).pool;
-        int attempts = 0;
-        int remainingRolls = rolls;
-        boolean insertedAnyTotal = false;
-        while ((fillUntilFull || remainingRolls-- > 0) && attempts++ < 4096) {
-            if (isFull(inventory)) return insertedAnyTotal;
-            WeightedRandomChestContentFrom1710 entry = WeightedRandom.getRandomItem(random, Arrays.asList(pool));
-            if (entry == null) return insertedAnyTotal;
-            ItemStack[] stacks = entry.generateChestContent(random, inventory);
-            boolean insertedAny = false;
-            if (stacks != null) {
-                for (ItemStack stack : stacks) {
-                    if (stack == null || stack.isEmpty()) continue;
-                    ItemStack remainder = ItemHandlerHelper.insertItem(inventory, stack.copy(), false);
-                    if (remainder.getCount() < stack.getCount()) insertedAny = true;
-                }
-            }
-            if (insertedAny) insertedAnyTotal = true;
-            if (!insertedAny && !fillUntilFull) continue;
-            if (!insertedAny) return insertedAnyTotal;
-        }
-        return insertedAnyTotal;
-    }
-
-    private static boolean isFull(IItemHandlerModifiable inventory) {
-        for (int i = 0; i < inventory.getSlots(); i++) {
-            ItemStack stack = inventory.getStackInSlot(i);
-            if (stack.isEmpty() || stack.getCount() < Math.min(stack.getMaxStackSize(), inventory.getSlotLimit(i)))
-                return false;
-        }
-        return true;
     }
 }
