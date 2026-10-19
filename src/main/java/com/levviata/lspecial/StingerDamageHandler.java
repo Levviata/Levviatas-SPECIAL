@@ -104,14 +104,14 @@ public final class StingerDamageHandler {
                 && (isLauncherRecorded(immediate) || isStingerFamilyHeld(player));
         boolean cancel = directProjectile || tracked || heldFallback;
         if (source.isExplosion() || directProjectile || tracked) {
-            LSPECIALMod.info("[RocketDebug] LivingAttack player={} damageType={} explosion={} immediate={} trueSource={} immediateOwner={} recordedLauncher={} heldLauncher={} trackedContext={} directProjectileMatch={} cancel={}",
+            LSPECIALMod.info("RocketDebug", "LivingAttack player={} damageType={} explosion={} immediate={} trueSource={} immediateOwner={} recordedLauncher={} heldLauncher={} trackedContext={} directProjectileMatch={} cancel={}",
                     player.getName(), source.damageType, source.isExplosion(), describeEntity(immediate),
                     describeEntity(trueSource), describeEntity(immediate == null ? null : getProjectileOwner(immediate)),
                     isLauncherRecorded(immediate), isStingerFamilyHeld(player), tracked, directProjectile, cancel);
         }
         if (cancel) {
             event.setCanceled(true);
-            LSPECIALMod.info("[RocketDebug] LivingAttack CANCELLED player={} damageType={} trackedContext={} heldLauncherFallback={} directProjectile={}",
+            LSPECIALMod.info("RocketDebug", "LivingAttack CANCELLED player={} damageType={} trackedContext={} heldLauncherFallback={} directProjectile={}",
                     player.getName(), source.damageType, tracked, heldFallback, directProjectile);
         }
     }
@@ -127,7 +127,7 @@ public final class StingerDamageHandler {
         boolean tracked = isTrackedRocketExplosion(player);
         boolean heldFallback = source.isExplosion() && source.getTrueSource() == player && isStingerFamilyHeld(player);
         if (tracked || heldFallback) {
-            LSPECIALMod.info("[RocketDebug] LivingHurt CANCELLED player={} damageType={} amount={} trackedContext={} heldLauncherFallback={}",
+            LSPECIALMod.info("RocketDebug", "LivingHurt CANCELLED player={} damageType={} amount={} trackedContext={} heldLauncherFallback={}",
                     player.getName(), source.damageType, event.getAmount(), tracked, heldFallback);
             event.setCanceled(true);
         }

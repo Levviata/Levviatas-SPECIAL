@@ -104,7 +104,7 @@ public abstract class MixinEntityLivingBaseRetaliation {
 
         NBTTagCompound data = mob.getEntityData();
         data.setUniqueId(LSPECIAL_RETALIATION_TARGET, target.getUniqueID());
-        LSPECIALMod.info("[CharismaRetaliation] entity={} action=RECORD mode=PERSISTENT player={} playerUuid={}",
+        LSPECIALMod.info("CharismaRetaliation", "entity={} action=RECORD mode=PERSISTENT player={} playerUuid={}",
                 lspecial$retaliationEntityId(mob), target.getName(), target.getUniqueID());
     }
 
@@ -122,12 +122,12 @@ public abstract class MixinEntityLivingBaseRetaliation {
         }
 
         if (!cir.getReturnValue()) {
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=damage_not_applied amount={}",
+            LSPECIALMod.info("CharismaRetaliation", "entity={} action=IGNORE_DAMAGE reason=damage_not_applied amount={}",
                     lspecial$retaliationEntityId(mob), amount);
             return;
         }
         if (!lspecial$retaliationIsConfiguredNeutralMob(mob)) {
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=not_configured_neutral",
+            LSPECIALMod.info("CharismaRetaliation", "entity={} action=IGNORE_DAMAGE reason=not_configured_neutral",
                     lspecial$retaliationEntityId(mob));
             return;
         }
@@ -135,21 +135,21 @@ public abstract class MixinEntityLivingBaseRetaliation {
         EntityPlayer player = source.getTrueSource() instanceof EntityPlayer
                 ? (EntityPlayer) source.getTrueSource() : null;
         if (player == null || !player.isEntityAlive()) {
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=not_living_player_damage source={} amount={}",
+            LSPECIALMod.info("CharismaRetaliation", "entity={} action=IGNORE_DAMAGE reason=not_living_player_damage source={} amount={}",
                     lspecial$retaliationEntityId(mob), source.getTrueSource(), amount);
             return;
         }
 
         IAttributeInstance maxHealthAttribute = mob.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
         if (maxHealthAttribute == null) {
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=no_max_health_attribute",
+            LSPECIALMod.info("CharismaRetaliation", "entity={} action=IGNORE_DAMAGE reason=no_max_health_attribute",
                     lspecial$retaliationEntityId(mob));
             return;
         }
 
         double maxHealth = maxHealthAttribute.getAttributeValue();
         if (maxHealth <= 0.0D) {
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=IGNORE_DAMAGE reason=invalid_max_health maxHealth={}",
+            LSPECIALMod.info("CharismaRetaliation", "entity={} action=IGNORE_DAMAGE reason=invalid_max_health maxHealth={}",
                     lspecial$retaliationEntityId(mob), maxHealth);
             return;
         }
@@ -165,13 +165,13 @@ public abstract class MixinEntityLivingBaseRetaliation {
         entityData.setTag(LSPECIAL_RETALIATION_DAMAGE, damageData);
 
         double threshold = maxHealth / 3.0D;
-        LSPECIALMod.info("[CharismaRetaliation] entity={} action=TRACK_DAMAGE player={} playerUuid={} damageThisHit={} cumulativeDamage={} threshold={} maxHealth={}",
+        LSPECIALMod.info("CharismaRetaliation", "entity={} action=TRACK_DAMAGE player={} playerUuid={} damageThisHit={} cumulativeDamage={} threshold={} maxHealth={}",
                 lspecial$retaliationEntityId(mob), player.getName(), player.getUniqueID(),
                 damageThisHit, totalDamage, threshold, maxHealth);
 
         if (totalDamage >= threshold) {
             entityData.setUniqueId(LSPECIAL_RETALIATION_TARGET, player.getUniqueID());
-            LSPECIALMod.info("[CharismaRetaliation] entity={} action=THRESHOLD_REACHED player={} cumulativeDamage={} threshold={} actionTarget=SET",
+            LSPECIALMod.info("CharismaRetaliation", "entity={} action=THRESHOLD_REACHED player={} cumulativeDamage={} threshold={} actionTarget=SET",
                     lspecial$retaliationEntityId(mob), player.getName(), totalDamage, threshold);
             mob.setRevengeTarget(player);
             mob.setAttackTarget(player);

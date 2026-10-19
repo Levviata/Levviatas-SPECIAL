@@ -42,13 +42,13 @@ public abstract class MixinEntityRocket {
     private void lspecial$recordLauncher(EntityLivingBase shooter) {
         EntityRocket rocket = (EntityRocket) (Object) this;
         if (!(shooter instanceof EntityPlayer)) {
-            LSPECIALMod.info("[RocketDebug] EntityRocket launcher-record skipped shooter={} rocketId={}",
+            LSPECIALMod.info("RocketDebug", "EntityRocket launcher-record skipped shooter={} rocketId={}",
                     shooter == null ? "null" : shooter.getClass().getName(), rocket.getEntityId());
             return;
         }
         String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) shooter);
         if (weapon == null) {
-            LSPECIALMod.info("[RocketDebug] EntityRocket launcher-record FAILED player={} rocketId={} mainhand={} offhand={}",
+            LSPECIALMod.info("RocketDebug", "EntityRocket launcher-record FAILED player={} rocketId={} mainhand={} offhand={}",
                     shooter.getName(), rocket.getEntityId(),
                     shooter.getHeldItemMainhand().getItem().getRegistryName(),
                     shooter.getHeldItemOffhand().getItem().getRegistryName());
@@ -56,7 +56,7 @@ public abstract class MixinEntityRocket {
         }
         rocket.getEntityData().setUniqueId("LSPECIALShooterUUID", shooter.getUniqueID());
         rocket.getEntityData().setString("LSPECIALShooterWeapon", weapon);
-        LSPECIALMod.info("[RocketDebug] EntityRocket launcher-recorded player={} weapon={} rocketId={}",
+        LSPECIALMod.info("RocketDebug", "EntityRocket launcher-recorded player={} weapon={} rocketId={}",
                 shooter.getName(), weapon, rocket.getEntityId());
     }
 
@@ -72,7 +72,7 @@ public abstract class MixinEntityRocket {
                 && shooter instanceof EntityPlayer;
         EntityPlayer player = familyRocket ? (EntityPlayer) shooter : null;
         boolean rocketJump = RocketJumpHandler.isPerkActive(player);
-        LSPECIALMod.info("[RocketDebug] EntityRocket explode rocketId={} owner={} weapon={} family={} selfProtection={} rocketJump={} explosion=({}, {}, {}) radius={}",
+        LSPECIALMod.info("RocketDebug", "EntityRocket explode rocketId={} owner={} weapon={} family={} selfProtection={} rocketJump={} explosion=({}, {}, {}) radius={}",
                 rocket.getEntityId(), shooter == null ? "null" : shooter.getName(), weapon, familyRocket,
                 LSPECIALConfig.stingerSelfDamageProtection, rocketJump, x, y, z, size);
 
@@ -92,7 +92,7 @@ public abstract class MixinEntityRocket {
         }
 
         if (!rocketJump) {
-            LSPECIALMod.info("[RocketDebug] EntityRocket rocket-jump not applied rocketId={} family={} perkActive={}",
+            LSPECIALMod.info("RocketDebug", "EntityRocket rocket-jump not applied rocketId={} family={} perkActive={}",
                     rocket.getEntityId(), familyRocket, rocketJump);
             return;
         }

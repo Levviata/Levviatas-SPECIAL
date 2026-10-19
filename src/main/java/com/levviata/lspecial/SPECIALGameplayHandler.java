@@ -205,7 +205,7 @@ public final class SPECIALGameplayHandler {
             if (charge <= maxCharge * 0.01D) {
                 long restoredCharge = maxCharge / 2L;
                 poweredArmor.setCharge(stack, restoredCharge);
-                LSPECIALMod.info("[LuckArmor] POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
+                LSPECIALMod.info("LuckArmor", "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
                         stack.getItem().getRegistryName(), player.getName(), luck, charge, maxCharge, restoredCharge);
             }
         }

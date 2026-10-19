@@ -44,7 +44,7 @@ public abstract class MixinEntityBulletBaseNT {
             if (weapon != null) {
                 bullet.getEntityData().setUniqueId("LSPECIALShooterUUID", owner.getUniqueID());
                 bullet.getEntityData().setString("LSPECIALShooterWeapon", weapon);
-                LSPECIALMod.info("[RocketDebug] BulletBaseNT launcher-recorded player={} weapon={} projectileId={}",
+                LSPECIALMod.info("RocketDebug", "BulletBaseNT launcher-recorded player={} weapon={} projectileId={}",
                         owner.getName(), weapon, bullet.getEntityId());
             }
         }
@@ -81,7 +81,7 @@ public abstract class MixinEntityBulletBaseNT {
             lspecial$impactY = bullet.posY;
             lspecial$impactZ = bullet.posZ;
         }
-        LSPECIALMod.info("[RocketDebug] BulletBaseNT impact HEAD player={} weapon={} projectileId={} configExplosion={} explosive={} impact=({}, {}, {}) perkActive={}",
+        LSPECIALMod.info("RocketDebug", "BulletBaseNT impact HEAD player={} weapon={} projectileId={} configExplosion={} explosive={} impact=({}, {}, {}) perkActive={}",
                 player.getName(), weapon, bullet.getEntityId(), bullet.getConfig().dmgExplosion,
                 bullet.getConfig().explosive, lspecial$impactX, lspecial$impactY, lspecial$impactZ,
                 RocketJumpHandler.isPerkActive(player));
@@ -98,7 +98,7 @@ public abstract class MixinEntityBulletBaseNT {
             return;
         }
         boolean active = RocketJumpHandler.isPerkActive(player);
-        LSPECIALMod.info("[RocketDebug] BulletBaseNT impact RETURN player={} projectileId={} perkActive={} owner={} motionBefore=({}, {}, {})",
+        LSPECIALMod.info("RocketDebug", "BulletBaseNT impact RETURN player={} projectileId={} perkActive={} owner={} motionBefore=({}, {}, {})",
                 player.getName(), bullet.getEntityId(), active, player.getUniqueID(),
                 lspecial$motionX, lspecial$motionY, lspecial$motionZ);
         if (!active) return;

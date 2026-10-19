@@ -51,7 +51,7 @@ public abstract class MixinNTMWandLoot {
         }
 
         LSPECIALMod.info(
-                "[LSPECIAL Loot] Tagging replaced wand-loot target: target={} pos={} pool={} rolls={}..{}",
+                "LSPECIAL Loot", "Tagging replaced wand-loot target: target={} pos={} pool={} rolls={}..{}",
                 target.getClass().getName(), target.getPos(), poolName, minItems, maxItems);
         LSPECIALNTMLootHandler.tagContainer(target, poolName, minItems, maxItems);
     }
@@ -105,7 +105,7 @@ public abstract class MixinNTMWandLoot {
             }
 
             LSPECIALMod.info(
-                    "[LSPECIAL Loot] Deferred structure tagging: target={} pos={} pool={} rolls={}..{}",
+                    "LSPECIAL Loot", "Deferred structure tagging: target={} pos={} pool={} rolls={}..{}",
                     target.getClass().getName(), pos, expectedPool, expectedMin, expectedMax);
             LSPECIALNTMLootHandler.tagContainer(target, expectedPool, expectedMin, expectedMax);
         });
@@ -144,7 +144,7 @@ public abstract class MixinNTMWandLoot {
             LSPECIALMod.logWarn("[LSPECIAL Loot] Wand-loot applyLoot called with null target: pool={} rolls={}..{}", poolName, minItems, maxItems);
             return;
         }
-        LSPECIALMod.info("[LSPECIAL Loot] Wand-loot applyLoot hook fired: target={} pos={} pool={} rolls={}..{}", tile.getClass().getName(), tile.getPos(), poolName, minItems, maxItems);
+        LSPECIALMod.info("LSPECIAL Loot", "Wand-loot applyLoot hook fired: target={} pos={} pool={} rolls={}..{}", tile.getClass().getName(), tile.getPos(), poolName, minItems, maxItems);
         LSPECIALNTMLootHandler.tagContainer(tile, poolName, minItems, maxItems);
     }
 }

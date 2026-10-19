@@ -37,7 +37,7 @@ public final class RocketJumpHandler {
         int intelligence = SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD);
         boolean active = LSPECIALConfig.intelligence && LSPECIALConfig.rocketJumpLesserPerk
                 && intelligence >= LSPECIALConfig.rocketJumpLesserPerkLevel;
-        LSPECIALMod.info("[RocketDebug] perk-check player={} intelligence={} minimum={} intelligenceEnabled={} perkEnabled={} active={}",
+        LSPECIALMod.info("RocketDebug", "perk-check player={} intelligence={} minimum={} intelligenceEnabled={} perkEnabled={} active={}",
                 player.getName(), intelligence, LSPECIALConfig.rocketJumpLesserPerkLevel,
                 LSPECIALConfig.intelligence, LSPECIALConfig.rocketJumpLesserPerk, active);
         return active;
@@ -51,7 +51,7 @@ public final class RocketJumpHandler {
                                       double fallbackMotionX, double fallbackMotionY, double fallbackMotionZ,
                                       double blastRadius) {
         if (player == null || player.world.isRemote || player.isDead) {
-            LSPECIALMod.info("[RocketDebug] impulse skipped player={} remote={} dead={}",
+            LSPECIALMod.info("RocketDebug", "impulse skipped player={} remote={} dead={}",
                     player == null ? "null" : player.getName(), player != null && player.world.isRemote,
                     player != null && player.isDead);
             return;
@@ -67,7 +67,7 @@ public final class RocketJumpHandler {
         // Only replace vanilla propulsion when the owner is inside the effective blast radius.
         if (distanceToBlast > blastRadius) {
             clearPendingRocketReward(player);
-            LSPECIALMod.info("[RocketDebug] impulse skipped outside-radius player={} distance={} radius={} explosion=({}, {}, {}) playerPos=({}, {}, {})",
+            LSPECIALMod.info("RocketDebug", "impulse skipped outside-radius player={} distance={} radius={} explosion=({}, {}, {}) playerPos=({}, {}, {})",
                     player.getName(), distanceToBlast, blastRadius, explosionX, explosionY, explosionZ,
                     player.posX, player.posY, player.posZ);
             return;
@@ -124,7 +124,7 @@ public final class RocketJumpHandler {
         jumpData.setBoolean(ROCKET_JUMPING, true);
         RocketJumpPhysicsHandler.begin(player);
         refundRocketOnSuccessfulJump(player);
-        LSPECIALMod.info("[RocketDebug] impulse APPLIED player={} distance={} radius={} strength={} falloff={} impulse={} direction=({}, {}, {}) motionBefore=({}, {}, {}) motionAfter=({}, {}, {})",
+        LSPECIALMod.info("RocketDebug", "impulse APPLIED player={} distance={} radius={} strength={} falloff={} impulse={} direction=({}, {}, {}) motionBefore=({}, {}, {}) motionAfter=({}, {}, {})",
                 player.getName(), distanceToBlast, blastRadius, LSPECIALConfig.rocketJumpStrength, falloff, impulse,
                 dx, dy, dz, previousMotionX, previousMotionY, previousMotionZ,
                 player.motionX, player.motionY, player.motionZ);

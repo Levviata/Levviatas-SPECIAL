@@ -87,7 +87,7 @@ public class SPECIALScoreboard {
         // otherwise, get or create it as normal
         if (boardName.equals(LIMIT_BOARD)) {
             if (!playerScoreboard.entityHasObjective(player.getName(), objective)) {
-                LSPECIALMod.info("getPlayerScorePoints(): player '" + player.getName()
+                LSPECIALMod.info("SPECIALScoreboard", "getPlayerScorePoints(): player '" + player.getName()
                         + "' has no LIMIT score. Initializing to 10.");
 
                 limitScore = playerScoreboard.getOrCreateScore(player.getName(), objective);
@@ -141,7 +141,7 @@ public class SPECIALScoreboard {
 
         // 5. start player's board if null
         if (playerScoreboard.getObjective(boardName) == null) {
-            LSPECIALMod.info("getPlayerScore(): objective '" + boardName
+            LSPECIALMod.info("SPECIALScoreboard", "getPlayerScore(): objective '" + boardName
                     + "' does not exist. Creating it for player: " + player.getName());
 
             playerScoreboard.addScoreObjective(boardName, IScoreCriteria.DUMMY);

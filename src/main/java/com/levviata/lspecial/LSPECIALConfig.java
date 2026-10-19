@@ -24,6 +24,7 @@ public final class LSPECIALConfig {
     public static boolean loggingInfo = false;
     public static boolean loggingWarn = true;
     public static boolean loggingError = true;
+    public static String listeningThisInfo = "RocketDebug,LSPECIAL Loot,CharismaRetaliation,CharismaNeutrality,LuckArmor,SPECIALScoreboard,StatsLogic";
 
     private static final String STATS = "1_special_stats";
     private static final String BOB = "2_bobbleheads_consumption";
@@ -246,6 +247,7 @@ public final class LSPECIALConfig {
         loggingInfo = b(LOGGING, "info", false, "Enable INFO-level logs from LSPECIAL");
         loggingWarn = b(LOGGING, "warn", true, "Enable WARN-level logs from LSPECIAL");
         loggingError = b(LOGGING, "error", true, "Enable ERROR-level logs from LSPECIAL");
+        listeningThisInfo = s(LOGGING, "listeningThisInfo", listeningThisInfo, "Comma-separated INFO identifiers to log. Identifiers are passed to LSPECIALMod.info without brackets.");
 
         // SPECIAL stats
         strength = b(STATS, "strength", true, "Enable Strength");

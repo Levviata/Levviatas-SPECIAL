@@ -66,21 +66,21 @@ public abstract class MixinMissileProjectile {
     @Unique
     private void lspecial$recordLauncher(EntityLivingBase shooter, String path) {
         if (!(shooter instanceof EntityPlayer player)) {
-            LSPECIALMod.info("[RocketDebug] BulletNT launcher-record skipped path={} shooter={}", path,
+            LSPECIALMod.info("RocketDebug", "BulletNT launcher-record skipped path={} shooter={}", path,
                     shooter == null ? "null" : shooter.getClass().getName());
             return;
         }
         String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
         EntityBulletBaseNT projectile = (EntityBulletBaseNT) (Object) this;
         if (weapon == null) {
-            LSPECIALMod.info("[RocketDebug] BulletNT launcher-record FAILED path={} player={} mainhand={} offhand={} projectileId={} config={}",
+            LSPECIALMod.info("RocketDebug", "BulletNT launcher-record FAILED path={} player={} mainhand={} offhand={} projectileId={} config={}",
                     path, player.getName(), lspecial$registryName(player.getHeldItemMainhand()),
                     lspecial$registryName(player.getHeldItemOffhand()), projectile.getEntityId(), projectile.getConfig());
             return;
         }
         projectile.getEntityData().setUniqueId("LSPECIALShooterUUID", player.getUniqueID());
         projectile.getEntityData().setString("LSPECIALShooterWeapon", weapon);
-        LSPECIALMod.info("[RocketDebug] BulletNT launcher-recorded path={} player={} weapon={} projectileId={} config={}",
+        LSPECIALMod.info("RocketDebug", "BulletNT launcher-recorded path={} player={} weapon={} projectileId={} config={}",
                 path, player.getName(), weapon, projectile.getEntityId(), projectile.getConfig());
     }
 
@@ -94,7 +94,7 @@ public abstract class MixinMissileProjectile {
         NBTTagCompound data = projectile.getEntityData();
         String weapon = data.hasKey("LSPECIALShooterWeapon") ? data.getString("LSPECIALShooterWeapon") : null;
         boolean family = StingerDamageHandler.isStingerFamilyWeapon(weapon);
-        LSPECIALMod.info("[RocketDebug] BulletNT impact HEAD projectileId={} hitType={} owner={} weapon={} family={} recorded={} remote={} pos=({}, {}, {})",
+        LSPECIALMod.info("RocketDebug", "BulletNT impact HEAD projectileId={} hitType={} owner={} weapon={} family={} recorded={} remote={} pos=({}, {}, {})",
                 projectile.getEntityId(), hit == null ? "null" : hit.typeOfHit,
                 shooter == null ? "null" : shooter.getName(), weapon, family,
                 StingerDamageHandler.isLauncherRecorded(projectile), projectile.world.isRemote,
@@ -116,7 +116,7 @@ public abstract class MixinMissileProjectile {
 
         if (LSPECIALConfig.stingerSelfDamageProtection) {
             StingerDamageHandler.beginRocketExplosion(player, weapon);
-            LSPECIALMod.info("[RocketDebug] BulletNT explosion context BEGIN player={} weapon={} projectileId={}",
+            LSPECIALMod.info("RocketDebug", "BulletNT explosion context BEGIN player={} weapon={} projectileId={}",
                     player.getName(), weapon, projectile.getEntityId());
         }
     }
@@ -128,13 +128,13 @@ public abstract class MixinMissileProjectile {
 
         if (LSPECIALConfig.stingerSelfDamageProtection) {
             StingerDamageHandler.endRocketExplosion();
-            LSPECIALMod.info("[RocketDebug] BulletNT explosion context END player={} weapon={}",
+            LSPECIALMod.info("RocketDebug", "BulletNT explosion context END player={} weapon={}",
                     player.getName(), lspecial$rocketJumpWeapon);
         }
 
         int intelligence = SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD);
         boolean perkActive = RocketJumpHandler.isPerkActive(player);
-        LSPECIALMod.info("[RocketDebug] BulletNT rocket-jump evaluation player={} weapon={} intelligence={} minimum={} enabled={} perkConfig={} active={} impact=({}, {}, {}) motionBefore=({}, {}, {})",
+        LSPECIALMod.info("RocketDebug", "BulletNT rocket-jump evaluation player={} weapon={} intelligence={} minimum={} enabled={} perkConfig={} active={} impact=({}, {}, {}) motionBefore=({}, {}, {})",
                 player.getName(), lspecial$rocketJumpWeapon, intelligence, LSPECIALConfig.rocketJumpLesserPerkLevel,
                 LSPECIALConfig.intelligence, LSPECIALConfig.rocketJumpLesserPerk, perkActive,
                 lspecial$explosionX, lspecial$explosionY, lspecial$explosionZ,

@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinNTMCrateLootBonus {
     @Inject(method = "openInventory(Lnet/minecraft/entity/player/EntityPlayer;)V", at = @At("RETURN"), remap = false)
     private void lspecial$applyLootBonus(EntityPlayer player, CallbackInfo callback) {
-        LSPECIALMod.info("[LSPECIAL Loot] NTM crate openInventory RETURN mixin fired for player={}", player == null ? "<null>" : player.getName());
+        LSPECIALMod.info("LSPECIAL Loot", "NTM crate openInventory RETURN mixin fired for player={}", player == null ? "<null>" : player.getName());
         LSPECIALNTMLootHandler.onContainerOpened((TileEntityCrateBase) (Object) this, player);
     }
 }

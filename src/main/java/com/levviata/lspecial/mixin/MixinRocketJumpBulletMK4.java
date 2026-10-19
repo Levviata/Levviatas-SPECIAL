@@ -72,7 +72,7 @@ public abstract class MixinRocketJumpBulletMK4 {
         if (!(shooter instanceof EntityPlayer player)) return;
         String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
         if (weapon == null) {
-            LSPECIALMod.info("[RocketDebug] BulletMK4 launcher-record FAILED path={} player={} mainhand={} offhand={} projectileId={}",
+            LSPECIALMod.info("RocketDebug", "BulletMK4 launcher-record FAILED path={} player={} mainhand={} offhand={} projectileId={}",
                     path, player.getName(), lspecial$registryName(player.getHeldItemMainhand()),
                     lspecial$registryName(player.getHeldItemOffhand()), ((EntityBulletBaseMK4) (Object) this).getEntityId());
             return;
@@ -80,7 +80,7 @@ public abstract class MixinRocketJumpBulletMK4 {
         EntityBulletBaseMK4 bullet = (EntityBulletBaseMK4) (Object) this;
         bullet.getEntityData().setUniqueId("LSPECIALShooterUUID", player.getUniqueID());
         bullet.getEntityData().setString("LSPECIALShooterWeapon", weapon);
-        LSPECIALMod.info("[RocketDebug] BulletMK4 launcher-recorded path={} player={} weapon={} projectileId={} config={}",
+        LSPECIALMod.info("RocketDebug", "BulletMK4 launcher-recorded path={} player={} weapon={} projectileId={} config={}",
                 path, player.getName(), weapon, bullet.getEntityId(), bullet.getBulletConfig());
     }
 
@@ -91,7 +91,7 @@ public abstract class MixinRocketJumpBulletMK4 {
 
         // NTM's Quadro impact callback intentionally ignores entity collisions during its first three ticks.
         if (hit != null && hit.typeOfHit == RayTraceResult.Type.ENTITY && bullet.ticksExisted < 3) {
-            LSPECIALMod.info("[RocketDebug] BulletMK4 impact ignored early entity hit projectileId={} ticks={}",
+            LSPECIALMod.info("RocketDebug", "BulletMK4 impact ignored early entity hit projectileId={} ticks={}",
                     bullet.getEntityId(), bullet.ticksExisted);
             return;
         }
@@ -100,7 +100,7 @@ public abstract class MixinRocketJumpBulletMK4 {
         NBTTagCompound data = bullet.getEntityData();
         String weapon = data.hasKey("LSPECIALShooterWeapon") ? data.getString("LSPECIALShooterWeapon") : null;
         boolean family = StingerDamageHandler.isStingerFamilyWeapon(weapon);
-        LSPECIALMod.info("[RocketDebug] BulletMK4 impact HEAD projectileId={} hitType={} owner={} weapon={} family={} recorded={} remote={} pos=({}, {}, {})",
+        LSPECIALMod.info("RocketDebug", "BulletMK4 impact HEAD projectileId={} hitType={} owner={} weapon={} family={} recorded={} remote={} pos=({}, {}, {})",
                 bullet.getEntityId(), hit == null ? "null" : hit.typeOfHit,
                 shooter == null ? "null" : shooter.getName(), weapon, family,
                 data.hasKey("LSPECIALShooterWeapon"), bullet.world.isRemote,
@@ -122,7 +122,7 @@ public abstract class MixinRocketJumpBulletMK4 {
 
         if (LSPECIALConfig.stingerSelfDamageProtection) {
             StingerDamageHandler.beginRocketExplosion(player, weapon);
-            LSPECIALMod.info("[RocketDebug] BulletMK4 explosion context BEGIN player={} weapon={} projectileId={}",
+            LSPECIALMod.info("RocketDebug", "BulletMK4 explosion context BEGIN player={} weapon={} projectileId={}",
                     player.getName(), weapon, bullet.getEntityId());
         }
     }
@@ -134,12 +134,12 @@ public abstract class MixinRocketJumpBulletMK4 {
 
         if (LSPECIALConfig.stingerSelfDamageProtection) {
             StingerDamageHandler.endRocketExplosion();
-            LSPECIALMod.info("[RocketDebug] BulletMK4 explosion context END player={} weapon={}",
+            LSPECIALMod.info("RocketDebug", "BulletMK4 explosion context END player={} weapon={}",
                     player.getName(), lspecial$rocketJumpWeapon);
         }
 
         boolean perkActive = RocketJumpHandler.isPerkActive(player);
-        LSPECIALMod.info("[RocketDebug] BulletMK4 rocket-jump evaluation player={} weapon={} active={} impact=({}, {}, {}) motionBefore=({}, {}, {})",
+        LSPECIALMod.info("RocketDebug", "BulletMK4 rocket-jump evaluation player={} weapon={} active={} impact=({}, {}, {}) motionBefore=({}, {}, {})",
                 player.getName(), lspecial$rocketJumpWeapon, perkActive,
                 lspecial$explosionX, lspecial$explosionY, lspecial$explosionZ,
                 lspecial$previousMotionX, lspecial$previousMotionY, lspecial$previousMotionZ);

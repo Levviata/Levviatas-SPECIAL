@@ -27,6 +27,8 @@ import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
+
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED_REGENERATION_NAME;
 
@@ -51,9 +53,11 @@ public class LSPECIALMod {
         return false;
     }
 
-    public static void info(String message, Object... params) {
-        if (LSPECIALConfig.loggingInfo) {
-            LOGGER.info(message, params);
+    public static void info(String identifier, String message, Object... params) {
+        if (LSPECIALConfig.loggingInfo && Arrays.stream(LSPECIALConfig.listeningThisInfo.split(","))
+                .map(String::trim)
+                .anyMatch(identifier::equals)) {
+            LOGGER.info("[" + identifier + "] " + message, params);
         }
     }
 
@@ -95,7 +99,7 @@ public class LSPECIALMod {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LSPECIALConfig.init(event.getSuggestedConfigurationFile());
-        info("[RocketDebug] rocket diagnostics initialized: infoLogging={} selfDamageProtection={} rocketJumpPerk={} intelligenceEnabled={} requiredIntelligence={}",
+        info("RocketDebug", "rocket diagnostics initialized: infoLogging={} selfDamageProtection={} rocketJumpPerk={} intelligenceEnabled={} requiredIntelligence={}",
                 LSPECIALConfig.loggingInfo, LSPECIALConfig.stingerSelfDamageProtection,
                 LSPECIALConfig.rocketJumpLesserPerk, LSPECIALConfig.intelligence,
                 LSPECIALConfig.rocketJumpLesserPerkLevel);

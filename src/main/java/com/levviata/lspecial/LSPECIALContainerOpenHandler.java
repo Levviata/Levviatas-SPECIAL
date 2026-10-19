@@ -42,7 +42,7 @@ public final class LSPECIALContainerOpenHandler {
                         collectTiles(nested, found, visited, depth + 1);
                     }
                 } catch (ReflectiveOperationException | RuntimeException exception) {
-                    LSPECIALMod.info("[LSPECIAL Loot] Could not inspect field {}.{} while resolving an opened container: {}",
+                    LSPECIALMod.info("LSPECIAL Loot", "Could not inspect field {}.{} while resolving an opened container: {}",
                             type.getName(), field.getName(), exception.toString());
                 }
             }
@@ -78,7 +78,7 @@ public final class LSPECIALContainerOpenHandler {
             if (!tile.getTileData().getBoolean(LSPECIALNTMLootHandler.CONTAINER_TAG)) continue;
 
             handled = true;
-            LSPECIALMod.info("[LSPECIAL Loot] Server container-open event found tagged tile: player={} container={} tile={} pos={} pool={}",
+            LSPECIALMod.info("LSPECIAL Loot", "Server container-open event found tagged tile: player={} container={} tile={} pos={} pool={}",
                     player.getName(), container.getClass().getName(), tile.getClass().getName(), tile.getPos(),
                     tile.getTileData().getString(LSPECIALNTMLootHandler.POOL_TAG));
             LSPECIALNTMLootHandler.onContainerOpened(tile, player);

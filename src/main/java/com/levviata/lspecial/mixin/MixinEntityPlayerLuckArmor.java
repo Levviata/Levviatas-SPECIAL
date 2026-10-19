@@ -67,7 +67,7 @@ public abstract class MixinEntityPlayerLuckArmor {
                 if (player.getRNG().nextDouble() < chance) {
                     stack.damageItem(amount, entity);
                     long refunded = lspecial$refundPoweredArmorEnergy(poweredArmor, stack, chargeBefore);
-                    LSPECIALMod.info("[LuckArmor] POWER_ARMOR_ENERGY_REFUNDED item={} player={} luck={} chance={} energyRefunded={} chargeBefore={} chargeAfter={}",
+                    LSPECIALMod.info("LuckArmor", "POWER_ARMOR_ENERGY_REFUNDED item={} player={} luck={} chance={} energyRefunded={} chargeBefore={} chargeAfter={}",
                             stack.getItem().getRegistryName(), player.getName(), luck, chance, refunded,
                             chargeBefore, poweredArmor.getCharge(stack));
                     return;
@@ -88,7 +88,7 @@ public abstract class MixinEntityPlayerLuckArmor {
                 && luck >= LSPECIALConfig.luckArmorFailsafeLevel
                 && amount >= remainingDurability) {
             if (lspecial$unequipArmor(player, stack)) {
-                LSPECIALMod.info("[LuckArmor] FAILSAFE unequipped {} before break (player={}, luck={}, incomingDurabilityDamage={}, remainingDurability={})",
+                LSPECIALMod.info("LuckArmor", "FAILSAFE unequipped {} before break (player={}, luck={}, incomingDurabilityDamage={}, remainingDurability={})",
                         stack.getItem().getRegistryName(), player.getName(), luck, amount, remainingDurability);
                 return;
             }
