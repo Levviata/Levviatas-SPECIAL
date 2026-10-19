@@ -36,8 +36,8 @@ public final class SPECIALGameplayHandler {
      * Starts a native rapid-fire burst and locks selection to the exact stack that triggered it.
      */
     public static boolean startLightRevolverRapidFire(EntityPlayer player, ItemStack stack) {
-        if (!lspecial$canUseLightRevolverRapidFire(player) || !lspecial$isLightRevolver(stack)) return false;
-        int slot = lspecial$findHotbarStack(player, stack);
+        if (!canUseLightRevolverRapidFire(player) || !isLightRevolver(stack)) return false;
+        int slot = findHotbarStack(player, stack);
         if (slot < 0) {
             ItemStack held = player.getHeldItemMainhand();
             if (!held.isEmpty() && ItemStack.areItemsEqual(held, stack)) {
@@ -48,7 +48,7 @@ public final class SPECIALGameplayHandler {
 
         // use the actual inventory object: keybind callbacks can supply an equivalent stack copy.
         ItemStack actualStack = player.inventory.getStackInSlot(slot);
-        if (actualStack.isEmpty() || !lspecial$isLightRevolver(actualStack)) return false;
+        if (actualStack.isEmpty() || !isLightRevolver(actualStack)) return false;
         LockedGun previous = rapidFireLocks.put(player,
                 new LockedGun(actualStack, slot, LSPECIALConfig.lightRevolverRapidFireTicks));
         if (previous != null && previous.stack != actualStack) lspecial$setRapidFire(previous.stack, false);
@@ -61,13 +61,13 @@ public final class SPECIALGameplayHandler {
      */
     public static boolean isLightRevolverRapidFireLocked(EntityPlayer player, ItemStack stack) {
         LockedGun locked = rapidFireLocks.get(player);
-        return locked != null && locked.stack == stack && lspecial$canUseLightRevolverRapidFire(player);
+        return locked != null && locked.stack == stack && canUseLightRevolverRapidFire(player);
     }
 
     /**
      * Releases the lock and clears native primary input so firing cannot continue after the burst.
      */
-    private static void lspecial$releaseRapidFire(EntityPlayer player, LockedGun locked) {
+    private static void releaseRapidFire(EntityPlayer player, LockedGun locked) {
         rapidFireLocks.remove(player);
         lspecial$setRapidFire(locked.stack, false);
     }
@@ -75,7 +75,7 @@ public final class SPECIALGameplayHandler {
     /**
      * Checks the configured perk and its Intelligence threshold before forcing fire input.
      */
-    private static boolean lspecial$canUseLightRevolverRapidFire(EntityPlayer player) {
+    private static boolean canUseLightRevolverRapidFire(EntityPlayer player) {
         return player != null && !player.isDead && LSPECIALConfig.modifyGuns
                 && LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk
                 && LSPECIALConfig.lightRevolverRapidFirePerk && inst != null
@@ -86,7 +86,7 @@ public final class SPECIALGameplayHandler {
     /**
      * Identifies the NTM light revolver without relying on its translated name.
      */
-    private static boolean lspecial$isLightRevolver(ItemStack stack) {
+    private static boolean isLightRevolver(ItemStack stack) {
         return stack != null && !stack.isEmpty() && stack.getItem().getRegistryName() != null
                 && "hbm:gun_light_revolver".equals(stack.getItem().getRegistryName().toString());
     }
@@ -94,7 +94,7 @@ public final class SPECIALGameplayHandler {
     /**
      * Finds the exact stack identity in the hotbar so a replacement stack cannot inherit the lock.
      */
-    private static int lspecial$findHotbarStack(EntityPlayer player, ItemStack target) {
+    private static int findHotbarStack(EntityPlayer player, ItemStack target) {
         for (int slot = 0; slot < 9; slot++) {
             if (player.inventory.getStackInSlot(slot) == target) return slot;
         }
@@ -189,13 +189,15 @@ public final class SPECIALGameplayHandler {
     /**
      * Restores all equipped NTM power armor below 50% when one piece reaches 1% charge.
      */
-    private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
+    private static void lspecial$tickPoweredArmorCooldown(EntityPlayer player) {
         StatsLogic.PlayerState state = StatsLogic.getPlayerstate(player);
-
         if (state.poweredArmorRechargeCooldown > 0) {
             state.poweredArmorRechargeCooldown--;
         }
+    }
 
+    private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
+        StatsLogic.PlayerState state = StatsLogic.getPlayerstate(player);
         boolean recoveryTriggered = false;
 
         if (LSPECIALConfig.luck && LSPECIALConfig.luckArmorFailsafe
@@ -343,14 +345,14 @@ public final class SPECIALGameplayHandler {
         LockedGun locked = rapidFireLocks.get(player);
         if (locked == null) return;
 
-        if (!lspecial$canUseLightRevolverRapidFire(player)) {
-            lspecial$releaseRapidFire(player, locked);
+        if (!canUseLightRevolverRapidFire(player)) {
+            releaseRapidFire(player, locked);
             return;
         }
 
-        int actualSlot = lspecial$findHotbarStack(player, locked.stack);
+        int actualSlot = findHotbarStack(player, locked.stack);
         if (actualSlot < 0 || locked.stack.isEmpty() || --locked.ticksRemaining <= 0) {
-            lspecial$releaseRapidFire(player, locked);
+            releaseRapidFire(player, locked);
             return;
         }
 
@@ -418,6 +420,7 @@ public final class SPECIALGameplayHandler {
         EntityPlayer player = event.player;
         lspecial$tickPendingSelfKill(player);
         lspecial$tickPendingProjectiles(player);
+        lspecial$tickPoweredArmorCooldown(player);
         lspecial$tickPoweredArmorRecovery(player);
 
     }
