@@ -69,7 +69,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 lines.add("LESSER PERK — Level 5");
                 lines.add("Duplicates found Nuclear Tech loot");
                 lines.add("HIGHER PERK — Level 10");
-                lines.add("If Luck is at level 10, add new special items to found loot");
+                lines.add("If Luck is also at level 10, fill all found Nuclear Tech loot (containers) to the brim.");
                 lines.add("HIGHER PERK — Above level 15");
                 lines.add("+1% armor threshold reduction per level, applies to guns");
                 break;
@@ -81,7 +81,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 break;
             case "Charisma":
                 lines.add("LESSER PERK — Level 5");
-                lines.add("Configured entities may ignore the player when supported.");
+                lines.add("All entities with less than 100 health become neutral, their retaliation is dynamic so if you deal too much damage to them they will remember your face, forever.");
                 lines.add("Villagers have a discount in proportion to your current level. Your current discount is " + getVillagerDiscountPercent() + "%");
                 /*lines.add("HIGHER PERK — Levels 10–15");
                 lines.add("Additional effects depend on the active configuration.");*/
