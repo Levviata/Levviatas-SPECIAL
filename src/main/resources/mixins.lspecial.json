@@ -11,7 +11,7 @@
     "MixinEntityBulletBaseNT",
     "MixinEntityLivingBaseRetaliation",
     "MixinEntityLivingCharismaNeutrality",
-    "MixinEntityPlayerLuckArmor",
+    "MixinInventoryPlayerLuckArmor",
     "MixinEntityRailgunBlast",
     "MixinEntityRocket",
     "MixinEntityVillager",
