@@ -81,7 +81,14 @@ public abstract class MixinItemStackLuckArmor {
         if (amount <= 0) return;
 
         if (stack.hasTagCompound() && stack.getTagCompound().getBoolean("LSPECIALArmorFailsafe")) {
-            return;
+            int savedDamage = stack.getTagCompound().getInteger("LSPECIALArmorFailsafeDamage");
+
+            if (stack.getItemDamage() == savedDamage) {
+                return;
+            }
+
+            stack.getTagCompound().removeTag("LSPECIALArmorFailsafe");
+            stack.getTagCompound().removeTag("LSPECIALArmorFailsafeDamage");
         }
 
         int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
