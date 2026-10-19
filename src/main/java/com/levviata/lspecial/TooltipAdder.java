@@ -71,9 +71,11 @@ public final class TooltipAdder {
             }
         }
 
-        int cooldown = tag.getInteger("LSPECIALArmorRechargeCooldown");
-        if (cooldown > 0) {
-            event.getToolTip().add("§cCooldown: " + ((cooldown + 19) / 20));
+        if (stack.getItem() instanceof com.hbm.items.armor.ArmorFSBPowered) {
+            int cooldown = tag.getInteger("LSPECIALArmorRechargeCooldown");
+            if (cooldown > 0) {
+                event.getToolTip().add("§cRecharge Cooldown: " + ((cooldown + 19) / 20));
+            }
         }
     }
 

@@ -204,7 +204,8 @@ public final class SPECIALGameplayHandler {
                 && state.poweredArmorRechargeCooldown <= 0) {
             int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
 
-            if (luck >= LSPECIALConfig.luckArmorFailsafeLevel) {
+            if (luck >= LSPECIALConfig.luckArmorFailsafeLevel
+                    && lspecial$hasFullPoweredArmorSet(player)) {
                 for (ItemStack stack : player.inventory.armorInventory) {
                     if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
                         continue;
@@ -272,34 +273,66 @@ public final class SPECIALGameplayHandler {
 
         int cooldown = state.poweredArmorRechargeCooldown;
 
+        // Keep the global cooldown visible on every powered armor stack the player owns.
+        // The cooldown itself belongs to the player, not to an individual armor piece.
+        for (ItemStack stack : player.inventory.armorInventory) {
+            lspecial$updatePoweredArmorTooltipState(stack, cooldown);
+        }
+
+        for (ItemStack stack : player.inventory.mainInventory) {
+            lspecial$updatePoweredArmorTooltipState(stack, cooldown);
+        }
+
+        for (ItemStack stack : player.inventory.offHandInventory) {
+            lspecial$updatePoweredArmorTooltipState(stack, cooldown);
+        }
+    }
+
+    private static boolean lspecial$hasFullPoweredArmorSet(EntityPlayer player) {
+        net.minecraft.item.ItemArmor.ArmorMaterial material = null;
+
         for (ItemStack stack : player.inventory.armorInventory) {
             if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
-                continue;
+                return false;
             }
 
-            if (!stack.hasTagCompound()) {
-                stack.setTagCompound(new NBTTagCompound());
+            if (material == null) {
+                material = poweredArmor.getArmorMaterial();
+            } else if (poweredArmor.getArmorMaterial() != material) {
+                return false;
             }
+        }
 
-            NBTTagCompound tag = stack.getTagCompound();
+        return material != null;
+    }
 
-            if (tag.getBoolean("LSPECIALArmorRecharged")) {
-                long savedCharge = tag.getLong("LSPECIALArmorRechargedCharge");
-                long maxCharge = tag.getLong("LSPECIALArmorRechargedMaxCharge");
-                long charge = poweredArmor.getCharge(stack);
+    private static void lspecial$updatePoweredArmorTooltipState(ItemStack stack, int cooldown) {
+        if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+            return;
+        }
 
-                if (maxCharge > 0L && Math.abs(charge - savedCharge) >= maxCharge * 0.20D) {
-                    tag.removeTag("LSPECIALArmorRecharged");
-                    tag.removeTag("LSPECIALArmorRechargedCharge");
-                    tag.removeTag("LSPECIALArmorRechargedMaxCharge");
-                }
+        if (!stack.hasTagCompound()) {
+            stack.setTagCompound(new NBTTagCompound());
+        }
+
+        NBTTagCompound tag = stack.getTagCompound();
+
+        if (tag.getBoolean("LSPECIALArmorRecharged")) {
+            long savedCharge = tag.getLong("LSPECIALArmorRechargedCharge");
+            long maxCharge = tag.getLong("LSPECIALArmorRechargedMaxCharge");
+            long charge = poweredArmor.getCharge(stack);
+
+            if (maxCharge > 0L && Math.abs(charge - savedCharge) >= maxCharge * 0.20D) {
+                tag.removeTag("LSPECIALArmorRecharged");
+                tag.removeTag("LSPECIALArmorRechargedCharge");
+                tag.removeTag("LSPECIALArmorRechargedMaxCharge");
             }
+        }
 
-            if (cooldown > 0) {
-                tag.setInteger("LSPECIALArmorRechargeCooldown", cooldown);
-            } else {
-                tag.removeTag("LSPECIALArmorRechargeCooldown");
-            }
+        if (cooldown > 0) {
+            tag.setInteger("LSPECIALArmorRechargeCooldown", cooldown);
+        } else {
+            tag.removeTag("LSPECIALArmorRechargeCooldown");
         }
     }
 
