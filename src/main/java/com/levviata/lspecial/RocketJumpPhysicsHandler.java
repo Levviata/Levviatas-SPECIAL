@@ -7,7 +7,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 /**
- * Applies the Source-style low-gravity/momentum portion only during a tracked blast jump.
+ * Applies Source sdk 2013-style low-gravity/momentum portion only during a tracked blast jump.
  * Minecraft's normal movement is untouched outside this short-lived marker.
  */
 public final class RocketJumpPhysicsHandler {

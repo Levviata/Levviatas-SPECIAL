@@ -2,7 +2,7 @@ package com.levviata.lspecial.mixin;
 
 import com.hbm.entity.projectile.EntityThrowableNT;
 import com.hbm.items.weapon.sedna.ItemGunBaseNT;
-import com.levviata.lspecial.StingerDamageHandler;
+import com.levviata.lspecial.RocketDamageHandler;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Persists the identity of the entity and weapon that launched an NTM throwable.
  */
+// its useful
 @Mixin(value = EntityThrowableNT.class, remap = false)
 public abstract class MixinProjectileShooter {
 
@@ -40,12 +41,12 @@ public abstract class MixinProjectileShooter {
         data.setUniqueId("LSPECIALShooterUUID", shooter.getUniqueID());
         if (shooter instanceof EntityPlayer player) {
             ItemStack held = player.getHeldItemMainhand();
-            String rocketFamilyWeapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
+            String rocketFamilyWeapon = RocketDamageHandler.getHeldStingerFamilyWeapon(player);
             if (rocketFamilyWeapon != null) {
                 ItemStack offhand = player.getHeldItemOffhand();
-                if (StingerDamageHandler.isStingerFamilyItem(held)) {
+                if (RocketDamageHandler.isStingerFamilyItem(held)) {
                     data.setString("LSPECIALShooterWeapon", held.getItem().getRegistryName().toString());
-                } else if (StingerDamageHandler.isStingerFamilyItem(offhand)) {
+                } else if (RocketDamageHandler.isStingerFamilyItem(offhand)) {
                     data.setString("LSPECIALShooterWeapon", offhand.getItem().getRegistryName().toString());
                 }
             } else if (!held.isEmpty() && held.getItem().getRegistryName() != null) {

@@ -3,7 +3,7 @@ package com.levviata.lspecial.mixin;
 import com.hbm.entity.projectile.EntityBulletBaseNT;
 import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.RocketJumpHandler;
-import com.levviata.lspecial.StingerDamageHandler;
+import com.levviata.lspecial.RocketDamageHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -40,7 +40,7 @@ public abstract class MixinEntityBulletBaseNT {
         EntityBulletBaseNT bullet = (EntityBulletBaseNT) (Object) this;
         EntityLivingBase owner = bullet.getThrower();
         if (owner instanceof EntityPlayer) {
-            String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) owner);
+            String weapon = RocketDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) owner);
             if (weapon != null) {
                 bullet.getEntityData().setUniqueId("LSPECIALShooterUUID", owner.getUniqueID());
                 bullet.getEntityData().setString("LSPECIALShooterWeapon", weapon);
@@ -55,9 +55,9 @@ public abstract class MixinEntityBulletBaseNT {
         EntityBulletBaseNT bullet = (EntityBulletBaseNT) (Object) this;
         Entity owner = bullet.getThrower();
         String weapon = bullet.getEntityData().getString("LSPECIALShooterWeapon");
-        boolean family = owner instanceof EntityPlayer && StingerDamageHandler.isStingerFamilyWeapon(weapon);
+        boolean family = owner instanceof EntityPlayer && RocketDamageHandler.isStingerFamilyWeapon(weapon);
         if (!family && owner instanceof EntityPlayer) {
-            String held = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) owner);
+            String held = RocketDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) owner);
             if (held != null) {
                 weapon = held;
                 family = true;

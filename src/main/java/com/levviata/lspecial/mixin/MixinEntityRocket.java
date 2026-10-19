@@ -5,7 +5,7 @@ import com.hbm.explosion.ExplosionLarge;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.RocketJumpHandler;
-import com.levviata.lspecial.StingerDamageHandler;
+import com.levviata.lspecial.RocketDamageHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -46,7 +46,7 @@ public abstract class MixinEntityRocket {
                     shooter == null ? "null" : shooter.getClass().getName(), rocket.getEntityId());
             return;
         }
-        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) shooter);
+        String weapon = RocketDamageHandler.getHeldStingerFamilyWeapon((EntityPlayer) shooter);
         if (weapon == null) {
             LSPECIALMod.info("RocketDebug", "EntityRocket launcher-record FAILED player={} rocketId={} mainhand={} offhand={}",
                     shooter.getName(), rocket.getEntityId(),
@@ -68,7 +68,7 @@ public abstract class MixinEntityRocket {
         EntityRocket rocket = (EntityRocket) (Object) this;
         Entity shooter = rocket.shootingEntity;
         String weapon = rocket.getEntityData().getString("LSPECIALShooterWeapon");
-        boolean familyRocket = StingerDamageHandler.isStingerFamilyWeapon(weapon)
+        boolean familyRocket = RocketDamageHandler.isStingerFamilyWeapon(weapon)
                 && shooter instanceof EntityPlayer;
         EntityPlayer player = familyRocket ? (EntityPlayer) shooter : null;
         boolean rocketJump = RocketJumpHandler.isPerkActive(player);
@@ -81,13 +81,13 @@ public abstract class MixinEntityRocket {
         double previousMotionZ = player == null ? 0.0D : player.motionZ;
 
         if (familyRocket && LSPECIALConfig.stingerSelfDamageProtection) {
-            StingerDamageHandler.beginRocketExplosion(player, weapon);
+            RocketDamageHandler.beginRocketExplosion(player, weapon);
         }
         try {
             ExplosionLarge.explode(world, explosionSource, x, y, z, size, smoke, rubble, shrapnel);
         } finally {
             if (familyRocket && LSPECIALConfig.stingerSelfDamageProtection) {
-                StingerDamageHandler.endRocketExplosion();
+                RocketDamageHandler.endRocketExplosion();
             }
         }
 

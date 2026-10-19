@@ -4,7 +4,7 @@ import com.hbm.entity.projectile.EntityBulletBaseMK4;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.RocketJumpHandler;
-import com.levviata.lspecial.StingerDamageHandler;
+import com.levviata.lspecial.RocketDamageHandler;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -70,7 +70,7 @@ public abstract class MixinRocketJumpBulletMK4 {
     @Unique
     private void lspecial$recordLauncher(EntityLivingBase shooter, String path) {
         if (!(shooter instanceof EntityPlayer player)) return;
-        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
+        String weapon = RocketDamageHandler.getHeldStingerFamilyWeapon(player);
         if (weapon == null) {
             LSPECIALMod.info("RocketDebug", "BulletMK4 launcher-record FAILED path={} player={} mainhand={} offhand={} projectileId={}",
                     path, player.getName(), lspecial$registryName(player.getHeldItemMainhand()),
@@ -99,7 +99,7 @@ public abstract class MixinRocketJumpBulletMK4 {
         EntityLivingBase shooter = bullet.getThrower();
         NBTTagCompound data = bullet.getEntityData();
         String weapon = data.hasKey("LSPECIALShooterWeapon") ? data.getString("LSPECIALShooterWeapon") : null;
-        boolean family = StingerDamageHandler.isStingerFamilyWeapon(weapon);
+        boolean family = RocketDamageHandler.isStingerFamilyWeapon(weapon);
         LSPECIALMod.info("RocketDebug", "BulletMK4 impact HEAD projectileId={} hitType={} owner={} weapon={} family={} recorded={} remote={} pos=({}, {}, {})",
                 bullet.getEntityId(), hit == null ? "null" : hit.typeOfHit,
                 shooter == null ? "null" : shooter.getName(), weapon, family,
@@ -121,7 +121,7 @@ public abstract class MixinRocketJumpBulletMK4 {
         lspecial$fallbackMotionZ = bullet.motionZ;
 
         if (LSPECIALConfig.stingerSelfDamageProtection) {
-            StingerDamageHandler.beginRocketExplosion(player, weapon);
+            RocketDamageHandler.beginRocketExplosion(player, weapon);
             LSPECIALMod.info("RocketDebug", "BulletMK4 explosion context BEGIN player={} weapon={} projectileId={}",
                     player.getName(), weapon, bullet.getEntityId());
         }
@@ -133,7 +133,7 @@ public abstract class MixinRocketJumpBulletMK4 {
         if (player == null) return;
 
         if (LSPECIALConfig.stingerSelfDamageProtection) {
-            StingerDamageHandler.endRocketExplosion();
+            RocketDamageHandler.endRocketExplosion();
             LSPECIALMod.info("RocketDebug", "BulletMK4 explosion context END player={} weapon={}",
                     player.getName(), lspecial$rocketJumpWeapon);
         }

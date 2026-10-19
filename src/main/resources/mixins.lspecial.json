@@ -8,7 +8,6 @@
   "mixins": [
     "MixinBeamProjectile",
     "MixinEntityBulletBaseMK4",
-    "MixinEntityBulletBaseNT",
     "MixinEntityLivingBaseRetaliation",
     "MixinEntityLivingCharismaNeutrality",
     "MixinEntityRailgunBlast",

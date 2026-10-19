@@ -17,12 +17,12 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
  * Cancels self-damage from configured NTM rocket-family projectiles without relying on the currently held item.
  */
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
-public final class StingerDamageHandler {
+public final class RocketDamageHandler {
 
     private static final ThreadLocal<EntityPlayer> ROCKET_EXPLOSION_OWNER = new ThreadLocal<>();
     private static final ThreadLocal<String> ROCKET_EXPLOSION_WEAPON = new ThreadLocal<>();
 
-    private StingerDamageHandler() {
+    private RocketDamageHandler() {
     }
 
     /**

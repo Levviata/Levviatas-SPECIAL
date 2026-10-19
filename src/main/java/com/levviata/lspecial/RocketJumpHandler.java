@@ -153,11 +153,11 @@ public final class RocketJumpHandler {
         }
 
         ItemStack launcher = player.getHeldItemMainhand();
-        if (!StingerDamageHandler.isStingerFamilyItem(launcher)) launcher = player.getHeldItemOffhand();
-        if (!StingerDamageHandler.isStingerFamilyItem(launcher)) {
+        if (!RocketDamageHandler.isStingerFamilyItem(launcher)) launcher = player.getHeldItemOffhand();
+        if (!RocketDamageHandler.isStingerFamilyItem(launcher)) {
             launcher = ItemStack.EMPTY;
             for (ItemStack candidate : player.inventory.mainInventory) {
-                if (StingerDamageHandler.isStingerFamilyItem(candidate)) {
+                if (RocketDamageHandler.isStingerFamilyItem(candidate)) {
                     launcher = candidate;
                     break;
                 }

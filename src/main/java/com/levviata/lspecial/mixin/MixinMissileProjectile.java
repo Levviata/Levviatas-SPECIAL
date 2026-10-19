@@ -70,7 +70,7 @@ public abstract class MixinMissileProjectile {
                     shooter == null ? "null" : shooter.getClass().getName());
             return;
         }
-        String weapon = StingerDamageHandler.getHeldStingerFamilyWeapon(player);
+        String weapon = RocketDamageHandler.getHeldStingerFamilyWeapon(player);
         EntityBulletBaseNT projectile = (EntityBulletBaseNT) (Object) this;
         if (weapon == null) {
             LSPECIALMod.info("RocketDebug", "BulletNT launcher-record FAILED path={} player={} mainhand={} offhand={} projectileId={} config={}",
@@ -93,11 +93,11 @@ public abstract class MixinMissileProjectile {
         EntityLivingBase shooter = projectile.getThrower();
         NBTTagCompound data = projectile.getEntityData();
         String weapon = data.hasKey("LSPECIALShooterWeapon") ? data.getString("LSPECIALShooterWeapon") : null;
-        boolean family = StingerDamageHandler.isStingerFamilyWeapon(weapon);
+        boolean family = RocketDamageHandler.isStingerFamilyWeapon(weapon);
         LSPECIALMod.info("RocketDebug", "BulletNT impact HEAD projectileId={} hitType={} owner={} weapon={} family={} recorded={} remote={} pos=({}, {}, {})",
                 projectile.getEntityId(), hit == null ? "null" : hit.typeOfHit,
                 shooter == null ? "null" : shooter.getName(), weapon, family,
-                StingerDamageHandler.isLauncherRecorded(projectile), projectile.world.isRemote,
+                RocketDamageHandler.isLauncherRecorded(projectile), projectile.world.isRemote,
                 projectile.posX, projectile.posY, projectile.posZ);
         if (projectile.world.isRemote || !(shooter instanceof EntityPlayer player) || !family) return;
 
@@ -115,7 +115,7 @@ public abstract class MixinMissileProjectile {
         lspecial$fallbackMotionZ = projectile.motionZ;
 
         if (LSPECIALConfig.stingerSelfDamageProtection) {
-            StingerDamageHandler.beginRocketExplosion(player, weapon);
+            RocketDamageHandler.beginRocketExplosion(player, weapon);
             LSPECIALMod.info("RocketDebug", "BulletNT explosion context BEGIN player={} weapon={} projectileId={}",
                     player.getName(), weapon, projectile.getEntityId());
         }
@@ -127,7 +127,7 @@ public abstract class MixinMissileProjectile {
         if (player == null) return;
 
         if (LSPECIALConfig.stingerSelfDamageProtection) {
-            StingerDamageHandler.endRocketExplosion();
+            RocketDamageHandler.endRocketExplosion();
             LSPECIALMod.info("RocketDebug", "BulletNT explosion context END player={} weapon={}",
                     player.getName(), lspecial$rocketJumpWeapon);
         }
