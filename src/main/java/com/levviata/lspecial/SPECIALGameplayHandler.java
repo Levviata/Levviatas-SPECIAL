@@ -192,28 +192,94 @@ public final class SPECIALGameplayHandler {
     private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
         StatsLogic.PlayerState state = StatsLogic.getPlayerstate(player);
 
-        LSPECIALMod.info("LSPECIAL Gameplay Handler", "Ran lspecial$tickPoweredArmorRecovery");
-
         if (state.poweredArmorRechargeCooldown > 0) {
             state.poweredArmorRechargeCooldown--;
         }
+
+        boolean recoveryTriggered = false;
+
+        if (LSPECIALConfig.luck && LSPECIALConfig.luckArmorFailsafe
+                && state.poweredArmorRechargeCooldown <= 0) {
+            int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
+
+            if (luck >= LSPECIALConfig.luckArmorFailsafeLevel) {
+                for (ItemStack stack : player.inventory.armorInventory) {
+                    if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+                        continue;
+                    }
+
+                    long maxCharge = poweredArmor.getMaxCharge(stack);
+                    if (maxCharge <= 0L) {
+                        continue;
+                    }
+
+                    if (poweredArmor.getCharge(stack) <= maxCharge * 0.01D) {
+                        recoveryTriggered = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (recoveryTriggered) {
+            boolean recovered = false;
+            state.poweredArmorRechargeCooldown = 6000;
+            int cooldown = state.poweredArmorRechargeCooldown;
+            int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
+
+            for (ItemStack stack : player.inventory.armorInventory) {
+                if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+                    continue;
+                }
+
+                long maxCharge = poweredArmor.getMaxCharge(stack);
+                if (maxCharge <= 0L) {
+                    continue;
+                }
+
+                long charge = poweredArmor.getCharge(stack);
+                if (charge >= maxCharge * 0.50D) {
+                    continue;
+                }
+
+                long restoredCharge = maxCharge / 2L;
+                poweredArmor.setCharge(stack, restoredCharge);
+
+                if (!stack.hasTagCompound()) {
+                    stack.setTagCompound(new NBTTagCompound());
+                }
+
+                NBTTagCompound tag = stack.getTagCompound();
+                tag.setBoolean("LSPECIALArmorRecharged", true);
+                tag.setLong("LSPECIALArmorRechargedCharge", restoredCharge);
+                tag.setLong("LSPECIALArmorRechargedMaxCharge", maxCharge);
+                tag.setInteger("LSPECIALArmorRechargeCooldown", cooldown);
+                recovered = true;
+
+                LSPECIALMod.info("LuckArmor",
+                        "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
+                        stack.getItem().getRegistryName(), player.getName(), luck, charge, maxCharge, restoredCharge);
+            }
+
+            if (recovered) {
+                player.playSound(LSPECIALSounds.ARMOR_FAILSAFE_POWERED, 1.0F, 1.0F);
+            } else {
+                state.poweredArmorRechargeCooldown = 0;
+            }
+        }
+
+        int cooldown = state.poweredArmorRechargeCooldown;
 
         for (ItemStack stack : player.inventory.armorInventory) {
             if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
                 continue;
             }
-            LSPECIALMod.info("LSPECIAL Gameplay Handler", "found stack");
+
             if (!stack.hasTagCompound()) {
                 stack.setTagCompound(new NBTTagCompound());
             }
 
             NBTTagCompound tag = stack.getTagCompound();
-
-            if (state.poweredArmorRechargeCooldown > 0) {
-                tag.setInteger("LSPECIALArmorRechargeCooldown", state.poweredArmorRechargeCooldown);
-            } else {
-                tag.removeTag("LSPECIALArmorRechargeCooldown");
-            }
 
             if (tag.getBoolean("LSPECIALArmorRecharged")) {
                 long savedCharge = tag.getLong("LSPECIALArmorRechargedCharge");
@@ -226,85 +292,12 @@ public final class SPECIALGameplayHandler {
                     tag.removeTag("LSPECIALArmorRechargedMaxCharge");
                 }
             }
-        }
 
-        if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe
-                || player.ticksExisted % 6000 != 0
-                || state.poweredArmorRechargeCooldown > 0) {
-            return;
-        }
-
-        int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
-        if (luck < LSPECIALConfig.luckArmorFailsafeLevel) {
-            return;
-        }
-
-        boolean recoveryTriggered = false;
-
-        for (ItemStack stack : player.inventory.armorInventory) {
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
-                continue;
+            if (cooldown > 0) {
+                tag.setInteger("LSPECIALArmorRechargeCooldown", cooldown);
+            } else {
+                tag.removeTag("LSPECIALArmorRechargeCooldown");
             }
-
-            long maxCharge = poweredArmor.getMaxCharge(stack);
-            if (maxCharge <= 0L) {
-                continue;
-            }
-
-            if (poweredArmor.getCharge(stack) <= maxCharge * 0.01D) {
-                recoveryTriggered = true;
-                break;
-            }
-        }
-
-        if (!recoveryTriggered) {
-            return;
-        }
-
-        boolean recovered = false;
-        state.poweredArmorRechargeCooldown = 6000;
-
-        for (ItemStack stack : player.inventory.armorInventory) {
-            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
-                continue;
-            }
-
-            long maxCharge = poweredArmor.getMaxCharge(stack);
-            if (maxCharge <= 0L) {
-                continue;
-            }
-
-            long charge = poweredArmor.getCharge(stack);
-            if (charge >= maxCharge * 0.50D) {
-                if (stack.hasTagCompound()) {
-                    stack.getTagCompound().setInteger("LSPECIALArmorRechargeCooldown", state.poweredArmorRechargeCooldown);
-                }
-                continue;
-            }
-
-            long restoredCharge = maxCharge / 2L;
-            poweredArmor.setCharge(stack, restoredCharge);
-
-            if (!stack.hasTagCompound()) {
-                stack.setTagCompound(new NBTTagCompound());
-            }
-
-            NBTTagCompound tag = stack.getTagCompound();
-            tag.setBoolean("LSPECIALArmorRecharged", true);
-            tag.setLong("LSPECIALArmorRechargedCharge", restoredCharge);
-            tag.setLong("LSPECIALArmorRechargedMaxCharge", maxCharge);
-            tag.setInteger("LSPECIALArmorRechargeCooldown", state.poweredArmorRechargeCooldown);
-            recovered = true;
-
-            LSPECIALMod.info("LuckArmor",
-                    "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
-                    stack.getItem().getRegistryName(), player.getName(), luck, charge, maxCharge, restoredCharge);
-        }
-
-        if (recovered) {
-            player.playSound(LSPECIALSounds.ARMOR_FAILSAFE_POWERED, 1.0F, 1.0F);
-        } else {
-            state.poweredArmorRechargeCooldown = 0;
         }
     }
 
