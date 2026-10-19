@@ -1,13 +1,15 @@
 package com.levviata.lspecial.mixin;
 
+import com.hbm.items.armor.ArmorFSBPowered;
 import com.levviata.lspecial.LSPECIALConfig;
 import com.levviata.lspecial.LSPECIALMod;
-import com.levviata.lspecial.LSPECIALSounds;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.SoundEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,7 +21,8 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 // AI IS FREE SLAVERY
 /*
  * itemstack.damageItem() is the confirmed armor damage path.
- * head handles the failsafe before damage is applied.
+ * head handles the vanilla armor failsafe before damage is applied.
+ * power armor is handled by the player-wide recovery in SPECIALGameplayHandler.
  * tail handles the Luck durability bonus after vanilla damage.
  */
 @Mixin(ItemStack.class)
@@ -45,6 +48,24 @@ public abstract class MixinItemStackLuckArmor {
     }
 
     @Unique
+    private static SoundEvent lspecial$getArmorEquipSound(ItemArmor armor) {
+        switch (armor.getArmorMaterial()) {
+            case LEATHER:
+                return SoundEvents.ITEM_ARMOR_EQUIP_LEATHER;
+            case CHAIN:
+                return SoundEvents.ITEM_ARMOR_EQUIP_CHAIN;
+            case IRON:
+                return SoundEvents.ITEM_ARMOR_EQUIP_IRON;
+            case GOLD:
+                return SoundEvents.ITEM_ARMOR_EQUIP_GOLD;
+            case DIAMOND:
+                return SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND;
+            default:
+                return null;
+        }
+    }
+
+    @Unique
     private static double lspecial$getChance(int luck) {
         return Math.min(LSPECIALConfig.luckArmorDurabilityChanceCap,
                 Math.max(0.0D, luck * LSPECIALConfig.luckArmorDurabilityChancePerPoint));
@@ -58,7 +79,13 @@ public abstract class MixinItemStackLuckArmor {
         if (!(entity instanceof EntityPlayer player)) {
             return;
         }
-        if (stack.isEmpty() || !(stack.getItem() instanceof ItemArmor)) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        if (stack.getItem() instanceof ArmorFSBPowered) {
+            return;
+        }
+        if (!(stack.getItem() instanceof ItemArmor)) {
             return;
         }
         if (amount <= 0) {
@@ -88,7 +115,6 @@ public abstract class MixinItemStackLuckArmor {
         if (luck < LSPECIALConfig.luckArmorFailsafeLevel) {
             return;
         }
-
         if (!stack.isItemStackDamageable()) {
             return;
         }
@@ -96,10 +122,9 @@ public abstract class MixinItemStackLuckArmor {
         int currentDamage = stack.getItemDamage();
         int remainingDurability = stack.getMaxDamage() - currentDamage;
 
-        if (remainingDurability <= 0 || amount <= 0) {
+        if (remainingDurability <= 0) {
             return;
         }
-
         if (amount < remainingDurability) {
             lspecial$armorDamageCall = true;
             return;
@@ -114,7 +139,11 @@ public abstract class MixinItemStackLuckArmor {
         tag.setInteger("LSPECIALArmorFailsafeDamage", currentDamage);
 
         if (lspecial$unequipArmor(player, stack) && stack.getItem() instanceof ItemArmor armor) {
-            player.playSound(armor.getArmorMaterial().getSoundEvent(), 1.0F, 1.0F);
+            SoundEvent sound = lspecial$getArmorEquipSound(armor);
+            if (sound != null) {
+                player.world.playSound(null, player.posX, player.posY, player.posZ, sound,
+                        net.minecraft.util.SoundCategory.PLAYERS, 1.0F, 1.0F);
+            }
         }
 
         LSPECIALMod.info("LuckArmor",
@@ -136,6 +165,9 @@ public abstract class MixinItemStackLuckArmor {
             return;
         }
         if (stack.isEmpty() || !(stack.getItem() instanceof ItemArmor)) {
+            return;
+        }
+        if (stack.getItem() instanceof ArmorFSBPowered) {
             return;
         }
         if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorDurabilityProtection) {

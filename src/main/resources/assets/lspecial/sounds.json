@@ -103,10 +103,10 @@
       }
     ]
   },
-  "armor_failsafe_powered": {
+  "armor_failsafe_powerarmor": {
     "sounds": [
       {
-        "name": "lspecial:armor_failsafe_powered",
+        "name": "lspecial:armor_failsafe_powerarmor",
         "stream": false
       }
     ]

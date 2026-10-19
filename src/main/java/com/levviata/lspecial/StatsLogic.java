@@ -637,6 +637,7 @@ public class StatsLogic {
         IMagazine originalMagazine;
         ItemStack wearTrackedStack;
         float previousObservedWear = Float.NaN;
+        int poweredArmorRechargeCooldown = 0;
 
         int gunIndex = -1;
 

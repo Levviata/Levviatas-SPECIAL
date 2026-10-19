@@ -16,6 +16,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -189,19 +190,32 @@ public final class SPECIALGameplayHandler {
      * Restores all equipped NTM power armor below 50% when one piece reaches 1% charge.
      */
     private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
+        StatsLogic.PlayerState state = StatsLogic.getPlayerstate(player);
+
+        LSPECIALMod.info("LSPECIAL Gameplay Handler", "Ran lspecial$tickPoweredArmorRecovery");
+
+        if (state.poweredArmorRechargeCooldown > 0) {
+            state.poweredArmorRechargeCooldown--;
+        }
+
         for (ItemStack stack : player.inventory.armorInventory) {
-            if (stack.isEmpty() || !stack.hasTagCompound()) {
+            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
                 continue;
+            }
+            LSPECIALMod.info("LSPECIAL Gameplay Handler", "found stack");
+            if (!stack.hasTagCompound()) {
+                stack.setTagCompound(new NBTTagCompound());
             }
 
             NBTTagCompound tag = stack.getTagCompound();
-            int cooldown = tag.getInteger("LSPECIALArmorRechargeCooldown");
-            if (cooldown > 0) {
-                tag.setInteger("LSPECIALArmorRechargeCooldown", cooldown - 1);
+
+            if (state.poweredArmorRechargeCooldown > 0) {
+                tag.setInteger("LSPECIALArmorRechargeCooldown", state.poweredArmorRechargeCooldown);
+            } else {
+                tag.removeTag("LSPECIALArmorRechargeCooldown");
             }
 
-            if (tag.getBoolean("LSPECIALArmorRecharged")
-                    && stack.getItem() instanceof ArmorFSBPowered poweredArmor) {
+            if (tag.getBoolean("LSPECIALArmorRecharged")) {
                 long savedCharge = tag.getLong("LSPECIALArmorRechargedCharge");
                 long maxCharge = tag.getLong("LSPECIALArmorRechargedMaxCharge");
                 long charge = poweredArmor.getCharge(stack);
@@ -215,7 +229,8 @@ public final class SPECIALGameplayHandler {
         }
 
         if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe
-                || player.ticksExisted % 6000 != 0) {
+                || player.ticksExisted % 6000 != 0
+                || state.poweredArmorRechargeCooldown > 0) {
             return;
         }
 
@@ -247,6 +262,7 @@ public final class SPECIALGameplayHandler {
         }
 
         boolean recovered = false;
+        state.poweredArmorRechargeCooldown = 6000;
 
         for (ItemStack stack : player.inventory.armorInventory) {
             if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
@@ -260,6 +276,9 @@ public final class SPECIALGameplayHandler {
 
             long charge = poweredArmor.getCharge(stack);
             if (charge >= maxCharge * 0.50D) {
+                if (stack.hasTagCompound()) {
+                    stack.getTagCompound().setInteger("LSPECIALArmorRechargeCooldown", state.poweredArmorRechargeCooldown);
+                }
                 continue;
             }
 
@@ -274,16 +293,51 @@ public final class SPECIALGameplayHandler {
             tag.setBoolean("LSPECIALArmorRecharged", true);
             tag.setLong("LSPECIALArmorRechargedCharge", restoredCharge);
             tag.setLong("LSPECIALArmorRechargedMaxCharge", maxCharge);
-            tag.setInteger("LSPECIALArmorRechargeCooldown", 6000);
+            tag.setInteger("LSPECIALArmorRechargeCooldown", state.poweredArmorRechargeCooldown);
             recovered = true;
 
-            LSPECIALMod.info("LuckArmor", "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
+            LSPECIALMod.info("LuckArmor",
+                    "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
                     stack.getItem().getRegistryName(), player.getName(), luck, charge, maxCharge, restoredCharge);
         }
 
         if (recovered) {
             player.playSound(LSPECIALSounds.ARMOR_FAILSAFE_POWERED, 1.0F, 1.0F);
+        } else {
+            state.poweredArmorRechargeCooldown = 0;
         }
+    }
+
+    @SubscribeEvent
+    public void onPlayerUseItem(PlayerInteractEvent.RightClickItem event) {
+        EntityPlayer player = event.getEntityPlayer();
+        if (player == null || player.world.isRemote) {
+            return;
+        }
+
+        ItemStack stack = event.getItemStack();
+        if (stack.isEmpty() || stack.getItem().getRegistryName() == null) {
+            return;
+        }
+        if (!"hbm:hev_battery".equals(stack.getItem().getRegistryName().toString())) {
+            return;
+        }
+
+        StatsLogic.PlayerState state = StatsLogic.getPlayerstate(player);
+        state.poweredArmorRechargeCooldown = 0;
+
+        for (ItemStack armorStack : player.inventory.armorInventory) {
+            if (armorStack.isEmpty() || !(armorStack.getItem() instanceof ArmorFSBPowered)) {
+                continue;
+            }
+            if (armorStack.hasTagCompound()) {
+                armorStack.getTagCompound().removeTag("LSPECIALArmorRechargeCooldown");
+            }
+        }
+
+        LSPECIALMod.info("LuckArmor",
+                "POWER_ARMOR_RECHARGE_COOLDOWN_RESET player={} item={}",
+                player.getName(), stack.getItem().getRegistryName());
     }
 
     /**
