@@ -215,7 +215,9 @@ public abstract class MixinMagazineSingleTypeBase {
             }
         }
 
-        if (!LSPECIALConfig.intelligence || !LSPECIALConfig.revolverPerk) return;
+        if (!LSPECIALConfig.intelligence) {
+            return;
+        }
 
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
         if (SPECIALScoreboard.inst == null || player == null

@@ -24,6 +24,7 @@ import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraft.util.ResourceLocation;
 import com.levviata.lspecial.entity.EntityGrappleChain;
 import net.minecraftforge.fml.relauncher.Side;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,9 +33,24 @@ import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED
 
 @Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION, guiFactory = "com.levviata.lspecial.LSPECIALGuiFactory")
 public class LSPECIALMod {
-    // AI IS FREE SLAVERY
-    /* NTM:CE source is available and RenderBulletMK4 delegates to BulletConfig.renderer inside a balanced push/pop matrix. Standard flamer configs had no renderer, so a client-only cached BulletConfig clone now supplies a dedicated renderer without changing the synced config ID or shared NTM config. Airblast particles now use WorldServer's synchronized particle path and a plane perpendicular to aim. Flamethrower TF2-rework pass -> the no-gravity/distance-based speed/size/color system was already wired through MixinTF2FlameProjectile + MixinTF2FlameRender + TF2FlameRenderer/TF2FlameParticle, but deleted an orphaned, unregistered duplicate (MixinTF2FlameParticleTrail, never in mixins.lspecial.json) that would've double-spawned particles with mismatched colors/random seed if someone ever enabled it. Native flame velocity (1 block/tick) crossed the whole 8-block range in ~1s, way before the 5s size-growth curve finished, so flames always died tiny; TF2FlamethrowerHandler#initFlameTuning (postInit, after XFactoryFlamer.init()) now slows flame_diesel/gas/napalm/balefire/nograv to 0.2F so both curves land around the same ~100 ticks, and raises every standard flame config's expires to a shared floor of 140 ticks since flame_gas's native expires=10 would've killed it almost instantly otherwise - the 8-block distance check is what actually ends the flame's life now, not NTM's native timer. Also made the orphaned-shooter case (shooter died/disconnected mid-burst) explicitly setDead() the flame instead of coasting on its last motion. Color bands tightened to exactly 0-2 / 2-5 / 5-8 blocks per spec. Two more orphaned/unregistered duplicate mixins from an earlier pass are still sitting in mixin/ (MixinDragonFuryConfig.java, MixinDragonFuryProjectile.java - singular "Dragon", the registered ones are the plural "Dragons" versions) - left alone since they're Dragon's Fury (topaz) specific and out of scope here, but worth deleting. Full compilation still not verified, no build files in the addon archive and no network access available. Rocket-jump reward sounds -> rocket_refund3.ogg was supplied and wired; rocket_refund1.ogg and rocket_refund2.ogg were named but not attached, so their registered resources are still missing. Rocket-jump rewards are one-shot: a successful jump arms the reward and only the next successful jump can redeem it. Standard flamethrower and Dragon's Fury perk logic now have separate false-by-default config toggles. Luck armor pass -> armor protection now follows vanilla Unbreaking-style per-durability-point odds with Luck as the effective level; powered armor energy protection uses the same per-point logic. Existing armor/power-armor failsafes were left in place. Full compilation is still not verified because the addon archive has no build files. */
     public static final Logger LOGGER = LogManager.getLogger(Tags.MOD_NAME);
+
+    public static final int HIGHER_PERK = 15;
+    public static final int LESSER_PERK = 5;
+
+    public static boolean hasNecessaryLevel(int intelligence, boolean higherOrLesser) {
+        if (!LSPECIALConfig.intelligence) {
+            return false;
+        }
+
+        if (intelligence >= HIGHER_PERK && higherOrLesser) {
+            return true;
+        }
+        if (intelligence >= LESSER_PERK && !higherOrLesser) {
+            return true;
+        }
+        return false;
+    }
 
     public static void info(String message, Object... params) {
         if (LSPECIALConfig.loggingInfo) {

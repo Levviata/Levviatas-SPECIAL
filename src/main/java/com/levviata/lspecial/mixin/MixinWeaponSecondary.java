@@ -52,12 +52,13 @@ public abstract class MixinWeaponSecondary {
         String itemId = lspecial$registryId(stack);
         if (itemId == null) return;
 
+        /* todo
         if ("hbm:gun_flamer_topaz".equals(itemId) && keybind.name().contains("PRIMARY")
                 && stack.hasTagCompound()
                 && stack.getTagCompound().getInteger("LSPECIALDragonsFuryPressureLock") > 0) {
             callback.cancel();
             return;
-        }
+        }*/
 
         if (LSPECIALConfig.secondaryFireToggle && lspecial$supportsToggleMode(itemId)
                 && !player.isSneaking() && keybind.name().contains("SECONDARY") && newState
@@ -113,6 +114,7 @@ public abstract class MixinWeaponSecondary {
         if (keybind != HbmKeybinds.EnumKeybind.GUN_SECONDARY) return;
 
         // Both flame weapons use TF2 airblast on secondary fire; Dragon's Fury shares its pressure lock.
+        /* todo
         if (("hbm:gun_flamer".equals(itemId) && LSPECIALConfig.flamethrowerPerk)
                 || ("hbm:gun_flamer_topaz".equals(itemId) && LSPECIALConfig.dragonsFuryPerk)) {
             if (newState && !player.world.isRemote) {
@@ -120,7 +122,7 @@ public abstract class MixinWeaponSecondary {
             }
             callback.cancel();
             return;
-        }
+        }*/
 
         boolean carbineSecondary = "hbm:gun_carbine".equals(itemId) && LSPECIALConfig.carbineSemiAutoPerk && lspecial$hasIntelligence(player, 15);
         boolean lagSecondary = "hbm:gun_lag".equals(itemId) && LSPECIALConfig.lagSecondaryBurst && lspecial$hasIntelligence(player, 5);

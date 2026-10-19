@@ -21,7 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Records configured missile-family impacts and applies their Intelligence rocket-jump behavior.
  */
 @Mixin(value = EntityBulletBaseNT.class, remap = false)
-public abstract class MixinStingerProjectile {
+public abstract class MixinMissileProjectile {
 
     @Unique
     private EntityPlayer lspecial$rocketJumpOwner;

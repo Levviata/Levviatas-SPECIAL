@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// todo doesnt work at all
 /**
  * Feeds the light revolver's native firing state without requiring physical primary-fire input.
  */

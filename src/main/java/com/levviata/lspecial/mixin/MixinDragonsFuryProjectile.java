@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// todo
 // rationale: NTM owns EntityBulletBaseMK4 collision and fire spawning, but has no addon hook for per-shot range, hit streaks, or impact audio. This mixin limits only the four Topaz configs and wraps their existing impact damage; risks are conflicts with addons mixing into onUpdate/onImpact. Avoidable if NTM adds projectile lifecycle and impact callbacks.
 @Mixin(value = EntityBulletBaseMK4.class, remap = false)
 public abstract class MixinDragonsFuryProjectile {

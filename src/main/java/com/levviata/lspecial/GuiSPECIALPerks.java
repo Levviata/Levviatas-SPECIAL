@@ -42,7 +42,7 @@ public final class GuiSPECIALPerks extends GuiScreen {
                 break;*/
             case "Perception":
                 lines.add("LESSER PERK — Level 5");
-                lines.add("Duplicates found loot");
+                lines.add("Duplicates found Nuclear Tech loot");
                 lines.add("HIGHER PERK — Level 10");
                 lines.add("If Luck is at level 10, add new special items to found loot");
                 lines.add("HIGHER PERK — Above level 15");

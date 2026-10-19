@@ -7,17 +7,14 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "MixinBeamProjectile",
-    "MixinDragonsFuryConfig",
-    "MixinDragonsFuryProjectile",
     "MixinEntityBulletBaseMK4",
     "MixinEntityBulletBaseNT",
-    "MixinEntityInvoker",
     "MixinEntityLivingBaseRetaliation",
+    "MixinEntityLivingCharismaNeutrality",
     "MixinEntityPlayerLuckArmor",
     "MixinEntityRailgunBlast",
     "MixinEntityRocket",
     "MixinEntityVillager",
-    "MixinLightRevolverRapidFire",
     "MixinItemGunBaseNT",
     "MixinMagazineBelt",
     "MixinMagazineFluid",
@@ -28,16 +25,13 @@
     "MixinProjectileShooter",
     "MixinReceiver",
     "MixinRocketJumpBulletMK4",
-    "MixinStingerProjectile",
-    "MixinTF2FlameProjectile",
+    "MixinMissileProjectile",
     "MixinVanillaChestLootBonus",
     "MixinWeaponSecondary",
     "MixinWorldRailgunBlast"
   ],
   "server": [],
   "client": [
-    "MixinEntityRenderer",
-    "MixinRenderItemOverlay",
-    "MixinTF2FlameRender"
+    "MixinEntityRenderer"
   ]
 }

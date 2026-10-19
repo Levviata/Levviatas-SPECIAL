@@ -27,10 +27,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+import static com.levviata.lspecial.LSPECIALMod.HIGHER_PERK;
+import static com.levviata.lspecial.LSPECIALMod.hasNecessaryLevel;
+
 /**
  * Applies Intelligence perk firing delays without permanently mutating NTM receiver data.
  */
-// rationale: NTM has no public per-shot sound selector for the Topaz flamer, so this changes Receiver#getFireSound only for that item. Other addons targeting this method may conflict; an NTM sound callback would avoid the mixin.
 @Mixin(value = Receiver.class, remap = false)
 public abstract class MixinReceiver implements ReceiverStateAccess {
 
@@ -78,16 +80,16 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
         }
 
         String itemId = lspecial$registryId(stack);
-        if ("hbm:gun_fatman".equals(itemId) && LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && intelligence >= 15 && LSPECIALConfig.fatmanHigherPerk && LSPECIALConfig.fatmanHigherPerkDelay) {
+        if ("hbm:gun_fatman".equals(itemId) && LSPECIALConfig.fatmanHigherPerk && LSPECIALConfig.fatmanHigherPerkDelay && hasNecessaryLevel(intelligence, true)) {
             delay = LSPECIALConfig.fatmanHigherPerkDelayTicks;
-        } else if ("hbm:gun_laser_pistol".equals(itemId) && LSPECIALConfig.laserPistolDelayBalance && LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && intelligence >= 15) {
-            delay = LSPECIALConfig.laserPistolDelayTicks;
-        } else if ("hbm:gun_flamer_topaz".equals(itemId)) {
+        }
+        /*} else if ("hbm:gun_flamer_topaz".equals(itemId)) {
+            // todo this works but the perk itself is wip so im commenting it out
             net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
             boolean hitBonus = tag != null && tag.getBoolean("LSPECIALDragonsFuryNextShotFast");
             delay = hitBonus ? 11 : 16; // 0.8 s base pressure cycle; 50% faster repressurization after a hit.
-            if (hitBonus) tag.setBoolean("LSPECIALDragonsFuryNextShotFast", false);
-        } else if (LSPECIALConfig.weaponSecondaryAmmoCycling && lspecial$isTertiaryMode(stack)) {
+            if (hitBonus) tag.setBoolean("LSPECIALDragonsFuryNextShotFast", false);*/
+        else if (LSPECIALConfig.weaponSecondaryAmmoCycling && lspecial$isTertiaryMode(stack)) {
             if (lspecial$isStarF(itemId)) {
                 delay = LSPECIALConfig.starFFiftyBmgDelayTicks;
             } else if (lspecial$isUzi(itemId)) {
@@ -103,6 +105,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     /**
      * Returns the player's Intelligence score, or zero when the scoreboard is not ready.
      */
+    // i have a big problem of inconsistency with how i handle intelligence score getting and checks, this doesnt matter for the player but the code quality may suck ass
     @Unique
     private static int lspecial$getIntelligence() {
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
@@ -182,6 +185,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     /**
      * Selects the custom projectile sound for the Dragon's Fury fireball.
      */
+    /* todo
     @Inject(method = "getFireSound", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$useSecondaryFlamerSound(ItemStack stack, CallbackInfoReturnable<SoundEvent> callback) {
         String itemId = lspecial$registryId(stack);
@@ -191,7 +195,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
             callback.setReturnValue(criticalShot ? LSPECIALSounds.DRAGONS_FURY_SHOOT_CRIT
                     : LSPECIALSounds.DRAGONS_FURY_SHOOT);
         }
-    }
+    }*/
 
     /**
      * Keeps the native Carbine semi-auto perk without changing Lag/Lincoln refire behavior.
@@ -239,16 +243,18 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     private static boolean lspecial$isCarbineHigherPerk(ItemStack stack) {
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
         return stack != null && !stack.isEmpty() && LSPECIALConfig.intelligence
-                && LSPECIALConfig.revolverPerk && SPECIALScoreboard.inst != null && player != null
+                && SPECIALScoreboard.inst != null && player != null
                 && SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) != null
                 && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= 15
                 && "hbm:gun_carbine".equals(lspecial$registryId(stack));
     }
 
+
     /**
      * Tightens spread while the supported lesser-perk weapons are scoped.
      */
-    @Inject(method = "getInnateSpread", at = @At("RETURN"), cancellable = true, remap = false)
+    // todo wip. this goes in hand with the heretic scope style mechanic which i havent been able to implement.
+    /*@Inject(method = "getInnateSpread", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$adjustScopedSpread(ItemStack stack, CallbackInfoReturnable<Float> callback) {
         if (stack == null || stack.isEmpty() || !LSPECIALConfig.scopedSecondarySpread
                 || !ItemGunBaseNT.getIsAiming(stack) || !lspecial$hasIntelligence(5)) return;
@@ -264,6 +270,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     /**
      * Tightens ammunition-derived spread as well as innate spread while a copied scope is active.
      */
+    /* todo wip. same as lspecial$adjustScopedSpread
     @Inject(method = "getAmmoSpread", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$adjustScopedAmmoSpread(ItemStack stack, CallbackInfoReturnable<Float> callback) {
         if (stack == null || stack.isEmpty() || !LSPECIALConfig.scopedSecondarySpread
@@ -275,20 +282,7 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
                 || "hbm:gun_congolake".equals(itemId) || "hbm:gun_am180".equals(itemId)) {
             callback.setReturnValue((float) (callback.getReturnValue() * LSPECIALConfig.scopedSpreadMultiplier));
         }
-    }
-
-    /**
-     * Checks the shared SPECIAL score safely because NTM can query receiver values on either side.
-     */
-    @Unique
-    private static boolean lspecial$hasIntelligence(int level) {
-        EntityPlayer player = SPECIALPlayerContext.getPlayer();
-        return LSPECIALConfig.intelligence
-                && (level >= 15 ? LSPECIALConfig.revolverPerk : LSPECIALConfig.pepperboxPerk)
-                && SPECIALScoreboard.inst != null && player != null
-                && SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) != null
-                && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= level;
-    }
+    }*/
 
     /**
      * Checks the NTM per-config secondary input state stored on the weapon stack.

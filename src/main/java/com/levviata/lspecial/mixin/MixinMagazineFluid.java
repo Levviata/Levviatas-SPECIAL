@@ -19,7 +19,7 @@ public abstract class MixinMagazineFluid {
 
     @Inject(method = "getCapacity", at = @At("RETURN"), cancellable = true, remap = false)
     private void lspecial$addDrillFluidCapacity(ItemStack stack, CallbackInfoReturnable<Integer> callback) {
-        if (!LSPECIALConfig.drillHigherPerkCapacity || !LSPECIALConfig.intelligence || !LSPECIALConfig.revolverPerk
+        if (!LSPECIALConfig.drillHigherPerkCapacity || !LSPECIALConfig.intelligence
                 || stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null
                 || !"hbm:gun_drill".equals(stack.getItem().getRegistryName().toString())) {
             return;

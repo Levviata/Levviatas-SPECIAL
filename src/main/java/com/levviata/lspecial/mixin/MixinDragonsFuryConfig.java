@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// todo
 // rationale: NTM's Topaz configs have no public addon hook for these projectile settings, so this adjusts only the four native Dragon's Fury configs after init. The mixin risks conflict with another addon changing XFactoryFlamer.init; it can be avoided if NTM exposes a config callback.
 @Mixin(value = XFactoryFlamer.class, remap = false)
 public abstract class MixinDragonsFuryConfig {

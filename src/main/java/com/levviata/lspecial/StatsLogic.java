@@ -114,7 +114,9 @@ public class StatsLogic {
                     && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5
                     && !(heldStack.getItem() instanceof ItemArmor);
             if (perkActive) {
-                if (!heldStack.hasTagCompound()) heldStack.setTagCompound(new NBTTagCompound());
+                if (!heldStack.hasTagCompound()) {
+                    heldStack.setTagCompound(new NBTTagCompound());
+                }
                 NBTTagCompound tag = heldStack.getTagCompound();
                 if (!tag.getBoolean("LSPECIALWasUnbreakableRecorded")) {
                     tag.setBoolean("LSPECIALWasUnbreakable", tag.getBoolean("Unbreakable"));

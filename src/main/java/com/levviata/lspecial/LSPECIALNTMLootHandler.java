@@ -37,17 +37,18 @@ public final class LSPECIALNTMLootHandler {
      * Stores the exact pool and roll range used by the NTM wand-loot block.
      */
     public static void tagContainer(net.minecraft.tileentity.TileEntity tile, String poolName, int minItems, int maxItems) {
+        // these three checks with "info" calls are actually warns but i fear it might clog up the logs because tagging happens on world generation which means it can be very frequent
         if (tile == null) {
-            LSPECIALMod.logWarn("[LSPECIAL Loot] Cannot tag wand-loot target: tile entity is null (pool={})", poolName);
+            LSPECIALMod.info("[LSPECIAL Loot] Cannot tag wand-loot target: tile entity is null (pool={})", poolName);
             return;
         }
         if (tile.getWorld() == null) {
-            LSPECIALMod.logWarn("[LSPECIAL Loot] Cannot tag target {}: world is null (pool={})", tile.getClass().getName(), poolName);
+            LSPECIALMod.info("[LSPECIAL Loot] Cannot tag target {}: world is null (pool={})", tile.getClass().getName(), poolName);
             return;
         }
         if (tile.getWorld().isRemote) return;
         if (poolName == null || poolName.trim().isEmpty()) {
-            LSPECIALMod.logWarn("[LSPECIAL Loot] Cannot tag target {} at {}: pool name is empty", tile.getClass().getName(), tile.getPos());
+            LSPECIALMod.info("[LSPECIAL Loot] Cannot tag target {} at {}: pool name is empty", tile.getClass().getName(), tile.getPos());
             return;
         }
         NBTTagCompound data = tile.getTileData();
@@ -63,6 +64,7 @@ public final class LSPECIALNTMLootHandler {
      * Applies each eligible perk independently, preserving existing stacks and never overwriting slots.
      */
     public static void onContainerOpened(TileEntity tile, EntityPlayer player) {
+        // these warns happen much less often and more specifically so they are nice and helpful
         if (tile == null) {
             LSPECIALMod.logWarn("[LSPECIAL Loot] Container-open handler received a null tile entity");
             return;

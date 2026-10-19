@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// todo doesnt work
 /**
  * Marks discounted villager trade-cost counts in the inventory-style item overlay.
  */

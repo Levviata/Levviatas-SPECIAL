@@ -33,6 +33,7 @@ public abstract class MixinEntityRenderer {
         EntityPlayer player = minecraft.player;
         if (player == null || !LSPECIALConfig.enduranceModelScaling || !LSPECIALConfig.endurance
                 || SPECIALScoreboard.inst == null || SPECIALScoreboard.inst.getClientEndurance() < 5) {
+            // injected code can call return; and it won't affect if the original code runs or not. callback.cancel() does stop the original code
             return;
         }
         double hearts = player.getMaxHealth() / 2.0D;
