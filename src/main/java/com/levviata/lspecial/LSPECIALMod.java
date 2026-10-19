@@ -4,6 +4,7 @@ import com.levviata.lspecial.command.CommandSetFlySpeed;
 import com.levviata.lspecial.command.CommandSetSpeed;
 import com.levviata.lspecial.network.RequestSPECIALStatsPacket;
 import com.levviata.lspecial.network.SyncSPECIALStatsPacket;
+import com.levviata.lspecial.network.SyncSPECIALStatsSetter;
 import com.levviata.lspecial.potion.PotionAmplifiedRegeneration;
 import com.levviata.lspecial.proxy.CommonProxy;
 import net.minecraft.entity.player.EntityPlayer;
@@ -97,7 +98,8 @@ public class LSPECIALMod {
 
         ForgeRegistries.POTIONS.register(AMPLIFIED_REGENERATION);
 
-        NETWORK.registerMessage(RequestSPECIALStatsPacket.Handler.class, RequestSPECIALStatsPacket.class, 0, Side.SERVER);
+        NETWORK.registerMessage(SyncSPECIALStatsSetter.class, SyncSPECIALStatsPacket.class, 0, Side.CLIENT);
+        NETWORK.registerMessage(RequestSPECIALStatsPacket.Handler.class, RequestSPECIALStatsPacket.class, 1, Side.SERVER);
         NETWORK.registerMessage(GrappleCameraPacket.Handler.class, GrappleCameraPacket.class, 2, Side.CLIENT);
         NETWORK.registerMessage(GrappleCameraPacket.Handler.class, GrappleCameraPacket.class, 3, Side.SERVER);
         MinecraftForge.EVENT_BUS.register(new GrappleController());

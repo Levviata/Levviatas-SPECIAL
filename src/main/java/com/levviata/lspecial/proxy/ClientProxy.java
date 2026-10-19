@@ -34,7 +34,6 @@ public class ClientProxy extends CommonProxy { // client only
         if (LSPECIALConfig.toggleSpecial) {
             ClientRegistry.registerKeyBinding(toggleSpecial);
         }
-        LSPECIALMod.NETWORK.registerMessage(SyncSPECIALStatsSetter.class, SyncSPECIALStatsPacket.class, 1, Side.CLIENT);
     }
 
     @Override
