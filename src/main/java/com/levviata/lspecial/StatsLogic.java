@@ -250,7 +250,25 @@ public class StatsLogic {
     }
 
     private void processReceiver(Receiver recIn, float ogDmg, ItemStack heldStack, EntityPlayer player, PlayerState state) {
-        recIn.dmg((float) (ogDmg + (LSPECIALConfig.perception ? expression(LSPECIALConfig.perceptionGunDamageFormula, "perception", inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD), "originalDamage", ogDmg) : 0)));
+        int perceptionScore = inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD);
+
+        double perceptionBonus = LSPECIALConfig.perception
+                ? expression(
+                LSPECIALConfig.perceptionGunDamageFormula,
+                "perception",
+                perceptionScore,
+                "originalDamage",
+                (double) ogDmg) : 0.0;
+
+        double newDamage = ogDmg + perceptionBonus;
+
+        LSPECIALMod.info("StatsLogic","Perception gun damage: original={}, perception={}, bonus={}, final={}",
+                String.valueOf(ogDmg),
+                perceptionScore,
+                perceptionBonus,
+                newDamage);
+
+        recIn.dmg((float) newDamage);
 
         if (recIn.getMagazine(heldStack) == null) {
             return;
