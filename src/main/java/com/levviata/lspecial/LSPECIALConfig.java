@@ -466,7 +466,7 @@ public final class LSPECIALConfig {
         gunWearFormula = s(ADV, "gunWearFormula", gunWearFormula, "Variables: intelligence, originalWear; output is reduction fraction");
 
         for (String category : Arrays.asList(
-                STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV, PERKS, LOGGING)) {
+                STATS, BOB, GUNS, POTIONS, RECIPES, MESSAGES, CLIENT, COMMANDS, ADV, PERKS, LOGGING)) {
             config.setCategoryComment(category, categoryComment(category));
         }
 
@@ -534,7 +534,7 @@ public final class LSPECIALConfig {
     public static GuiScreen gui(GuiScreen parent) {
         List<IConfigElement> elements = new ArrayList<>();
 
-        for (String categoryName : Arrays.asList(STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV, PERKS, LOGGING)) {
+        for (String categoryName : Arrays.asList(STATS, BOB, GUNS, POTIONS, RECIPES, MESSAGES, CLIENT, COMMANDS, ADV, PERKS, LOGGING)) {
             ConfigCategory category = config.getCategory(categoryName);
             elements.add(new ConfigElement(category));
         }
