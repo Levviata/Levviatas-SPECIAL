@@ -10,6 +10,7 @@ import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.PlayerCapabilities;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
@@ -18,6 +19,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -49,6 +51,9 @@ public class StatsLogic {
     private static final List<Item> g = new ArrayList<>();
     private static final List<String> r = new ArrayList<>();
     private static final List<UUID> uuids = new ArrayList<>();
+
+    // server variable
+    private boolean hasLoggedUnsupportedFeature = false;
 
     public static PlayerState getPlayerstate(EntityPlayer player) {
         PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), id -> new PlayerState());
@@ -589,6 +594,7 @@ public class StatsLogic {
                 movementSpeed.applyModifier(new AttributeModifier(MOVEMENT_SPEED_UUID, nameIn, expression(LSPECIALConfig.agilityFormula, "agility", agilityValue), 1));
             }
         }
+        MinecraftServer server = player.getServer();
 
         // fly speed
         float baseFlySpeed = 0.05F;
@@ -609,8 +615,14 @@ public class StatsLogic {
 
         if (Float.isNaN(state.previousFlySpeed)
                 || Math.abs(player.capabilities.getFlySpeed() - flySpeed) > 0.0001F) {
+            if (server != null) {
+                if (server.isSinglePlayer()) {
+                    player.capabilities.setFlySpeed(flySpeed); // no setFlySpeed in dedicated servers, the method is missing for some reason
+                } else {
+                    player.capabilities.flySpeed = flySpeed;
+                }
+            }
 
-            player.capabilities.setFlySpeed(flySpeed);
             state.previousFlySpeed = flySpeed;
 
             if (player instanceof EntityPlayerMP) {
