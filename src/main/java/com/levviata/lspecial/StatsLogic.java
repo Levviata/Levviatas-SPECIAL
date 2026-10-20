@@ -617,9 +617,9 @@ public class StatsLogic {
                 || Math.abs(player.capabilities.getFlySpeed() - flySpeed) > 0.0001F) {
             if (server != null) {
                 if (server.isSinglePlayer()) {
-                    player.capabilities.setFlySpeed(flySpeed); // no setFlySpeed in dedicated servers, the method is missing for some reason
+                    player.capabilities.setFlySpeed(flySpeed);
                 } else {
-                    player.capabilities.flySpeed = flySpeed;
+                    player.capabilities.flySpeed = flySpeed; // no setFlySpeed in dedicated servers, the method is missing for some reason
                 }
             }
 
