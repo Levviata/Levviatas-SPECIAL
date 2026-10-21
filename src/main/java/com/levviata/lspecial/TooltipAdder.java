@@ -180,13 +180,19 @@ public final class TooltipAdder {
         ItemStack heldStack = mc.player.getHeldItemMainhand();
 
         LSPECIALMod.info("GunDebug",
-                "Tooltip: stack={}, held={}, stored={}, storedIndex={}",
+                "Tooltip: stack={}, held={}, stored={}, storedIndex={}, stackEqualHeld={}, stackEqualStored={}",
                 stack.isEmpty() ? "EMPTY" : stack.getDisplayName(),
                 heldStack.isEmpty() ? "EMPTY" : heldStack.getDisplayName(),
                 ClientGunState.getGun().isEmpty() ? "EMPTY" : ClientGunState.getGun().getDisplayName(),
-                ClientGunState.getCurrentGunIndex());
+                ClientGunState.getCurrentGunIndex(),
+                ItemStack.areItemStacksEqual(stack, heldStack),
+                ClientGunState.matches(stack));
 
-        if (!ClientGunState.matches(stack) || !ItemStack.areItemsEqual(stack, heldStack)) {
+        if (!ItemStack.areItemStacksEqual(stack, heldStack)) {
+            return;
+        }
+
+        if (!ClientGunState.matches(stack)) {
             return;
         }
 
@@ -198,7 +204,12 @@ public final class TooltipAdder {
 
         float damage = ClientGunState.getDamage(gunIndex);
 
-        LSPECIALMod.info("GunDebug", "Tooltip: synchronized damage for index {} = {}", gunIndex, damage);
+        LSPECIALMod.info("GunDebug",
+                "Tooltip: synchronized damage for index {} = {}, held registry={}",
+                gunIndex,
+                damage,
+                heldStack.isEmpty() || heldStack.getItem().getRegistryName() == null
+                        ? "null" : heldStack.getItem().getRegistryName());
 
         if (Float.isNaN(damage)) {
             LSPECIALMod.info("GunDebug", "Tooltip: no synchronized damage for index {}", gunIndex);
@@ -207,29 +218,41 @@ public final class TooltipAdder {
 
         String attackDamageName = I18n.format("attribute.name.generic.attackDamage");
         List<String> tooltip = event.getToolTip();
+        boolean replaced = false;
 
         for (int i = 0; i < tooltip.size(); i++) {
             String line = tooltip.get(i);
 
             LSPECIALMod.info("GunDebug", "Tooltip line {}: {}", i, line);
 
-            if (!line.contains(attackDamageName)) {
-                continue;
-            }
-
             Matcher matcher = DAMAGE_VALUE.matcher(line);
 
-            if (matcher.find()) {
+            if (line.contains(attackDamageName) && matcher.find()) {
                 String replacement = FORMAT.format(damage);
                 tooltip.set(i, matcher.replaceFirst(Matcher.quoteReplacement(replacement)));
-                LSPECIALMod.info("GunDebug", "Tooltip damage replaced: {} -> {}", line, tooltip.get(i));
-            } else {
-                LSPECIALMod.info("GunDebug", "Tooltip attack damage line found but no damage number matched: {}", line);
+                LSPECIALMod.info("GunDebug", "Tooltip vanilla damage replaced: {} -> {}", line, tooltip.get(i));
+                replaced = true;
+                break;
             }
 
-            return;
+            if (line.matches(".*(?i)damage.*") && matcher.find()) {
+                int numberStart = matcher.start();
+                String beforeNumber = line.substring(0, numberStart);
+
+                if (beforeNumber.matches(".*(?i)damage\\s*[:=]\\s*$")) {
+                    String replacement = FORMAT.format(damage);
+                    tooltip.set(i, matcher.replaceFirst(Matcher.quoteReplacement(replacement)));
+                    LSPECIALMod.info("GunDebug", "Tooltip NTM damage replaced: {} -> {}", line, tooltip.get(i));
+                    replaced = true;
+                    break;
+                }
+            }
         }
 
-        LSPECIALMod.info("GunDebug", "Tooltip: attack damage line not found; localized name={}", attackDamageName);
+        if (!replaced) {
+            String replacement = "Damage: " + FORMAT.format(damage);
+            tooltip.add(replacement);
+            LSPECIALMod.info("GunDebug", "Tooltip damage line not found, added fallback: {}", replacement);
+        }
     }
 }
