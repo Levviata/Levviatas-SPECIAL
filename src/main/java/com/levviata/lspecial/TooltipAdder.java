@@ -1,5 +1,6 @@
 package com.levviata.lspecial;
 
+import com.levviata.lspecial.client.ClientGunState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -34,6 +35,8 @@ public final class TooltipAdder {
         minigunTooltips(tooltipStack, event);
 
         strengthTooltip(tooltipStack, event);
+
+        perceptionTooltip(tooltipStack, event);
 
         armorFailsafeTooltip(tooltipStack, event);
     }
@@ -161,5 +164,45 @@ public final class TooltipAdder {
         }
 
         tooltip.add("§eHigher Perk: Accepts Capacitor ammo");
+    }
+
+    private void perceptionTooltip(ItemStack stack, ItemTooltipEvent event) {
+        if (!LSPECIALConfig.perception) {
+            return;
+        }
+
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.player == null
+                || !ClientGunState.matches(stack)
+                || !ItemStack.areItemsEqual(stack, mc.player.getHeldItemMainhand())) {
+            return;
+        }
+
+        float damage = ClientGunState.getDamage(0);
+
+        if (Float.isNaN(damage)) {
+            return;
+        }
+
+        String attackDamageName = I18n.format("attribute.name.generic.attackDamage");
+        List<String> tooltip = event.getToolTip();
+
+        for (int i = 0; i < tooltip.size(); i++) {
+            String line = tooltip.get(i);
+
+            if (!line.contains(attackDamageName)) {
+                continue;
+            }
+
+            Matcher matcher = DAMAGE_VALUE.matcher(line);
+
+            if (matcher.find()) {
+                tooltip.set(i, matcher.replaceFirst(
+                        Matcher.quoteReplacement(FORMAT.format(damage))
+                ));
+            }
+
+            return;
+        }
     }
 }

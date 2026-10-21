@@ -27,6 +27,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import java.util.*;
 
 import static com.levviata.lspecial.LSPECIALMod.syncStats;
+import static com.levviata.lspecial.LSPECIALMod.syncGunState;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 import static com.levviata.lspecial.command.CommandSetFlySpeed.getPlayerFlySpeed;
 import static com.levviata.lspecial.command.CommandSetSpeed.getPlayerSpeed;
@@ -192,7 +193,12 @@ public class StatsLogic {
 
         if (!heldStack.isEmpty() && heldStack.getItem() != Items.AIR) {
             if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT gun) {
-                if (!state.modified || state.modifiedStackRef != heldStack) {
+                int perceptionScore = inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD);
+
+                if (!state.modified
+                        || state.modifiedStackRef != heldStack
+                        || state.previousGunPerception != perceptionScore) {
+
                     int configs = gun.getConfigCount();
                     // restore the previous item once before applying changes to a newly held stack.
                     if (state.modified) {
@@ -207,10 +213,27 @@ public class StatsLogic {
 
                     state.modifiedStackRef = heldStack;
                     state.modified = true;
+                    state.previousGunPerception = perceptionScore;
+
+                    if (player instanceof EntityPlayerMP) {
+                        syncGunState((EntityPlayerMP) player, state);
+                    }
                 }
             } else if (state.modified) {
                 // the held item changed or gun modification was disabled. Never cast a non-gun item.
                 cleanGun(state.modifiedStackRef, state);
+                state.previousGunPerception = -1;
+
+                if (player instanceof EntityPlayerMP) {
+                    syncGunState((EntityPlayerMP) player, state);
+                }
+            }
+        } else if (state.modified) {
+            cleanGun(state.modifiedStackRef, state);
+            state.previousGunPerception = -1;
+
+            if (player instanceof EntityPlayerMP) {
+                syncGunState((EntityPlayerMP) player, state);
             }
         }
 
@@ -338,6 +361,7 @@ public class StatsLogic {
         state.modifiedStackRef = ItemStack.EMPTY;
         state.modifiedReceiver = null;
         state.modified = false;
+        state.previousGunPerception = -1;
     }
 
     private void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack, PlayerState state) {
@@ -481,6 +505,28 @@ public class StatsLogic {
 
         // Apply the player's attributes immediately.
         updatePlayerAttributes(player, heldStack, state);
+
+        if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT gun) {
+            if (state.modified) {
+                cleanGun(state.modifiedStackRef, state);
+            }
+
+            int perceptionScore = inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD);
+            int configs = gun.getConfigCount();
+
+            for (state.gunIndex = 0; state.gunIndex < configs; state.gunIndex++) {
+                modifyGuns(heldStack, player, gun.getConfig(heldStack, state.gunIndex), state);
+            }
+
+            state.modifiedStackRef = heldStack;
+            state.modified = true;
+            state.previousGunPerception = perceptionScore;
+
+            syncGunState((EntityPlayerMP) player, state);
+        } else {
+            state.previousGunPerception = -1;
+            syncGunState((EntityPlayerMP) player, state);
+        }
     }
 
     /**
@@ -675,8 +721,24 @@ public class StatsLogic {
         int poweredArmorRechargeCooldown = 0;
 
         int gunIndex = -1;
+        int previousGunPerception = -1;
 
         ItemStack loggedSednaGun = ItemStack.EMPTY;
+
+        GunStateView getGunStateView(int index) {
+            GunState gunState = gunStates.get(index);
+            return new GunStateView(gunState.index, gunState.damage);
+        }
+    }
+
+    public static class GunStateView {
+        public final int index;
+        public final float damage;
+
+        public GunStateView(int index, float damage) {
+            this.index = index;
+            this.damage = damage;
+        }
     }
 
     @Desugar

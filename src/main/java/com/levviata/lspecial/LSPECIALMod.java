@@ -6,10 +6,13 @@ import com.levviata.lspecial.entity.EntityGrappleChain;
 import com.levviata.lspecial.network.RequestSPECIALStatsPacket;
 import com.levviata.lspecial.network.SyncSPECIALStatsPacket;
 import com.levviata.lspecial.network.SyncSPECIALStatsSetter;
+import com.levviata.lspecial.network.SyncSPECIALGunStatePacket;
+import com.levviata.lspecial.network.SyncSPECIALGunStateSetter;
 import com.levviata.lspecial.potion.PotionAmplifiedRegeneration;
 import com.levviata.lspecial.proxy.CommonProxy;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextComponentString;
@@ -117,6 +120,7 @@ public class LSPECIALMod {
         ForgeRegistries.POTIONS.register(AMPLIFIED_REGENERATION);
 
         NETWORK.registerMessage(SyncSPECIALStatsSetter.class, SyncSPECIALStatsPacket.class, 0, Side.CLIENT);
+        NETWORK.registerMessage(SyncSPECIALGunStateSetter.class, SyncSPECIALGunStatePacket.class, 4, Side.CLIENT);
         NETWORK.registerMessage(RequestSPECIALStatsPacket.Handler.class, RequestSPECIALStatsPacket.class, 1, Side.SERVER);
         NETWORK.registerMessage(GrappleCameraPacket.Handler.class, GrappleCameraPacket.class, 2, Side.CLIENT);
         NETWORK.registerMessage(GrappleCameraPacket.Handler.class, GrappleCameraPacket.class, 3, Side.SERVER);
@@ -154,6 +158,31 @@ public class LSPECIALMod {
                         inst.getPlayerScorePoints(player, inst.AGILITY_BOARD),
                         inst.getPlayerScorePoints(player, inst.LUCK_BOARD),
                         inst.getPlayerScorePoints(player, inst.LIMIT_BOARD)
+                ),
+                player
+        );
+    }
+
+    public static void syncGunState(EntityPlayerMP player, StatsLogic.PlayerState state) {
+        if (player == null || state == null) {
+            return;
+        }
+
+        int size = state.gunStates.size();
+        int[] indices = new int[size];
+        float[] damages = new float[size];
+
+        for (int i = 0; i < size; i++) {
+            StatsLogic.GunStateView gunState = state.getGunStateView(i);
+            indices[i] = gunState.index;
+            damages[i] = gunState.damage;
+        }
+
+        NETWORK.sendTo(
+                new SyncSPECIALGunStatePacket(
+                        state.modifiedStackRef == null ? ItemStack.EMPTY : state.modifiedStackRef.copy(),
+                        indices,
+                        damages
                 ),
                 player
         );
