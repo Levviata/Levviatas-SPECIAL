@@ -248,7 +248,13 @@ public class StatsLogic {
         Receiver[] receivers = cfg.getReceivers(heldStack);
         if (receivers == null || receivers.length == 0 || receivers[0] == null) return;
         state.currentGunIndex = state.gunIndex;
-        LSPECIALMod.info("StatsLogic", "Applying gun config {} at index {}", cfg, state.gunIndex);
+        LSPECIALMod.info("GunDebug",
+                "Server modifying gun: player={}, gun={}, registry={}, gunIndex={}, config={}",
+                player.getName(),
+                heldStack.getDisplayName(),
+                heldStack.getItem().getRegistryName(),
+                state.gunIndex,
+                cfg);
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5) {
             ItemGunBaseNT.setWear(heldStack, state.gunIndex, 0);
@@ -286,8 +292,6 @@ public class StatsLogic {
 
         double newDamage = ogDmg + perceptionBonus;
 
-        state.modifiedGunDamages.put(state.gunIndex, (float) newDamage);
-
         LSPECIALMod.info("StatsLogic","Perception gun damage: original={}, perception={}, bonus={}, final={}",
                 String.valueOf(ogDmg),
                 perceptionScore,
@@ -295,6 +299,16 @@ public class StatsLogic {
                 newDamage);
 
         recIn.dmg((float) newDamage);
+
+        state.modifiedGunDamages.put(state.gunIndex, (float) newDamage);
+
+        LSPECIALMod.info("GunDebug",
+                "Server receiver updated: player={}, gunIndex={}, original={}, final={}, receiverDamageNow={}",
+                player.getName(),
+                state.gunIndex,
+                ogDmg,
+                newDamage,
+                recIn.getBaseDamage(heldStack));
 
         if (recIn.getMagazine(heldStack) == null) {
             return;
@@ -359,6 +373,7 @@ public class StatsLogic {
 
     private void resetGunTracking(PlayerState state) {
         state.gunStates.clear();
+        state.modifiedGunDamages.clear();
         state.gunIndex = 0;
         state.installedMagazine = false;
         state.modifiedStackRef = ItemStack.EMPTY;
@@ -366,7 +381,6 @@ public class StatsLogic {
         state.modified = false;
         state.previousGunPerception = -1;
         state.currentGunIndex = -1;
-        state.modifiedGunDamages.clear();
     }
 
     private void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack, PlayerState state) {

@@ -172,21 +172,36 @@ public final class TooltipAdder {
         }
 
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.player == null
-                || !ClientGunState.matches(stack)
-                || stack.getItem() != mc.player.getHeldItemMainhand().getItem()
-                || stack.getMetadata() != mc.player.getHeldItemMainhand().getMetadata()) {
+        if (mc.player == null) {
+            LSPECIALMod.info("GunDebug", "Tooltip: client player is null");
+            return;
+        }
+
+        ItemStack heldStack = mc.player.getHeldItemMainhand();
+
+        LSPECIALMod.info("GunDebug",
+                "Tooltip: stack={}, held={}, stored={}, storedIndex={}",
+                stack.isEmpty() ? "EMPTY" : stack.getDisplayName(),
+                heldStack.isEmpty() ? "EMPTY" : heldStack.getDisplayName(),
+                ClientGunState.getGun().isEmpty() ? "EMPTY" : ClientGunState.getGun().getDisplayName(),
+                ClientGunState.getCurrentGunIndex());
+
+        if (!ClientGunState.matches(stack) || !ItemStack.areItemsEqual(stack, heldStack)) {
             return;
         }
 
         int gunIndex = ClientGunState.getCurrentGunIndex();
         if (gunIndex < 0) {
+            LSPECIALMod.info("GunDebug", "Tooltip: no synchronized gun index");
             return;
         }
 
         float damage = ClientGunState.getDamage(gunIndex);
 
+        LSPECIALMod.info("GunDebug", "Tooltip: synchronized damage for index {} = {}", gunIndex, damage);
+
         if (Float.isNaN(damage)) {
+            LSPECIALMod.info("GunDebug", "Tooltip: no synchronized damage for index {}", gunIndex);
             return;
         }
 
@@ -196,6 +211,8 @@ public final class TooltipAdder {
         for (int i = 0; i < tooltip.size(); i++) {
             String line = tooltip.get(i);
 
+            LSPECIALMod.info("GunDebug", "Tooltip line {}: {}", i, line);
+
             if (!line.contains(attackDamageName)) {
                 continue;
             }
@@ -203,12 +220,16 @@ public final class TooltipAdder {
             Matcher matcher = DAMAGE_VALUE.matcher(line);
 
             if (matcher.find()) {
-                tooltip.set(i, matcher.replaceFirst(
-                        Matcher.quoteReplacement(FORMAT.format(damage))
-                ));
+                String replacement = FORMAT.format(damage);
+                tooltip.set(i, matcher.replaceFirst(Matcher.quoteReplacement(replacement)));
+                LSPECIALMod.info("GunDebug", "Tooltip damage replaced: {} -> {}", line, tooltip.get(i));
+            } else {
+                LSPECIALMod.info("GunDebug", "Tooltip attack damage line found but no damage number matched: {}", line);
             }
 
             return;
         }
+
+        LSPECIALMod.info("GunDebug", "Tooltip: attack damage line not found; localized name={}", attackDamageName);
     }
 }

@@ -16,6 +16,14 @@ public final class ClientGunState {
     public static void set(ItemStack stack, int currentGunIndex, int[] indices, float[] values) {
         gun = stack == null ? ItemStack.EMPTY : stack.copy();
         ClientGunState.currentGunIndex = currentGunIndex;
+
+        com.levviata.lspecial.LSPECIALMod.info("GunDebug",
+                "Client received gun state: gun={}, registry={}, meta={}, gunIndex={}, entries={}",
+                gun.getDisplayName(),
+                gun.isEmpty() || gun.getItem().getRegistryName() == null ? "null" : gun.getItem().getRegistryName(),
+                gun.isEmpty() ? -1 : gun.getMetadata(),
+                currentGunIndex,
+                indices == null ? 0 : indices.length);
         damages.clear();
 
         if (indices == null || values == null) {
@@ -26,15 +34,31 @@ public final class ClientGunState {
 
         for (int i = 0; i < size; i++) {
             damages.put(indices[i], values[i]);
+            com.levviata.lspecial.LSPECIALMod.info("GunDebug",
+                    "Client stored gun config: index={}, damage={}", indices[i], values[i]);
         }
     }
 
     public static boolean matches(ItemStack stack) {
-        return stack != null
+        boolean matches = stack != null
                 && !stack.isEmpty()
                 && !gun.isEmpty()
-                && stack.getItem() == gun.getItem()
-                && stack.getMetadata() == gun.getMetadata();
+                && ItemStack.areItemsEqual(stack, gun);
+
+        if (stack != null && !stack.isEmpty()) {
+            com.levviata.lspecial.LSPECIALMod.info("GunDebug",
+                    "Client gun match: heldTooltipGun={}, storedGun={}, matches={}, storedIndex={}",
+                    stack.getDisplayName(),
+                    gun.getDisplayName(),
+                    matches,
+                    currentGunIndex);
+        }
+
+        return matches;
+    }
+
+    public static ItemStack getGun() {
+        return gun;
     }
 
     public static int getCurrentGunIndex() {

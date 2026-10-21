@@ -178,6 +178,19 @@ public class LSPECIALMod {
             damages[i] = gunState.damage;
         }
 
+        LSPECIALMod.info("GunDebug",
+                "Server sending gun state: player={}, gun={}, registry={}, meta={}, currentIndex={}, entries={}",
+                player.getName(),
+                state.modifiedStackRef == null || state.modifiedStackRef.isEmpty() ? "EMPTY" : state.modifiedStackRef.getDisplayName(),
+                state.modifiedStackRef == null || state.modifiedStackRef.isEmpty() ? "null" : state.modifiedStackRef.getItem().getRegistryName(),
+                state.modifiedStackRef == null || state.modifiedStackRef.isEmpty() ? -1 : state.modifiedStackRef.getMetadata(),
+                state.currentGunIndex,
+                size);
+
+        for (int i = 0; i < size; i++) {
+            LSPECIALMod.info("GunDebug", "Server sync entry: index={}, damage={}", indices[i], damages[i]);
+        }
+
         NETWORK.sendTo(
                 new SyncSPECIALGunStatePacket(
                         state.modifiedStackRef == null ? ItemStack.EMPTY : state.modifiedStackRef.copy(),

@@ -24,7 +24,7 @@ public final class LSPECIALConfig {
     public static boolean loggingInfo = false;
     public static boolean loggingWarn = true;
     public static boolean loggingError = true;
-    public static String listeningThisInfo = "RocketDebug,LSPECIAL Loot,CharismaRetaliation,CharismaNeutrality,LuckArmor,SPECIALScoreboard,StatsLogic";
+    public static String listeningThisInfo = "RocketDebug,LSPECIAL Loot,CharismaRetaliation,CharismaNeutrality,LuckArmor,SPECIALScoreboard,StatsLogic,GunDebug";
 
     private static final String STATS = "1_special_stats";
     private static final String BOB = "2_bobbleheads_consumption";
