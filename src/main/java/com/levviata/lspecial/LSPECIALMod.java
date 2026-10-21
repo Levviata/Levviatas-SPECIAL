@@ -181,6 +181,7 @@ public class LSPECIALMod {
         NETWORK.sendTo(
                 new SyncSPECIALGunStatePacket(
                         state.modifiedStackRef == null ? ItemStack.EMPTY : state.modifiedStackRef.copy(),
+                        state.currentGunIndex,
                         indices,
                         damages
                 ),

@@ -178,7 +178,12 @@ public final class TooltipAdder {
             return;
         }
 
-        float damage = ClientGunState.getDamage(0);
+        int gunIndex = ClientGunState.getCurrentGunIndex();
+        if (gunIndex < 0) {
+            return;
+        }
+
+        float damage = ClientGunState.getDamage(gunIndex);
 
         if (Float.isNaN(damage)) {
             return;

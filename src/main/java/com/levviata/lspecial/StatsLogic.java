@@ -200,7 +200,7 @@ public class StatsLogic {
                         || state.previousGunPerception != perceptionScore) {
 
                     int configs = gun.getConfigCount();
-                    // restore the previous item once before applying changes to a newly held stack.
+
                     if (state.modified) {
                         cleanGun(state.modifiedStackRef, state);
                     }
@@ -247,6 +247,7 @@ public class StatsLogic {
 
         Receiver[] receivers = cfg.getReceivers(heldStack);
         if (receivers == null || receivers.length == 0 || receivers[0] == null) return;
+        state.currentGunIndex = state.gunIndex;
         LSPECIALMod.info("StatsLogic", "Applying gun config {} at index {}", cfg, state.gunIndex);
 
         if (LSPECIALConfig.intelligence && "INFINITE_AT_INTELLIGENCE_5".equalsIgnoreCase(LSPECIALConfig.gunWearMode) && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5) {
@@ -362,6 +363,7 @@ public class StatsLogic {
         state.modifiedReceiver = null;
         state.modified = false;
         state.previousGunPerception = -1;
+        state.currentGunIndex = -1;
     }
 
     private void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack, PlayerState state) {
@@ -721,6 +723,7 @@ public class StatsLogic {
         int poweredArmorRechargeCooldown = 0;
 
         int gunIndex = -1;
+        int currentGunIndex = -1;
         int previousGunPerception = -1;
 
         ItemStack loggedSednaGun = ItemStack.EMPTY;

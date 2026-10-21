@@ -10,7 +10,7 @@ public class SyncSPECIALGunStateSetter implements IMessageHandler<SyncSPECIALGun
     @Override
     public IMessage onMessage(SyncSPECIALGunStatePacket message, MessageContext ctx) {
         Minecraft.getMinecraft().addScheduledTask(() ->
-                ClientGunState.set(message.gun, message.indices, message.damages));
+                ClientGunState.set(message.gun, message.currentGunIndex, message.indices, message.damages));
         return null;
     }
 }

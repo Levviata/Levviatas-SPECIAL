@@ -7,13 +7,15 @@ import java.util.Map;
 
 public final class ClientGunState {
     private static ItemStack gun = ItemStack.EMPTY;
+    private static int currentGunIndex = -1;
     private static final Map<Integer, Float> damages = new HashMap<>();
 
     private ClientGunState() {
     }
 
-    public static void set(ItemStack stack, int[] indices, float[] values) {
+    public static void set(ItemStack stack, int currentGunIndex, int[] indices, float[] values) {
         gun = stack == null ? ItemStack.EMPTY : stack.copy();
+        ClientGunState.currentGunIndex = currentGunIndex;
         damages.clear();
 
         if (indices == null || values == null) {
@@ -34,6 +36,10 @@ public final class ClientGunState {
                 && ItemStack.areItemStacksEqual(stack, gun);
     }
 
+    public static int getCurrentGunIndex() {
+        return currentGunIndex;
+    }
+
     public static float getDamage(int gunIndex) {
         Float damage = damages.get(gunIndex);
         return damage == null ? Float.NaN : damage;
@@ -41,6 +47,7 @@ public final class ClientGunState {
 
     public static void clear() {
         gun = ItemStack.EMPTY;
+        currentGunIndex = -1;
         damages.clear();
     }
 }
