@@ -33,7 +33,8 @@ public final class ClientGunState {
         return stack != null
                 && !stack.isEmpty()
                 && !gun.isEmpty()
-                && ItemStack.areItemStacksEqual(stack, gun);
+                && stack.getItem() == gun.getItem()
+                && stack.getMetadata() == gun.getMetadata();
     }
 
     public static int getCurrentGunIndex() {

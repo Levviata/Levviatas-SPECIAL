@@ -286,6 +286,8 @@ public class StatsLogic {
 
         double newDamage = ogDmg + perceptionBonus;
 
+        state.modifiedGunDamages.put(state.gunIndex, (float) newDamage);
+
         LSPECIALMod.info("StatsLogic","Perception gun damage: original={}, perception={}, bonus={}, final={}",
                 String.valueOf(ogDmg),
                 perceptionScore,
@@ -364,6 +366,7 @@ public class StatsLogic {
         state.modified = false;
         state.previousGunPerception = -1;
         state.currentGunIndex = -1;
+        state.modifiedGunDamages.clear();
     }
 
     private void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack, PlayerState state) {
@@ -725,12 +728,14 @@ public class StatsLogic {
         int gunIndex = -1;
         int currentGunIndex = -1;
         int previousGunPerception = -1;
+        final Map<Integer, Float> modifiedGunDamages = new HashMap<>();
 
         ItemStack loggedSednaGun = ItemStack.EMPTY;
 
         GunStateView getGunStateView(int index) {
             GunState gunState = gunStates.get(index);
-            return new GunStateView(gunState.index, gunState.damage);
+            Float modifiedDamage = modifiedGunDamages.get(gunState.index);
+            return new GunStateView(gunState.index, modifiedDamage == null ? gunState.damage : modifiedDamage);
         }
     }
 

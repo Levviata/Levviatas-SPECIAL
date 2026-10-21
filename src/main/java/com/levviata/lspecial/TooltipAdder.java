@@ -174,7 +174,8 @@ public final class TooltipAdder {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.player == null
                 || !ClientGunState.matches(stack)
-                || !ItemStack.areItemsEqual(stack, mc.player.getHeldItemMainhand())) {
+                || stack.getItem() != mc.player.getHeldItemMainhand().getItem()
+                || stack.getMetadata() != mc.player.getHeldItemMainhand().getMetadata()) {
             return;
         }
 
