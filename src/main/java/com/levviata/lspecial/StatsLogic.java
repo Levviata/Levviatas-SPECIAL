@@ -427,6 +427,10 @@ public class StatsLogic {
     }
 
     private void applyGunWearPolicy(EntityPlayer player, ItemStack heldStack, PlayerState state) {
+        if (!LSPECIALConfig.modifyGuns) {
+            return;
+        }
+
         String mode = LSPECIALConfig.gunWearMode;
 
         if (!LSPECIALConfig.intelligence) {
@@ -574,7 +578,8 @@ public class StatsLogic {
 
         double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD)) : 0.0;
 
-        double newDamage = baseHeldDamage + strengthBonus;
+        int handDamage = 1;
+        double newDamage = handDamage + baseHeldDamage + strengthBonus;
         AttributeModifier strengthModifier = strength.getModifier(ATTACK_DAMAGE_UUID);
         boolean hasStrengthModifier = strengthModifier != null;
 

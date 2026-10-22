@@ -122,18 +122,17 @@ public final class TooltipAdder {
 
         String attackDamageName = I18n.format("attribute.name.generic.attackDamage");
         List<String> tooltip = event.getToolTip();
-
+        int handDamage = 1;
         for (int i = 0; i < tooltip.size(); i++) {
             String line = tooltip.get(i);
 
             if (!line.contains(attackDamageName)) {
                 continue;
             }
-
             Matcher matcher = DAMAGE_VALUE.matcher(line);
             if (matcher.find()) {
                 tooltip.set(i, matcher.replaceFirst(
-                        Matcher.quoteReplacement(FORMAT.format(original + bonus))));
+                        Matcher.quoteReplacement(FORMAT.format(handDamage + original + bonus))));
             }
 
             return;
