@@ -206,7 +206,7 @@ public final class LSPECIALConfig {
     public static String refundAmmoFormula = "min(luck * 0.05, 0.5)";
 
     public static String buckshotGaugeList = "41,42,43,44,45,46,47,48,49,78,79,80,81,84,hbm:ammo_secret:3";
-    public static String revolverList = "hbm:gun_flaregun,hbm:gun_heavy_revolver,hbm:gun_light_revolver_atlas";
+    public static String revolverList = "hbm:gun_flaregun,hbm:gun_heavy_revolver,hbm:gun_heavy_revolver_lilmac,hbm:gun_heavy_revolver_protege,hbm:gun_light_revolver,hbm:gun_light_revolver_atlas,hbm:gun_light_revolver_dani";
 
     public static boolean[] recipeEnabled = {true, true, true, true, true, true, true};
 
@@ -235,14 +235,9 @@ public final class LSPECIALConfig {
     private LSPECIALConfig() {
     }
 
-    // categories whose values the server sends to clients. Recipes and commands are only read at startup, and the
-    // client, perks and logging categories are personal preferences
-    private static final Set<String> SYNCED_CATEGORIES = new HashSet<>(Arrays.asList(STATS, BOB, GUNS, POTIONS, ADV));
-    // display-only options that live in a synced category but belong to the player's own screen
-    private static final Set<String> CLIENT_PREFERENCE_KEYS = new HashSet<>(Arrays.asList(
-            "doubleBarrelGrappleCamera", "doubleBarrelGrappleCrosshairScale", "doubleBarrelGrappleHookScale",
-            "doubleBarrelGrappleTargetCone", "enduranceModelScaling", "enduranceModelScaleThresholdHearts",
-            "enduranceModelScalePerHeart", "hideDisabledStats", "strengthTooltip"));
+    // categories whose values the server sends to clients. Recipes and commands are only read at startup and
+    // logging is a personal choice, everything else (client options included) follows the server while connected
+    private static final Set<String> SYNCED_CATEGORIES = new HashSet<>(Arrays.asList(STATS, BOB, GUNS, POTIONS, MESSAGES, CLIENT, ADV, PERKS));
     // values received from the server, kept in memory only and never written to the local config file
     private static final Map<String, String> serverOverrides = new HashMap<>();
     // this side's own values, which is what a server sends to the players that join it
@@ -262,6 +257,7 @@ public final class LSPECIALConfig {
         serverOverrides.clear();
         serverOverrides.putAll(values);
         load();
+        LSPECIALMod.info("ConfigSync", "Applied {} config values from the server", values.size());
     }
 
     public static synchronized void clearServerOverrides() {
@@ -277,7 +273,7 @@ public final class LSPECIALConfig {
      * Records the local value for syncing and returns the one that applies (the server's, when connected to one).
      */
     private static synchronized String effective(String category, String key, String local) {
-        if (!SYNCED_CATEGORIES.contains(category) || CLIENT_PREFERENCE_KEYS.contains(key)) {
+        if (!SYNCED_CATEGORIES.contains(category)) {
             return local;
         }
 
@@ -300,6 +296,15 @@ public final class LSPECIALConfig {
 
         config.load();
         config.getCategory(STATS).remove("strengthTooltipFormat");
+
+        // refundAmmoFormula moved to the advanced category, keep the value people already set
+        if (config.getCategory(GUNS).containsKey("refundAmmoFormula")) {
+            String legacyFormula = config.getCategory(GUNS).get("refundAmmoFormula").getString();
+            config.getCategory(GUNS).remove("refundAmmoFormula");
+            if (!config.getCategory(ADV).containsKey("refundAmmoFormula")) {
+                config.get(ADV, "refundAmmoFormula", legacyFormula).set(legacyFormula);
+            }
+        }
 
         // logging
         loggingInfo = b(LOGGING, "info", false, "Enable INFO-level logs from LSPECIAL");
@@ -326,7 +331,6 @@ public final class LSPECIALConfig {
         bobbleheadRename = b(BOB, "rename", true, "Give bobbleheads their stats in their display name");
 
         // guns and ammunition
-        refundAmmoFormula = s(GUNS, "refundAmmoFormula", refundAmmoFormula, "Validated expression; variable: luck");
         modifyGuns = b(GUNS, "modifyGuns", true, "Master switch for gun modifications. Whether to modify Nuclear Tech guns at all.");
         buckshotDelayNerf = b(GUNS, "buckshotDelayNerf", true, "Use the nerfed delay formula for guns that use buckshot (shotguns)");
         revolverPerk = b(GUNS, "revolverHigherPerk", true, "Enable Intelligence revolver perk");
@@ -513,6 +517,7 @@ public final class LSPECIALConfig {
         }
 
         // advanced formulas
+        refundAmmoFormula = s(ADV, "refundAmmoFormula", refundAmmoFormula, "Validated expression; variable: luck");
         agilityFormula = s(ADV, "agilityFormula", agilityFormula, "Variables: agility");
         enduranceFormula = s(ADV, "enduranceFormula", enduranceFormula, "Variables: endurance");
         attackDamageFormula = s(ADV, "attackDamageFormula", attackDamageFormula, "Variables: strength");
@@ -531,6 +536,9 @@ public final class LSPECIALConfig {
         if (config.hasChanged()) {
             config.save();
         }
+
+        // lists parsed out of the config need to follow it, server overrides included
+        StatsLogic.init();
     }
 
     private static String categoryComment(String category) {
@@ -598,6 +606,8 @@ public final class LSPECIALConfig {
         if (Tags.MOD_ID.equals(event.getModID()) && config != null) {
             config.save();
             load();
+            // anybody connected to this game as a server gets the new values right away
+            LSPECIALMod.syncConfigToAll();
         }
     }
 

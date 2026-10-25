@@ -1,7 +1,7 @@
 # v2.0.0
 
 ### Features
-!Server config sync -> on a multiplayer server the server's gameplay config (stats, bobbleheads, guns, potions, advanced) overrides the client's, so what the server decides is what you see in the GUI, tooltips and HUD. Client-only options (grapple crosshair/hook scale and camera, endurance model scaling, hide disabled stats, strength tooltip) stay yours. Restored on disconnect
+!Server config sync -> on a multiplayer server the server's config (stats, bobbleheads, guns, potions, messages, client, perks and advanced, client options included) overrides the client's in memory, so what the server decides is what you see in the GUI, tooltips and HUD. Your config file is never touched and everything is restored on disconnect. Changing the config on a running server sends it to everybody connected right away
 !Alternate calibers are now per player -> crouch + secondary (pepperbox, star-f, uzi, g3, AMAT and the minigun's capacitors) no longer unlocks the calibers for everyone holding that gun, only for players that meet the Intelligence requirement. If a player stops meeting it, the loaded rounds are refunded and the gun goes back to its base caliber
 Add
 - Agility flying speed (+ formula)
@@ -33,6 +33,27 @@ Fixed
 - AMAT magazine reading a null bullet config
 - armor durability protection only working while the failsafe was on
 - bobblehead augment count being read from the wrong place, now it is the player's own limit minus the default limit
+- alternate calibers: reload offered base ammo but loaded nothing, the magazine stayed empty and could not shoot. Reloading now only uses the selected caliber (the whole BMG group on the Star F)
+- AMAT and Star F BMG capacities now follow the loaded caliber and not only the saved selection
+- ammo icon and counter in the HUD ignoring alternate calibers, the client now resolves them for the local player
+- switching back to the native caliber now clears the saved selection, so every native round loads again
+- double barrel crosshair still drawing under the grapple one, the grapple one now hides it first
+- scores changed with /scoreboard now reach the client right away
+- gun damage staying modified on screen after disabling modifyGuns (also on one gun of an akimbo pair), the client is told when the gun gets cleaned
+- gun perks not falling off when Intelligence drops or a perk is switched off, guns are now re-evaluated on every change that feeds them (pepperbox six shot included)
+- gun modifications (armor threshold negation, penetration, headshot) only reaching the loaded caliber, now every caliber the gun can fire
+- revolver penetration missing on the light revolver and the other revolver variants, the default list now has all of them (existing configs keep their own list)
+- carbine perk: right click now fires one shot per press, left click is automatic
+- infinite durability leaving items unbreakable in the inventory, armor included, after losing the perk, it is now swept as soon as the perk ends
+- endurance bonus being rewritten from the current formula, it is now a running total: each step adds what the formula gives at that moment and changing the formula later keeps the health already earned
+- max health dropping to zero with a low or negative formula, which left the player alive but unable to die ("dead-alive" death screen). The bar can't go under half a heart and health is kept inside it when endurance changes or gets disabled
+- endurance and charisma bonuses staying active under level 5, they are now removed (the bonus score goes back to 0 and the potion effects they gave are taken away)
+- respectHigherRegenAmplifier: amplified regeneration is not given while a stronger regeneration is active and gets removed if it was there
+- mobs already hunting the player not turning neutral when charismaNeutralLevel is reached
+- neutral mobs locking on to the player and dropping it over and over, they no longer pick the player as a target at all
+- magazine refund: only one gun of an akimbo pair got refunded, both now share the roll of that tick
+- magazine refund: ammo taken from an ammo bag went to the inventory even when the bag had room, it goes back to the bag first
+- magazine refund (and caliber refund) not dropping ammo with a full inventory in creative
 - unsafe inventory cast in RefundMagazine
 - GrappleCameraPacket not being registered on both sides
 - StatsLogic.init() running twice
@@ -45,6 +66,9 @@ Fixed
 Rapid fire revolver perk now defaults to false and is labeled deprecated
 Options that do nothing yet are labeled "[Not implemented yet, no effect]", Dragon's Fury and flamethrower are labeled experimental
 Add logging options (error, warn, info and a list of info identifiers to listen to)
+Move refundAmmoFormula to the advanced category (the value you had is kept)
+Default revolverList now has every revolver variant
+Add INFO log identifiers AmmoCycle and ConfigSync
 
 ### General
 Declare Nuclear Tech as a required dependency and Minecraft 1.12.2 as the accepted version

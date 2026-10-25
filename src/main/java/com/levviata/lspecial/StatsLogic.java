@@ -4,6 +4,8 @@ import com.github.bsideup.jabel.Desugar;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.*;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
+import com.hbm.items.weapon.sedna.mags.MagazineBelt;
+import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
@@ -105,6 +107,17 @@ public class StatsLogic {
         ItemStack heldStack = player.getHeldItemMainhand();
         updateInfiniteDurability(player, heldStack, state);
 
+        // scores can change at any time (/scoreboard), so the client mirror and the level 5 bonuses follow them every tick
+        enforceBonusLevels(player);
+        syncStatsIfChanged(player, state);
+
+        // mobs that were already hunting the player when the neutrality kicked in let go of them
+        boolean neutral = CharismaNeutrality.isActiveFor(player);
+        if (neutral && (!state.neutralityApplied || player.ticksExisted % 100 == 0)) {
+            CharismaNeutrality.releaseTargets(player);
+        }
+        state.neutralityApplied = neutral;
+
         if (heldStack.getItem() instanceof ItemGunBaseNT) {
             applyGunWearPolicy(player, heldStack, state);
         } else {
@@ -131,34 +144,36 @@ public class StatsLogic {
                 || !(heldStack.getItem() instanceof ItemGunBaseNT)
                 || state.modifiedStackRef != heldStack)) {
             cleanGun(state.modifiedStackRef, state);
+
+            // the client shows the modified damage until it is told otherwise
+            if (player instanceof EntityPlayerMP) {
+                syncGunState((EntityPlayerMP) player, state);
+            }
         }
 
         if (!heldStack.isEmpty() && heldStack.getItem() != Items.AIR) {
             if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT gun) {
                 int perceptionScore = inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD);
                 int luckScore = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
+                int signature = gunSignature(player);
 
+                // everything that feeds a gun modification is in the signature, so perks also fall off again
+                // when intelligence drops or a perk gets switched off
                 if (!state.modified
                         || state.modifiedStackRef != heldStack
-                        || state.previousGunPerception != perceptionScore
-                        || state.previousGunLuck != luckScore) {
-
-                    int configs = gun.getConfigCount();
+                        || state.previousGunSignature != signature) {
 
                     if (state.modified) {
                         cleanGun(state.modifiedStackRef, state);
                     }
 
-                    for (state.gunIndex = 0; state.gunIndex < configs; state.gunIndex++) {
-                        // modify guns using their unique gun config
-                        // akimbo guns have two configs so this loop would trigger twice, modifying both
-                        modifyGuns(heldStack, player, gun.getConfig(heldStack, state.gunIndex), state);
-                    }
+                    modifyAllConfigs(heldStack, player, gun, state);
 
                     state.modifiedStackRef = heldStack;
                     state.modified = true;
                     state.previousGunPerception = perceptionScore;
                     state.previousGunLuck = luckScore;
+                    state.previousGunSignature = signature;
 
                     if (player instanceof EntityPlayerMP) {
                         syncGunState((EntityPlayerMP) player, state);
@@ -182,7 +197,89 @@ public class StatsLogic {
             }
         }
 
-        givePotions(player);
+        givePotions(player, state);
+    }
+
+    /**
+     * Runs the gun modification for every config of the gun, with the player known to the per-player caliber view.<br>
+     * Akimbo guns have two configs, so both get modified.
+     */
+    private void modifyAllConfigs(ItemStack heldStack, EntityPlayer player, ItemGunBaseNT gun, PlayerState state) {
+        SPECIALPlayerContext.push(player, heldStack);
+        try {
+            int configs = gun.getConfigCount();
+            for (state.gunIndex = 0; state.gunIndex < configs; state.gunIndex++) {
+                modifyGuns(heldStack, player, gun.getConfig(heldStack, state.gunIndex), state);
+            }
+        } finally {
+            SPECIALPlayerContext.pop();
+        }
+    }
+
+    /**
+     * Folds everything that changes how a gun gets modified into one number.
+     */
+    private static int gunSignature(EntityPlayer player) {
+        return Objects.hash(
+                inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD),
+                inst.getPlayerScorePoints(player, inst.LUCK_BOARD),
+                inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD),
+                LSPECIALConfig.perception, LSPECIALConfig.intelligence, LSPECIALConfig.luck,
+                LSPECIALConfig.perceptionGunDamageFormula,
+                LSPECIALConfig.perceptionArmorThresholdNegation,
+                LSPECIALConfig.perceptionArmorThresholdNegationLevel,
+                LSPECIALConfig.perceptionArmorThresholdNegationPerPoint,
+                LSPECIALConfig.pepperboxPerk, LSPECIALConfig.pepperboxSixShotPerk,
+                LSPECIALConfig.revolverPerk, LSPECIALConfig.revolverPenetrationPerk,
+                LSPECIALConfig.revolverHeadshotMultiplier, LSPECIALConfig.revolverList,
+                LSPECIALConfig.carbineSemiAutoPerk, LSPECIALConfig.refundMagazines,
+                LSPECIALConfig.gunWearMode);
+    }
+
+    /**
+     * Sends the player's scores to their client whenever one of them is different from what was sent last.
+     */
+    private void syncStatsIfChanged(EntityPlayer player, PlayerState state) {
+        if (!(player instanceof EntityPlayerMP)) {
+            return;
+        }
+
+        int[] scores = {
+                inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD),
+                inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD),
+                inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD),
+                inst.getPlayerScorePoints(player, inst.ENDURANCE_BONUS_BOARD),
+                inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD),
+                inst.getPlayerScorePoints(player, inst.CHARISMA_BONUS_BOARD),
+                inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD),
+                inst.getPlayerScorePoints(player, inst.AGILITY_BOARD),
+                inst.getPlayerScorePoints(player, inst.LUCK_BOARD),
+                inst.getPlayerScorePoints(player, inst.LIMIT_BOARD)};
+
+        if (!Arrays.equals(scores, state.lastSyncedScores)) {
+            state.lastSyncedScores = scores;
+            syncStats((EntityPlayerMP) player);
+        }
+    }
+
+    /**
+     * The Endurance and Charisma bonuses are level 5 perks, they are switched off while the score is under 5.
+     */
+    private void enforceBonusLevels(EntityPlayer player) {
+        disableBonusBelowLevel(player, inst.ENDURANCE_BOARD, inst.ENDURANCE_BONUS_BOARD);
+        disableBonusBelowLevel(player, inst.CHARISMA_BOARD, inst.CHARISMA_BONUS_BOARD);
+    }
+
+    private void disableBonusBelowLevel(EntityPlayer player, String statBoard, String bonusBoard) {
+        if (inst.getPlayerScorePoints(player, statBoard) >= LSPECIALMod.LESSER_PERK
+                || inst.getPlayerScorePoints(player, bonusBoard) == 0) {
+            return;
+        }
+
+        net.minecraft.scoreboard.Score bonus = inst.getPlayerScore(player, bonusBoard);
+        if (bonus != null) {
+            bonus.setScorePoints(0);
+        }
     }
 
     /**
@@ -217,14 +314,23 @@ public class StatsLogic {
             revertUnbreakable(heldStack);
         }
 
-        // a flagged stack can still end up somewhere else (shift-click copies it, trades, etc), sweep once a second
-        if (player.ticksExisted % 20 == 0) {
+        // a flagged stack can still end up somewhere else (shift-click copies it, trades, etc), sweep once a second.
+        // losing the perk sweeps right away, and the first tick after joining does too
+        boolean perkJustEnded = state.unbreakablePerkWasActive && !perkActive;
+        boolean firstTick = !state.unbreakableSwept;
+        state.unbreakablePerkWasActive = perkActive;
+        state.unbreakableSwept = true;
+
+        if (player.ticksExisted % 20 == 0 || perkJustEnded || firstTick) {
             for (ItemStack stack : player.inventory.mainInventory) {
-                if (stack != heldStack) {
+                if (stack != heldStack || !perkActive) {
                     revertUnbreakable(stack);
                 }
             }
             for (ItemStack stack : player.inventory.offHandInventory) {
+                revertUnbreakable(stack);
+            }
+            for (ItemStack stack : player.inventory.armorInventory) {
                 revertUnbreakable(stack);
             }
         }
@@ -283,10 +389,11 @@ public class StatsLogic {
         state.modifiedReceiver = receivers[0];
 
         if (state.modifiedReceiver.getMagazine(heldStack) == null) return;
-        Object ammoType = state.modifiedReceiver.getMagazine(heldStack).getType(heldStack, player.inventory);
-        if (!(ammoType instanceof BulletConfig bConfig)) return;
 
-        setOriginalValues(bConfig, state.modifiedReceiver, heldStack, state);
+        List<BulletConfig> bullets = collectBullets(state.modifiedReceiver, heldStack, player);
+        if (bullets.isEmpty()) return;
+
+        setOriginalValues(bullets, state.modifiedReceiver, heldStack, state);
 
         // if i have luck, install a magazine that can refund bullets. tracked per receiver so akimbo guns get both wrapped
         NativeReceiver nativeReceiver = nativeReceivers.get(state.modifiedReceiver);
@@ -296,10 +403,37 @@ public class StatsLogic {
             nativeReceiver.refundInstalled = true;
         }
 
-        processReceiver(state.modifiedReceiver, state.originalDamage, heldStack, player, state);
+        processReceiver(state.modifiedReceiver, state.originalDamage, heldStack, player, state, bullets);
     }
 
-    private void processReceiver(Receiver recIn, float ogDmg, ItemStack heldStack, EntityPlayer player, PlayerState state) {
+    /**
+     * Lists every bullet config the receiver's magazine can fire for this player, so the modifications
+     * also apply to alternate calibers and not only to whatever is loaded right now.
+     */
+    private static List<BulletConfig> collectBullets(Receiver receiver, ItemStack heldStack, EntityPlayer player) {
+        List<BulletConfig> bullets = new ArrayList<>();
+        IMagazine<?> magazine = receiver.getMagazine(heldStack);
+        while (magazine instanceof RefundMagazine) {
+            magazine = ((RefundMagazine) magazine).getOriginalMagazine();
+        }
+
+        if (magazine instanceof MagazineSingleTypeBase single) {
+            bullets.addAll(single.acceptedBullets);
+        } else if (magazine instanceof MagazineBelt belt) {
+            bullets.addAll(belt.acceptedBullets);
+        }
+
+        if (magazine != null) {
+            Object current = magazine.getType(heldStack, player.inventory);
+            if (current instanceof BulletConfig config && !bullets.contains(config)) {
+                bullets.add(config);
+            }
+        }
+        bullets.removeIf(Objects::isNull);
+        return bullets;
+    }
+
+    private void processReceiver(Receiver recIn, float ogDmg, ItemStack heldStack, EntityPlayer player, PlayerState state, List<BulletConfig> bullets) {
         int perceptionScore = inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD);
 
         double perceptionBonus = LSPECIALConfig.perception
@@ -334,32 +468,41 @@ public class StatsLogic {
             return;
         }
 
-        Object ammoType = recIn.getMagazine(heldStack).getType(heldStack, player.inventory);
-        if (!(ammoType instanceof BulletConfig bC)) {
-            return;
+        String itemID = heldStack.isEmpty() ? "" : String.valueOf(heldStack.getItem().getRegistryName());
+        int intelligence = inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD);
+
+        // every caliber the gun can fire gets the bullet modifications, not only the loaded one
+        if (LSPECIALConfig.perception && LSPECIALConfig.perceptionArmorThresholdNegation && perceptionScore > LSPECIALConfig.perceptionArmorThresholdNegationLevel) {
+            double addedNegation = (perceptionScore - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
+            for (BulletConfig bullet : bullets) {
+                NativeBullet nativeBullet = nativeBullets.get(bullet);
+                float original = nativeBullet == null ? bullet.armorThresholdNegation : nativeBullet.armorThresholdNegation;
+                bullet.armorThresholdNegation = (float) Math.min(1.0, original + addedNegation);
+            }
         }
 
-        if (LSPECIALConfig.perception && LSPECIALConfig.perceptionArmorThresholdNegation && inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD) > LSPECIALConfig.perceptionArmorThresholdNegationLevel) {
-            double addedNegation = (inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD) - LSPECIALConfig.perceptionArmorThresholdNegationLevel) * LSPECIALConfig.perceptionArmorThresholdNegationPerPoint;
-            bC.armorThresholdNegation = (float) Math.min(1.0, state.originalArmorThresholdNegation + addedNegation);
-        }
-        if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5 && !heldStack.isEmpty()) {
-            String itemID = String.valueOf(heldStack.getItem().getRegistryName());
+        if (LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && intelligence >= 5 && !heldStack.isEmpty()) {
             if (LSPECIALConfig.pepperboxSixShotPerk && "hbm:gun_pepperbox".equals(itemID)) {
                 recIn.rounds(6);
             }
         }
 
-        if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 15 && !heldStack.isEmpty()) {
-            String itemID = String.valueOf(heldStack.getItem().getRegistryName());
+        if (LSPECIALConfig.intelligence && LSPECIALConfig.revolverPerk && intelligence >= 15 && !heldStack.isEmpty()) {
             recIn.auto(true);
             if ("hbm:gun_tau".equals(itemID)) {
                 recIn.auto(false);
             }
             if (LSPECIALConfig.revolverPenetrationPerk && r.contains(itemID)) {
-                bC.doesPenetrate = true;
-                bC.setHeadshot(LSPECIALConfig.revolverHeadshotMultiplier);
+                for (BulletConfig bullet : bullets) {
+                    bullet.doesPenetrate = true;
+                    bullet.setHeadshot(LSPECIALConfig.revolverHeadshotMultiplier);
+                }
             }
+        }
+
+        // the carbine fires automatically on left click with the perk, right click is the single shot
+        if (LSPECIALConfig.intelligence && LSPECIALConfig.carbineSemiAutoPerk && intelligence >= 15 && "hbm:gun_carbine".equals(itemID)) {
+            recIn.auto(true);
         }
     }
 
@@ -372,11 +515,10 @@ public class StatsLogic {
         // each akimbo/config receiver is released on its own. The native values are only written back once
         // nobody else is holding the same receiver, wear is left alone on purpose (restoring it undid real wear)
         for (int i = state.gunStates.size() - 1; i >= 0; i--) {
-            GunState gunState = state.gunStates.get(i);
-            if (gunState.bulletConfig != null) {
-                releaseBullet(gunState.bulletConfig, state.owner);
-            }
-            releaseReceiver(gunState.receiver, state.owner);
+            releaseReceiver(state.gunStates.get(i).receiver, state.owner);
+        }
+        for (BulletConfig bullet : state.boundBullets) {
+            releaseBullet(bullet, state.owner);
         }
         resetGunTracking(state);
     }
@@ -451,6 +593,7 @@ public class StatsLogic {
 
     private void resetGunTracking(PlayerState state) {
         state.gunStates.clear();
+        state.boundBullets.clear();
         state.modifiedGunDamages.clear();
         state.gunIndex = 0;
         state.modifiedStackRef = ItemStack.EMPTY;
@@ -458,10 +601,11 @@ public class StatsLogic {
         state.modified = false;
         state.previousGunPerception = -1;
         state.previousGunLuck = -1;
+        state.previousGunSignature = 0;
         state.currentGunIndex = -1;
     }
 
-    private void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack, PlayerState state) {
+    private void setOriginalValues(List<BulletConfig> bullets, Receiver rIn, ItemStack heldStack, PlayerState state) {
         // only the first holder records the values, anyone after that reads the recorded ones so they never
         // mistake another player's perk values for the gun's native ones
         NativeReceiver nativeReceiver = nativeReceivers.get(rIn);
@@ -474,44 +618,71 @@ public class StatsLogic {
         }
         nativeReceiver.holders.add(state.owner);
 
-        NativeBullet nativeBullet = nativeBullets.get(bCIn);
-        if (nativeBullet == null) {
-            nativeBullet = new NativeBullet(bCIn.armorPiercingPercent, bCIn.armorThresholdNegation, bCIn.doesPenetrate, bCIn.headshotMult);
-            nativeBullets.put(bCIn, nativeBullet);
-        }
-        nativeBullet.holders.add(state.owner);
-
-        state.originalMagazine = nativeReceiver.magazine;
-        state.originalArmorThresholdNegation = nativeBullet.armorThresholdNegation;
-        state.originalDamage = nativeReceiver.damage;
-        state.gunStates.add(new GunState(state.gunIndex, rIn, bCIn, nativeReceiver.damage));
-    }
-
-    private void givePotions(EntityPlayer player) {
-        if (LSPECIALConfig.amplifiedRegeneration && LSPECIALConfig.enduranceBonus && inst.getPlayerScorePoints(player, inst.ENDURANCE_BONUS_BOARD) == 1) {
-            String p = Tags.MOD_ID + ":" + AMPLIFIED_REGENERATION_NAME;
-            if (Potion.getPotionFromResourceLocation("regeneration") != null && Potion.getPotionFromResourceLocation(p) != null) {
-                Potion a = Potion.getPotionFromResourceLocation("regeneration");
-                Potion b = Potion.getPotionFromResourceLocation(p);
-                if (player.isPotionActive(a)) {
-                    PotionEffect existing = player.getActivePotionEffect(a);
-                    if (!(LSPECIALConfig.respectHigherRegenAmplifier && existing != null && existing.getAmplifier() > 1)) {
-                        PotionEffect ae = player.getActivePotionEffect(a);
-                        if (ae != null) {
-                            int cAmplifier = ae.getAmplifier();
-                            player.removePotionEffect(a);
-                            player.addPotionEffect(new PotionEffect(b, ae.getDuration(), cAmplifier + (int) LSPECIALConfig.regenAmplifierBonus));
-                        }
-                    }
-                } else if (!player.isPotionActive(b)) {
-                    player.addPotionEffect(new PotionEffect(b, LSPECIALConfig.potionTimeTicks, Math.max(0, LSPECIALConfig.endurancePotionAmplifier)));
-                }
+        for (BulletConfig bullet : bullets) {
+            NativeBullet nativeBullet = nativeBullets.get(bullet);
+            if (nativeBullet == null) {
+                nativeBullet = new NativeBullet(bullet.armorPiercingPercent, bullet.armorThresholdNegation, bullet.doesPenetrate, bullet.headshotMult);
+                nativeBullets.put(bullet, nativeBullet);
+            }
+            nativeBullet.holders.add(state.owner);
+            if (!state.boundBullets.contains(bullet)) {
+                state.boundBullets.add(bullet);
             }
         }
 
-        if (LSPECIALConfig.charismaBonus && inst.getPlayerScorePoints(player, inst.CHARISMA_BONUS_BOARD) == 1) {
-            if (Potion.getPotionFromResourceLocation("resistance") != null && !player.isPotionActive(Potion.getPotionFromResourceLocation("resistance"))) {
-                player.addPotionEffect(new PotionEffect(Potion.getPotionFromResourceLocation("resistance"), LSPECIALConfig.potionTimeTicks, LSPECIALConfig.charismaPotionAmplifier));
+        state.originalMagazine = nativeReceiver.magazine;
+        state.originalDamage = nativeReceiver.damage;
+        state.gunStates.add(new GunState(state.gunIndex, rIn, nativeReceiver.damage));
+    }
+
+    private void givePotions(EntityPlayer player, PlayerState state) {
+        Potion regeneration = Potion.getPotionFromResourceLocation("regeneration");
+        Potion amplified = Potion.getPotionFromResourceLocation(Tags.MOD_ID + ":" + AMPLIFIED_REGENERATION_NAME);
+
+        // both bonuses are level 5 perks, under 5 (or switched off) they are taken away again
+        boolean enduranceBonusActive = LSPECIALConfig.amplifiedRegeneration && LSPECIALConfig.enduranceBonus
+                && inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD) >= LSPECIALMod.LESSER_PERK
+                && inst.getPlayerScorePoints(player, inst.ENDURANCE_BONUS_BOARD) == 1;
+
+        if (regeneration != null && amplified != null) {
+            PotionEffect vanilla = player.getActivePotionEffect(regeneration);
+            int grantedAmplifier = Math.max(0, LSPECIALConfig.endurancePotionAmplifier);
+            boolean higherRegenerationActive = LSPECIALConfig.respectHigherRegenAmplifier
+                    && vanilla != null && vanilla.getAmplifier() > grantedAmplifier;
+
+            if (!enduranceBonusActive || higherRegenerationActive) {
+                // a stronger regeneration wins, and ours doesn't stay behind next to it
+                if (player.isPotionActive(amplified)) {
+                    player.removePotionEffect(amplified);
+                }
+            } else if (vanilla != null) {
+                int currentAmplifier = vanilla.getAmplifier();
+                player.removePotionEffect(regeneration);
+                player.addPotionEffect(new PotionEffect(amplified, vanilla.getDuration(), currentAmplifier + (int) LSPECIALConfig.regenAmplifierBonus));
+            } else if (!player.isPotionActive(amplified)) {
+                player.addPotionEffect(new PotionEffect(amplified, LSPECIALConfig.potionTimeTicks, grantedAmplifier));
+            }
+        }
+
+        Potion resistance = Potion.getPotionFromResourceLocation("resistance");
+        boolean charismaBonusActive = LSPECIALConfig.charismaBonus
+                && inst.getPlayerScorePoints(player, inst.CHARISMA_BOARD) >= LSPECIALMod.LESSER_PERK
+                && inst.getPlayerScorePoints(player, inst.CHARISMA_BONUS_BOARD) == 1;
+
+        if (resistance != null) {
+            if (charismaBonusActive) {
+                if (!player.isPotionActive(resistance)) {
+                    player.addPotionEffect(new PotionEffect(resistance, LSPECIALConfig.potionTimeTicks, LSPECIALConfig.charismaPotionAmplifier));
+                    state.resistanceGranted = true;
+                }
+            } else if (state.resistanceGranted) {
+                // only take back what this bonus gave, resistance from anything else stays
+                PotionEffect active = player.getActivePotionEffect(resistance);
+                if (active != null && active.getAmplifier() == LSPECIALConfig.charismaPotionAmplifier
+                        && active.getDuration() <= LSPECIALConfig.potionTimeTicks) {
+                    player.removePotionEffect(resistance);
+                }
+                state.resistanceGranted = false;
             }
         }
     }
@@ -648,21 +819,80 @@ public class StatsLogic {
             }
 
             int perceptionScore = inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD);
-            int configs = gun.getConfigCount();
 
-            for (state.gunIndex = 0; state.gunIndex < configs; state.gunIndex++) {
-                modifyGuns(heldStack, player, gun.getConfig(heldStack, state.gunIndex), state);
-            }
+            modifyAllConfigs(heldStack, player, gun, state);
 
             state.modifiedStackRef = heldStack;
             state.modified = true;
             state.previousGunPerception = perceptionScore;
             state.previousGunLuck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
+            state.previousGunSignature = gunSignature(player);
 
             syncGunState((EntityPlayerMP) player, state);
         } else {
             state.previousGunPerception = -1;
             syncGunState((EntityPlayerMP) player, state);
+        }
+    }
+
+    private static final String ENDURANCE_BONUS_TAG = "LSPECIALEnduranceBonus";
+    private static final String ENDURANCE_SCORE_TAG = "LSPECIALEnduranceScore";
+    // a player below this would end up with no health bar at all, which leaves them alive but unable to die
+    private static final double MIN_MAX_HEALTH = 1.0D;
+
+    /**
+     * Keeps the max health bonus. The bonus is kept as a running total: every score change adds what the formula
+     * gives for that step, so changing the formula later doesn't rewrite the health already earned.
+     */
+    private void updateEndurance(EntityPlayer player, PlayerState state) {
+        IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
+        int enduranceScore = inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);
+
+        if (!state.enduranceLoaded) {
+            NBTTagCompound saved = player.getEntityData().getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
+            state.enduranceBonus = saved.hasKey(ENDURANCE_BONUS_TAG) ? saved.getDouble(ENDURANCE_BONUS_TAG) : 0.0D;
+            state.enduranceAccounted = saved.hasKey(ENDURANCE_SCORE_TAG) ? saved.getInteger(ENDURANCE_SCORE_TAG) : -1;
+            state.enduranceLoaded = true;
+        }
+
+        if (LSPECIALConfig.endurance && enduranceScore != state.enduranceAccounted) {
+            if (enduranceScore <= 0) {
+                state.enduranceBonus = 0.0D;
+            } else if (state.enduranceAccounted < 0) {
+                // nothing accumulated yet (first time or an older version), start from the formula as it is now
+                state.enduranceBonus = expression(LSPECIALConfig.enduranceFormula, "endurance", enduranceScore * 2);
+            } else {
+                double before = state.enduranceAccounted <= 0 ? 0.0D
+                        : expression(LSPECIALConfig.enduranceFormula, "endurance", state.enduranceAccounted * 2);
+                double after = expression(LSPECIALConfig.enduranceFormula, "endurance", enduranceScore * 2);
+                state.enduranceBonus += after - before;
+            }
+            state.enduranceAccounted = enduranceScore;
+
+            NBTTagCompound persisted = player.getEntityData().getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
+            persisted.setDouble(ENDURANCE_BONUS_TAG, state.enduranceBonus);
+            persisted.setInteger(ENDURANCE_SCORE_TAG, state.enduranceAccounted);
+            player.getEntityData().setTag(EntityPlayer.PERSISTED_NBT_TAG, persisted);
+        }
+
+        AttributeModifier current = maxHealth.getModifier(MAX_HEALTH_UUID);
+
+        if (LSPECIALConfig.endurance) {
+            double bonus = Double.isFinite(state.enduranceBonus) ? state.enduranceBonus : 0.0D;
+            // never let the bonus take the whole health bar away
+            bonus = Math.max(bonus, MIN_MAX_HEALTH - maxHealth.getBaseValue());
+
+            if (current == null || Math.abs(current.getAmount() - bonus) > 0.000001D) {
+                maxHealth.removeModifier(MAX_HEALTH_UUID);
+                maxHealth.applyModifier(new AttributeModifier(MAX_HEALTH_UUID, nameIn, bonus, 0));
+            }
+        } else if (current != null) {
+            maxHealth.removeModifier(MAX_HEALTH_UUID);
+        }
+
+        // a lowered max health (endurance disabled, score or formula lowered) must not leave health above the bar
+        if (player.getHealth() > player.getMaxHealth() && player.getMaxHealth() >= MIN_MAX_HEALTH) {
+            player.setHealth(player.getMaxHealth());
         }
     }
 
@@ -713,30 +943,7 @@ public class StatsLogic {
         }
 
         // endurance
-        IAttributeInstance maxHealth = player.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH);
-
-        int enduranceScore = inst.getPlayerScorePoints(player, inst.ENDURANCE_BOARD);
-
-        boolean hasEnduranceModifier = maxHealth.getModifier(MAX_HEALTH_UUID) != null;
-
-        if (enduranceScore != state.previousEndurance
-                || state.previousEnduranceEnabled != LSPECIALConfig.endurance
-                || Float.isNaN(state.previousMaxHealth)
-                || Math.abs(player.getMaxHealth() - state.previousMaxHealth) > 0.001F
-                || (LSPECIALConfig.endurance && !hasEnduranceModifier)
-                || (!LSPECIALConfig.endurance && hasEnduranceModifier)) {
-
-            state.previousEndurance = enduranceScore;
-
-            maxHealth.removeModifier(MAX_HEALTH_UUID);
-
-            if (LSPECIALConfig.endurance) {
-                maxHealth.applyModifier(new AttributeModifier(MAX_HEALTH_UUID, nameIn, expression(LSPECIALConfig.enduranceFormula, "endurance", enduranceScore * 2), 0));
-            }
-
-            state.previousMaxHealth = player.getMaxHealth();
-            state.previousEnduranceEnabled = LSPECIALConfig.endurance;
-        }
+        updateEndurance(player, state);
 
         // charisma
         IAttributeInstance armor = player.getEntityAttribute(SharedMonsterAttributes.ARMOR);
@@ -844,22 +1051,28 @@ public class StatsLogic {
     public static class PlayerState {
         final UUID owner;
         final List<GunState> gunStates = new ArrayList<>();
-        int previousEndurance = -1;
-        float previousMaxHealth = Float.NaN;
+        final List<BulletConfig> boundBullets = new ArrayList<>();
+        int[] lastSyncedScores;
+        int previousGunSignature;
+        boolean enduranceLoaded;
+        double enduranceBonus;
+        int enduranceAccounted = -1;
+        boolean unbreakablePerkWasActive;
+        boolean unbreakableSwept;
+        boolean neutralityApplied;
+        boolean resistanceGranted;
         int previousCharisma = -1;
         int previousAgility = -1;
         boolean legacyStrengthChecked;
         boolean flySpeedManaged;
         ItemStack unbreakableStack;
         int previousGunLuck = -1;
-        boolean previousEnduranceEnabled = true;
         boolean previousCharismaEnabled = true;
         boolean previousAgilityEnabled = true;
         ItemStack modifiedStackRef = ItemStack.EMPTY;
         Receiver modifiedReceiver;
         boolean modified;
         float originalDamage;
-        float originalArmorThresholdNegation;
         float previousFlySpeed = Float.NaN;
         IMagazine originalMagazine;
         ItemStack wearTrackedStack;
@@ -895,7 +1108,7 @@ public class StatsLogic {
     }
 
     @Desugar
-    private record GunState(int index, Receiver receiver, BulletConfig bulletConfig, float damage) {
+    private record GunState(int index, Receiver receiver, float damage) {
     }
 
     /**

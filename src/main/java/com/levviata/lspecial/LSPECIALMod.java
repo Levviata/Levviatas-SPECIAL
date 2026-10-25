@@ -38,6 +38,16 @@ import java.util.Arrays;
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED_REGENERATION_NAME;
 
+// AI IS FREE SLAVERY
+/*
+notes for whoever reads this next
+-> no minecraft/forge/ntm jars where the code gets written, only ci compiles it, nothing here was run in game
+-> MixinEntityAITargetNeutrality targets EntityAITarget.isSuitableTarget(EntityLiving, EntityLivingBase, boolean, boolean) by descriptor, require = 0 so a wrong one is skipped silently, check the log if neutral mobs still lock on
+-> AMAT caliber switch: no cause found by reading the code, turn on info logging with the AmmoCycle identifier and send the log if it still fails
+-> endurance bonus is a running total now (each score step adds the formula difference), assumed from the report, the persisted tags are LSPECIALEnduranceBonus and LSPECIALEnduranceScore
+-> config sync now covers client, perks and messages too, only recipes, commands and logging stay local
+-> the carbine auto fire is set by the perk itself, the "every gun goes auto at intelligence 15" part of the revolver perk is still there (revolver auto fire is scheduled for removal)
+*/
 @Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION, guiFactory = "com.levviata.lspecial.LSPECIALGuiFactory",
      dependencies = "required-after:hbm", acceptedMinecraftVersions = "[1.12.2]")
 public class LSPECIALMod {
@@ -164,6 +174,7 @@ public class LSPECIALMod {
     public void serverStopping(FMLServerStoppingEvent event) {
         // all of this is static and would otherwise outlive the world (singleplayer keeps the JVM), NTM's shared gun objects included
         StatsLogic.restoreAllNativeGuns();
+        RefundMagazine.clearSharedRolls();
         GrappleController.clearAll();
         RocketJumpHandler.clearAll();
         RocketDamageHandler.clearAll();
@@ -174,6 +185,19 @@ public class LSPECIALMod {
      */
     public static void syncConfig(EntityPlayerMP player) {
         NETWORK.sendTo(new SyncConfigPacket(LSPECIALConfig.syncSnapshot()), player);
+    }
+
+    /**
+     * Sends the current config to everybody connected to a running server, the host of an integrated server skips it.
+     */
+    public static void syncConfigToAll() {
+        net.minecraft.server.MinecraftServer server = net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance();
+        if (server == null) {
+            return;
+        }
+        for (EntityPlayerMP player : server.getPlayerList().getPlayers()) {
+            syncConfig(player);
+        }
     }
 
     public static void syncStats(EntityPlayerMP player) {
