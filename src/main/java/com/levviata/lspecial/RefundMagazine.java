@@ -108,7 +108,11 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
             return;
         }
 
-        EntityPlayer player = ((InventoryPlayer) inventory).player;
+        // another IInventory can end up here through the shared receiver, check before casting
+        if (!(inventory instanceof InventoryPlayer playerInventory)) {
+            return;
+        }
+        EntityPlayer player = playerInventory.player;
         int luck = LSPECIALConfig.luck ? inst.getPlayerScorePoints(player, inst.LUCK_BOARD) : 0;
         Map<String, Double> variables = new HashMap<>();
         variables.put("luck", (double) luck);
@@ -116,7 +120,7 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
         if (Math.random() >= Math.max(0.0, Math.min(1.0, chance))) {
             return;
         }
-        if (selectedConfig == null || selectedConfig.ammo == null || !(inventory instanceof InventoryPlayer)) {
+        if (selectedConfig == null || selectedConfig.ammo == null) {
             return;
         }
 

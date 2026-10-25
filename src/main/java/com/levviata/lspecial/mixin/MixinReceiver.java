@@ -107,10 +107,8 @@ public abstract class MixinReceiver implements ReceiverStateAccess {
     @Unique
     private static boolean lspecial$isCarbineHigherPerk(ItemStack stack) {
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
-        return stack != null && !stack.isEmpty() && LSPECIALConfig.intelligence
-                && SPECIALScoreboard.inst != null && player != null
-                && SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) != null
-                && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= 15
+        return stack != null && !stack.isEmpty()
+                && LSPECIALMod.hasIntelligenceLevel(player, LSPECIALMod.HIGHER_PERK)
                 && "hbm:gun_carbine".equals(lspecial$registryId(stack));
     }
 

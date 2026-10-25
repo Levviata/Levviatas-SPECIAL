@@ -2,6 +2,7 @@ package com.levviata.lspecial.proxy;
 
 import com.levviata.lspecial.*;
 import com.levviata.lspecial.client.ClientGunDebugHandler;
+import com.levviata.lspecial.client.ConfigSyncClient;
 import com.levviata.lspecial.client.render.RenderGrappleChain;
 import com.levviata.lspecial.entity.EntityGrappleChain;
 import net.minecraft.client.settings.KeyBinding;
@@ -19,12 +20,6 @@ import org.lwjgl.input.Keyboard;
 public class ClientProxy extends CommonProxy { // client only
     public static final KeyBinding toggleSpecial = new KeyBinding("toggleSpecial", Keyboard.KEY_P, "key.categories.misc");
 
-    public static KeyBinding toggleSpecial = new KeyBinding(
-            "toggleSpecial",
-            Keyboard.KEY_P,
-            "key.categories.misc"
-    );
-
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
@@ -38,6 +33,7 @@ public class ClientProxy extends CommonProxy { // client only
         MinecraftForge.EVENT_BUS.register(new TooltipAdder());
         MinecraftForge.EVENT_BUS.register(new ClientGunDebugHandler());
         MinecraftForge.EVENT_BUS.register(new SPECIALRenamer());
+        MinecraftForge.EVENT_BUS.register(new ConfigSyncClient());
         if (LSPECIALConfig.toggleSpecial) {
             ClientRegistry.registerKeyBinding(toggleSpecial);
         }

@@ -13,7 +13,8 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
 public class BobbleheadUse {
 
-    private int augLimit = 0;
+    // the limit starts at 10 and every augment adds 1 (see SPECIALScoreboard), so the player's own score says how many they used
+    private static final int DEFAULT_LIMIT = 10;
 
     @SubscribeEvent
     public void use(PlayerInteractEvent.RightClickItem event) {
@@ -139,7 +140,8 @@ public class BobbleheadUse {
             return;
         }
 
-        augLimit++;
+        // the score was already raised for this augment, and it belongs to this player only
+        int augLimit = Math.max(0, inst.getPlayerScorePoints(player, inst.LIMIT_BOARD) - DEFAULT_LIMIT);
 
         if (!LSPECIALConfig.variedAugLimitMessages) {
             message(player, LSPECIALConfig.augLimitMessage);

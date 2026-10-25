@@ -77,10 +77,8 @@ public final class SPECIALGameplayHandler {
      */
     private static boolean canUseLightRevolverRapidFire(EntityPlayer player) {
         return player != null && !player.isDead && LSPECIALConfig.modifyGuns
-                && LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk
-                && LSPECIALConfig.lightRevolverRapidFirePerk && inst != null
-                && inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD) != null
-                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5;
+                && LSPECIALConfig.lightRevolverRapidFirePerk
+                && LSPECIALMod.hasIntelligenceLevel(player, LSPECIALMod.LESSER_PERK);
     }
 
     /**
@@ -146,9 +144,7 @@ public final class SPECIALGameplayHandler {
      * Checks the Lag's Intelligence requirement using the same lesser-perk setting as its other actions.
      */
     private static boolean lspecial$hasLagSelfKillPerk(EntityPlayer player) {
-        return LSPECIALConfig.intelligence && LSPECIALConfig.pepperboxPerk && inst != null
-                && inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD) != null
-                && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5;
+        return LSPECIALConfig.pepperboxPerk && LSPECIALMod.hasIntelligenceLevel(player, LSPECIALMod.LESSER_PERK);
     }
 
     /**
@@ -312,6 +308,9 @@ public final class SPECIALGameplayHandler {
         }
 
         if (!stack.hasTagCompound()) {
+            if (cooldown <= 0) {
+                return;
+            }
             stack.setTagCompound(new NBTTagCompound());
         }
 
@@ -330,8 +329,12 @@ public final class SPECIALGameplayHandler {
         }
 
         if (cooldown > 0) {
-            tag.setInteger("LSPECIALArmorRechargeCooldown", cooldown);
-        } else {
+            // the tooltip shows whole seconds, so rounding up to 20 ticks means the stack only changes once per second
+            int rounded = ((cooldown + 19) / 20) * 20;
+            if (tag.getInteger("LSPECIALArmorRechargeCooldown") != rounded) {
+                tag.setInteger("LSPECIALArmorRechargeCooldown", rounded);
+            }
+        } else if (tag.hasKey("LSPECIALArmorRechargeCooldown")) {
             tag.removeTag("LSPECIALArmorRechargeCooldown");
         }
     }
@@ -417,9 +420,7 @@ public final class SPECIALGameplayHandler {
             requiredLevel = 15;
             enabled = LSPECIALConfig.henryLincolnSecondaryBurst;
         } else return;
-        if (!enabled || !LSPECIALConfig.modifyGuns || !LSPECIALConfig.intelligence || inst == null
-                || inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD) == null
-                || inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) < requiredLevel) return;
+        if (!enabled || !LSPECIALConfig.modifyGuns || !LSPECIALMod.hasIntelligenceLevel(player, requiredLevel)) return;
 
         List<PendingProjectile> pending = pendingProjectileBursts.computeIfAbsent(player, k -> new ArrayList<>());
         pending.add(new PendingProjectile(bullet, 5));
@@ -490,12 +491,14 @@ public final class SPECIALGameplayHandler {
         }
 
         private EntityBulletBaseMK4 spawn(EntityPlayer shooter) {
-            double spawnX = shooter.posX;
-            double spawnY = shooter.posY;
-            double spawnZ = shooter.posZ;
+            // use the data captured when the original bullet spawned, the shooter may have moved or turned since
             EntityBulletBaseMK4 clone = new EntityBulletBaseMK4(shooter.world, shooter, config,
-                    shooter.rotationYaw, shooter.rotationPitch, spawnX, spawnY, spawnZ, motionX, motionY, motionZ);
-            clone.setPosition(spawnX, spawnY, spawnZ);
+                    yaw, pitch, x, y, z, motionX, motionY, motionZ);
+            clone.setPosition(x, y, z);
+            clone.rotationYaw = yaw;
+            clone.rotationPitch = pitch;
+            clone.prevRotationYaw = yaw;
+            clone.prevRotationPitch = pitch;
             clone.motionX = motionX;
             clone.motionY = motionY;
             clone.motionZ = motionZ;

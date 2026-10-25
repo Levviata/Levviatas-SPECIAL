@@ -37,11 +37,7 @@ public abstract class MixinWeaponSecondary {
      */
     @Unique
     private static boolean lspecial$hasIntelligence(EntityPlayer player, int level) {
-        return LSPECIALConfig.intelligence
-                && (level >= 15 ? LSPECIALConfig.revolverPerk : LSPECIALConfig.pepperboxPerk)
-                && SPECIALScoreboard.inst != null
-                && SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) != null
-                && SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) >= level;
+        return LSPECIALMod.hasIntelligenceLevel(player, level);
     }
 
     /**
@@ -57,28 +53,27 @@ public abstract class MixinWeaponSecondary {
      */
     @Unique
     private static boolean lspecial$supportsAmmoCycling(String itemId) {
-        return "hbm:gun_pepperbox".equals(itemId) || lspecial$isStarF(itemId) || lspecial$isUzi(itemId)
-                || lspecial$isG3(itemId) || "hbm:gun_amat".equals(itemId);
+        return CaliberAccess.supportsAmmoCycling(itemId);
     }
 
     @Unique
     private static boolean lspecial$isStarF(String itemId) {
-        return "hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId);
+        return CaliberAccess.isStarF(itemId);
     }
 
     @Unique
     private static boolean lspecial$isUzi(String itemId) {
-        return "hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId);
+        return CaliberAccess.isUzi(itemId);
     }
 
     @Unique
     private static boolean lspecial$isG3(String itemId) {
-        return "hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId);
+        return CaliberAccess.isG3(itemId);
     }
 
     @Unique
     private static boolean lspecial$isMinigun(String itemId) {
-        return "hbm:gun_minigun".equals(itemId) || "hbm:gun_minigun_dual".equals(itemId);
+        return CaliberAccess.isMinigun(itemId);
     }
 
     /**
@@ -97,43 +92,7 @@ public abstract class MixinWeaponSecondary {
      */
     @Unique
     private static List<BulletConfig> lspecial$getAlternateCalibers(String itemId) {
-        if ("hbm:gun_amat".equals(itemId)) {
-            return java.util.Collections.singletonList(AMATRailgun.getBulletConfig());
-        }
-        String prefix;
-        Class<?> factory;
-        if ("hbm:gun_pepperbox".equals(itemId)) {
-            factory = XFactory44.class;
-            prefix = "m44_";
-        } else if (lspecial$isStarF(itemId)) {
-            factory = XFactory50.class;
-            prefix = "bmg50_";
-        } else if (lspecial$isUzi(itemId)) {
-            factory = XFactory556mm.class;
-            prefix = "r556_";
-        } else if (lspecial$isG3(itemId)) {
-            factory = XFactory10ga.class;
-            prefix = "g10";
-        } else return java.util.Collections.emptyList();
-
-        List<BulletConfig> result = lspecial$getBulletConfigs(factory, prefix);
-        result.sort(Comparator.comparingInt(config -> config.id));
-        return result;
-    }
-
-    @Unique
-    private static List<BulletConfig> lspecial$getBulletConfigs(Class<?> factory, String prefix) {
-        List<BulletConfig> result = new java.util.ArrayList<>();
-        try {
-            for (java.lang.reflect.Field field : factory.getFields()) {
-                if (field.getType() != BulletConfig.class || !field.getName().startsWith(prefix)) continue;
-                BulletConfig config = (BulletConfig) field.get(null);
-                if (config != null && !result.contains(config)) result.add(config);
-            }
-        } catch (IllegalAccessException ignored) {
-            // Public factory fields are expected; an inaccessible field simply isn't a usable caliber.
-        }
-        return result;
+        return CaliberAccess.getAlternateCalibers(itemId);
     }
 
     /**
@@ -141,6 +100,19 @@ public abstract class MixinWeaponSecondary {
      */
     @Unique
     private static boolean lspecial$cycleSupportedAmmo(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
+        // the per-player caliber view reads the context, so make sure it is this player's even if hook order changes
+        EntityPlayer previousPlayer = SPECIALPlayerContext.getPlayer();
+        ItemStack previousStack = SPECIALPlayerContext.getStack();
+        SPECIALPlayerContext.setContext(player, stack);
+        try {
+            return lspecial$cycleSupportedAmmoInContext(player, stack, inventory, itemId);
+        } finally {
+            SPECIALPlayerContext.setContext(previousPlayer, previousStack);
+        }
+    }
+
+    @Unique
+    private static boolean lspecial$cycleSupportedAmmoInContext(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
         if (!(stack.getItem() instanceof ItemGunBaseNT gun)) return false;
         List<BulletConfig> alternateCalibers = lspecial$getAlternateCalibers(itemId);
         if (lspecial$isMinigun(itemId)) {
@@ -221,11 +193,9 @@ public abstract class MixinWeaponSecondary {
         if (original instanceof MagazineBelt) return false;
         if (!(original instanceof MagazineSingleTypeBase single)) return false;
 
-        List<BulletConfig> accepted = single.acceptedBullets;
+        // the native list is never written to, alternates are exposed per player by PlayerAcceptedBullets
+        List<BulletConfig> accepted = PlayerAcceptedBullets.baseOf(single.acceptedBullets);
         if (accepted == null || accepted.isEmpty()) return false;
-        for (BulletConfig config : alternateCalibers) {
-            if (config != null && !accepted.contains(config)) accepted.add(config);
-        }
 
         Object currentObject = single.getType(stack, null);
         if (!(currentObject instanceof BulletConfig current)) return false;
@@ -274,9 +244,8 @@ public abstract class MixinWeaponSecondary {
      */
     @Unique
     private static boolean lspecial$cycleBeltAmmo(ItemStack stack, MagazineBelt magazine) {
-        List<BulletConfig> accepted = magazine.acceptedBullets;
+        List<BulletConfig> accepted = PlayerAcceptedBullets.baseOf(magazine.acceptedBullets);
         if (accepted == null || accepted.isEmpty()) return false;
-        lspecial$registerEnergyCapacitors(accepted);
 
         net.minecraft.nbt.NBTTagCompound tag = stack.getTagCompound();
         int currentId = tag != null && tag.hasKey("LSPECIALSelectedBeltCaliber")
@@ -311,31 +280,14 @@ public abstract class MixinWeaponSecondary {
         return true;
     }
 
-    /**
-     * Adds the native capacitor configurations used by NTM's laser, Tesla, and emerald energy weapons.
-     */
-    @Unique
-    private static void lspecial$registerEnergyCapacitors(List<BulletConfig> accepted) {
-        for (BulletConfig config : lspecial$getEnergyCapacitors()) {
-            if (!accepted.contains(config)) accepted.add(config);
-        }
-    }
-
     @Unique
     private static List<BulletConfig> lspecial$getEnergyCapacitors() {
-        return Arrays.asList(XFactoryEnergy.energy_las, XFactoryEnergy.energy_las_overcharge,
-                XFactoryEnergy.energy_las_ir, XFactoryEnergy.energy_tesla,
-                XFactoryEnergy.energy_tesla_overcharge, XFactoryEnergy.energy_tesla_ir,
-                XFactoryEnergy.energy_emerald,
-                XFactoryEnergy.energy_emerald_overcharge, XFactoryEnergy.energy_emerald_ir);
+        return CaliberAccess.getEnergyCapacitors();
     }
 
     @Unique
     private static BulletConfig lspecial$findBulletConfig(int id) {
-        for (BulletConfig config : BulletConfig.configs) {
-            if (config != null && config.id == id) return config;
-        }
-        return null;
+        return CaliberAccess.findBulletConfig(id);
     }
 
     /**
@@ -343,23 +295,7 @@ public abstract class MixinWeaponSecondary {
      */
     @Unique
     private static boolean lspecial$refundAmmoToPlayer(EntityPlayer player, BulletConfig oldConfig, int count) {
-        if (count <= 0) return true;
-        if (oldConfig.ammo == null) return false;
-        ItemStack template = oldConfig.ammo.getStack();
-        if (template.isEmpty()) return false;
-
-        int remaining = count;
-        while (remaining > 0) {
-            ItemStack refund = template.copy();
-            int stackCount = Math.min(remaining, refund.getMaxStackSize());
-            refund.setCount(stackCount);
-            player.inventory.addItemStackToInventory(refund);
-            if (!refund.isEmpty()) {
-                player.dropItem(refund, false);
-            }
-            remaining -= stackCount;
-        }
-        return true;
+        return CaliberAccess.refundAmmo(player, oldConfig, count);
     }
 
     /**

@@ -15,7 +15,12 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID, value = Side.CLIENT)
 public final class LSPECIALConfig {
@@ -60,7 +65,7 @@ public final class LSPECIALConfig {
     public static boolean buckshotDelayNerf = true;
     public static boolean revolverPerk = true;
     public static boolean pepperboxPerk = true;
-    public static boolean lightRevolverRapidFirePerk = true;
+    public static boolean lightRevolverRapidFirePerk = false;
     public static int lightRevolverRapidFireTicks = 20;
     public static boolean refundMagazines = true;
     public static boolean bobbleheadRename = true;
@@ -230,6 +235,59 @@ public final class LSPECIALConfig {
     private LSPECIALConfig() {
     }
 
+    // categories whose values the server sends to clients. Recipes and commands are only read at startup, and the
+    // client, perks and logging categories are personal preferences
+    private static final Set<String> SYNCED_CATEGORIES = new HashSet<>(Arrays.asList(STATS, BOB, GUNS, POTIONS, ADV));
+    // display-only options that live in a synced category but belong to the player's own screen
+    private static final Set<String> CLIENT_PREFERENCE_KEYS = new HashSet<>(Arrays.asList(
+            "doubleBarrelGrappleCamera", "doubleBarrelGrappleCrosshairScale", "doubleBarrelGrappleHookScale",
+            "doubleBarrelGrappleTargetCone", "enduranceModelScaling", "enduranceModelScaleThresholdHearts",
+            "enduranceModelScalePerHeart", "hideDisabledStats", "strengthTooltip"));
+    // values received from the server, kept in memory only and never written to the local config file
+    private static final Map<String, String> serverOverrides = new HashMap<>();
+    // this side's own values, which is what a server sends to the players that join it
+    private static final Map<String, String> syncSnapshot = new LinkedHashMap<>();
+
+    /**
+     * Returns this side's own synced config values, to be sent to a joining client.
+     */
+    public static synchronized Map<String, String> syncSnapshot() {
+        return new LinkedHashMap<>(syncSnapshot);
+    }
+
+    /**
+     * Makes the server's values win over the local config until clearServerOverrides is called.
+     */
+    public static synchronized void applyServerOverrides(Map<String, String> values) {
+        serverOverrides.clear();
+        serverOverrides.putAll(values);
+        load();
+    }
+
+    public static synchronized void clearServerOverrides() {
+        if (serverOverrides.isEmpty()) {
+            return;
+        }
+
+        serverOverrides.clear();
+        load();
+    }
+
+    /**
+     * Records the local value for syncing and returns the one that applies (the server's, when connected to one).
+     */
+    private static synchronized String effective(String category, String key, String local) {
+        if (!SYNCED_CATEGORIES.contains(category) || CLIENT_PREFERENCE_KEYS.contains(key)) {
+            return local;
+        }
+
+        String id = category + "/" + key;
+        syncSnapshot.put(id, local);
+
+        String override = serverOverrides.get(id);
+        return override == null ? local : override;
+    }
+
     public static void init(File file) {
         config = new Configuration(file);
         load();
@@ -273,7 +331,7 @@ public final class LSPECIALConfig {
         buckshotDelayNerf = b(GUNS, "buckshotDelayNerf", true, "Use the nerfed delay formula for guns that use buckshot (shotguns)");
         revolverPerk = b(GUNS, "revolverHigherPerk", true, "Enable Intelligence revolver perk");
         pepperboxPerk = b(GUNS, "pepperboxLesserPerk", true, "Enable Pepperbox lesser perk");
-        lightRevolverRapidFirePerk = b(GUNS, "lightRevolverRapidFirePerk", true, "Intelligence level 5 perk. Secondary fire triggers a rapid-fire burst and locks the player to that exact hotbar stack");
+        lightRevolverRapidFirePerk = b(GUNS, "lightRevolverRapidFirePerk", false, "Deprecated (scheduled for removal, see todo). Intelligence level 5 perk. Secondary fire triggers a rapid-fire burst and locks the player to that exact hotbar stack");
         lightRevolverRapidFireTicks = i(GUNS, "lightRevolverRapidFireTicks", 20, 1, 200, "Duration of the light revolver rapid-fire burst in ticks");
         refundMagazines = b(GUNS, "refundMagazines", true, "Enable magazine refunds");
         gunWearMode = s(GUNS, "gunWearMode", "INFINITE_AT_INTELLIGENCE_5", "INFINITE_AT_INTELLIGENCE_5, PERCENT_REDUCTION, FORMULA");
@@ -339,8 +397,8 @@ public final class LSPECIALConfig {
         pepperboxSixShotPerk = b(GUNS, "pepperboxSixShotPerk", true, "Intelligence 5: Pepperbox fires six rounds per cycle");
         revolverPenetrationPerk = b(GUNS, "revolverPenetrationPerk", true, "Intelligence 15: configured revolvers penetrate and deal increased headshot damage");
         revolverHeadshotMultiplier = (float) d(GUNS, "revolverHeadshotMultiplier", 3.0, 1, 20, "Headshot multiplier for the Intelligence revolver perk");
-        laserPistolDelayBalance = b(GUNS, "laserPistolDelayBalance", true, "Apply the higher-perk laser pistol delay balance");
-        laserPistolDelayTicks = i(GUNS, "laserPistolDelayTicks", 10, 0, 1200, "Laser pistol delay in ticks");
+        laserPistolDelayBalance = b(GUNS, "laserPistolDelayBalance", true, "[Not implemented yet, no effect] Apply the higher-perk laser pistol delay balance");
+        laserPistolDelayTicks = i(GUNS, "laserPistolDelayTicks", 10, 0, 1200, "[Not implemented yet, no effect] Laser pistol delay in ticks");
         fatmanHigherPerk = b(GUNS, "fatmanHigherPerk", true, "Intelligence 15: increase Fat Man magazine capacity and apply its delay");
         fatmanHigherPerkDelay = b(GUNS, "fatmanHigherPerkDelay", true, "Intelligence 15: apply the Fat Man firing delay");
         fatmanHigherPerkDelayTicks = i(GUNS, "fatmanHigherPerkDelayTicks", 80, 0, 1200, "Fat Man firing delay in ticks (80 = 4 seconds)");
@@ -350,9 +408,9 @@ public final class LSPECIALConfig {
         drillHigherPerkCapacity = b(GUNS, "drillHigherPerkCapacity", true, "Intelligence 15: add fluid capacity to the drill");
         drillAdditionalCapacityMb = i(GUNS, "drillAdditionalCapacityMb", 4000, 0, 1000000, "Additional drill fluid capacity in mB");
         weaponSecondaryAmmoCycling = b(GUNS, "weaponSecondaryAmmoCycling", true, "Allow crouch + secondary to cycle supported single-magazine alternate calibers");
-        hereticStyleScoping = b(GUNS, "hereticStyleScoping", true, "Allow secondary-fire hold-to-scope behavior on supported lesser-perk weapons");
+        hereticStyleScoping = b(GUNS, "hereticStyleScoping", true, "[Not implemented yet, no effect] Allow secondary-fire hold-to-scope behavior on supported lesser-perk weapons");
         minigunLaserModePerk = b(GUNS, "minigunLaserModePerk", true, "Legacy setting retained for config compatibility; the minigun uses the caliber of its loaded magazine");
-        minigunLaserModeDelayTicks = i(GUNS, "minigunLaserModeDelayTicks", 4, 0, 1200, "Minigun laser-mode firing delay in ticks");
+        minigunLaserModeDelayTicks = i(GUNS, "minigunLaserModeDelayTicks", 4, 0, 1200, "[Not implemented yet, no effect] Minigun laser-mode firing delay in ticks");
         starFFiftyBmgDelayTicks = i(GUNS, "starFFiftyBmgDelayTicks", 20, 0, 1200, "Star-F .50 BMG mode firing delay in ticks (20 = 1 second)");
         uzi556DelayTicks = i(GUNS, "uzi556DelayTicks", 2, 0, 1200, "UZI 5.56 mm mode firing delay in ticks");
         g3TenGaugeDelayTicks = i(GUNS, "g3TenGaugeDelayTicks", 10, 0, 1200, "G3 10 gauge mode firing delay in ticks");
@@ -385,8 +443,8 @@ public final class LSPECIALConfig {
         henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-shot sequential burst");
         AMATRailgunProjectile = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: crouch + secondary selects the deuterium plasma capsule caliber for the AMAT; its native Sedna projectile homes to Quackos");
         stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Suppress self-inflicted damage from configured Stinger-family projectiles");
-        dragonsFuryPerk = b(GUNS, "dragonsFuryPerk", false, "Enable the incomplete Dragon's Fury perk logic");
-        flamethrowerPerk = b(GUNS, "flamethrowerPerk", false, "Enable the incomplete TF2-style flamethrower perk logic");
+        dragonsFuryPerk = b(GUNS, "dragonsFuryPerk", false, "[Experimental, unfinished: its mixins are not registered in this build] Enable the incomplete Dragon's Fury perk logic");
+        flamethrowerPerk = b(GUNS, "flamethrowerPerk", false, "[Experimental, unfinished: its mixins are not registered in this build] Enable the incomplete TF2-style flamethrower perk logic");
         rocketJumpLesserPerk = b(GUNS, "rocketJumpLesserPerk", true, "Intelligence level 5 lesser perk. Replace the owner's native NTM rocket blast propulsion with TF2-style rocket jumping for the configured Stinger-family launchers");
         rocketJumpLesserPerkLevel = i(GUNS, "rocketJumpLesserPerkLevel", 5, 5, 100, "Minimum Intelligence required for the TF2-style rocket-jumping lesser perk");
         rocketJumpStrength = d(GUNS, "rocketJumpStrength", 1.2D, 0.1D, 5.0D, "Base velocity impulse applied to the rocket owner when the rocket explodes");
@@ -507,19 +565,32 @@ public final class LSPECIALConfig {
 
     // boolean, integer, double, or string
     private static boolean b(String category, String key, boolean defaultValue, String comment) {
-        return config.get(category, key, defaultValue, sideComment(category, comment)).getBoolean(defaultValue);
+        boolean local = config.get(category, key, defaultValue, sideComment(category, comment)).getBoolean(defaultValue);
+        return Boolean.parseBoolean(effective(category, key, Boolean.toString(local)));
     }
 
     private static int i(String category, String key, int defaultValue, int min, int max, String comment) {
-        return config.get(category, key, defaultValue, sideComment(category, comment), min, max).getInt(defaultValue);
+        int local = config.get(category, key, defaultValue, sideComment(category, comment), min, max).getInt(defaultValue);
+
+        try {
+            return Integer.parseInt(effective(category, key, Integer.toString(local)));
+        } catch (NumberFormatException e) {
+            return local;
+        }
     }
 
     private static double d(String category, String key, double defaultValue, double min, double max, String comment) {
-        return config.get(category, key, defaultValue, sideComment(category, comment), min, max).getDouble(defaultValue);
+        double local = config.get(category, key, defaultValue, sideComment(category, comment), min, max).getDouble(defaultValue);
+
+        try {
+            return Double.parseDouble(effective(category, key, Double.toString(local)));
+        } catch (NumberFormatException e) {
+            return local;
+        }
     }
 
     private static String s(String category, String key, String defaultValue, String comment) {
-        return config.get(category, key, defaultValue, sideComment(category, comment)).getString();
+        return effective(category, key, config.get(category, key, defaultValue, sideComment(category, comment)).getString());
     }
 
     @SubscribeEvent

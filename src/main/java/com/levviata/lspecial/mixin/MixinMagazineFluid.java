@@ -2,6 +2,7 @@ package com.levviata.lspecial.mixin;
 
 import com.hbm.items.weapon.sedna.mags.MagazineFluid;
 import com.levviata.lspecial.LSPECIALConfig;
+import com.levviata.lspecial.LSPECIALMod;
 import com.levviata.lspecial.SPECIALPlayerContext;
 import com.levviata.lspecial.SPECIALScoreboard;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,9 +27,7 @@ public abstract class MixinMagazineFluid {
         }
 
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
-        if (SPECIALScoreboard.inst == null || player == null
-                || SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null
-                || SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) < 15) {
+        if (!LSPECIALMod.hasIntelligenceLevel(player, LSPECIALMod.HIGHER_PERK)) {
             return;
         }
 

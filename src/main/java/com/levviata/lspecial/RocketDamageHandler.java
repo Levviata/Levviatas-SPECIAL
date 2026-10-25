@@ -13,6 +13,10 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 /**
  * Cancels self-damage from configured NTM rocket-family projectiles without relying on the currently held item.
  */
@@ -21,6 +25,9 @@ public final class RocketDamageHandler {
 
     private static final ThreadLocal<EntityPlayer> ROCKET_EXPLOSION_OWNER = new ThreadLocal<>();
     private static final ThreadLocal<String> ROCKET_EXPLOSION_WEAPON = new ThreadLocal<>();
+    // world time of the last rocket launch/impact seen for each player, the held-launcher fallback only applies shortly after it
+    private static final Map<UUID, Long> RECENT_ROCKET_ACTIVITY = new HashMap<>();
+    private static final long RECENT_ROCKET_TICKS = 100L;
 
     private RocketDamageHandler() {
     }
@@ -76,15 +83,35 @@ public final class RocketDamageHandler {
     }
 
     /**
-     * records which supported launcher a player's rocket came from, including an offhand launcher.
+     * records which supported launcher a player's rocket came from, including an offhand launcher.<br>
+     * Every call that finds a launcher also notes that this player just used a rocket (see hadRecentRocketActivity).
      */
     public static String getHeldStingerFamilyWeapon(EntityPlayer player) {
         if (player == null) return null;
+        String weapon = null;
         ItemStack mainhand = player.getHeldItemMainhand();
-        if (isStingerFamilyItem(mainhand)) return mainhand.getItem().getRegistryName().toString();
         ItemStack offhand = player.getHeldItemOffhand();
-        if (isStingerFamilyItem(offhand)) return offhand.getItem().getRegistryName().toString();
-        return null;
+        if (isStingerFamilyItem(mainhand)) weapon = mainhand.getItem().getRegistryName().toString();
+        else if (isStingerFamilyItem(offhand)) weapon = offhand.getItem().getRegistryName().toString();
+        if (weapon != null && player.world != null) {
+            RECENT_ROCKET_ACTIVITY.put(player.getUniqueID(), player.world.getTotalWorldTime());
+        }
+        return weapon;
+    }
+
+    /**
+     * Whether this player launched or detonated a rocket in the last few seconds.
+     */
+    private static boolean hadRecentRocketActivity(EntityPlayer player) {
+        Long last = RECENT_ROCKET_ACTIVITY.get(player.getUniqueID());
+        return last != null && player.world.getTotalWorldTime() - last <= RECENT_ROCKET_TICKS;
+    }
+
+    /**
+     * Forgets all rocket activity timers, used when the server stops.
+     */
+    public static void clearAll() {
+        RECENT_ROCKET_ACTIVITY.clear();
     }
 
     /**
@@ -99,7 +126,9 @@ public final class RocketDamageHandler {
         Entity immediate = source.getImmediateSource();
         Entity trueSource = source.getTrueSource();
         boolean tracked = isTrackedRocketExplosion(player);
-        boolean heldFallback = source.isExplosion() && trueSource == player && isStingerFamilyHeld(player);
+        // holding a launcher isn't enough: TNT or any other explosion of the player's would be cancelled too
+        boolean heldFallback = source.isExplosion() && trueSource == player && isStingerFamilyHeld(player)
+                && hadRecentRocketActivity(player);
         boolean directProjectile = isSupportedProjectile(immediate) && getProjectileOwner(immediate) == player
                 && (isLauncherRecorded(immediate) || isStingerFamilyHeld(player));
         boolean cancel = directProjectile || tracked || heldFallback;
@@ -125,7 +154,8 @@ public final class RocketDamageHandler {
                 || !(event.getEntityLiving() instanceof EntityPlayer player)) return;
         DamageSource source = event.getSource();
         boolean tracked = isTrackedRocketExplosion(player);
-        boolean heldFallback = source.isExplosion() && source.getTrueSource() == player && isStingerFamilyHeld(player);
+        boolean heldFallback = source.isExplosion() && source.getTrueSource() == player && isStingerFamilyHeld(player)
+                && hadRecentRocketActivity(player);
         if (tracked || heldFallback) {
             LSPECIALMod.info("RocketDebug", "LivingHurt CANCELLED player={} damageType={} amount={} trackedContext={} heldLauncherFallback={}",
                     player.getName(), source.damageType, event.getAmount(), tracked, heldFallback);
