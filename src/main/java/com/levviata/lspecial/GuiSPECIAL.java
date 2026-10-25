@@ -215,6 +215,7 @@ public class GuiSPECIAL extends GuiScreen {
                 : "S.P.E.C.I.A.L";
         drawClippedString(heading, infoLeft + 8, infoTop + 29, Math.max(1, infoWidth - 16), AMBER_BRIGHT);
 
+        // todo make another row that says "Lesser perks are usually obtained at level 5 while Higher perks are acquired at level 10-15"
         String description = selectedRow >= 0 && selectedRow < rows.size()
                 ? rows.get(selectedRow).description
                 : "Select a stat to see what it does.";
