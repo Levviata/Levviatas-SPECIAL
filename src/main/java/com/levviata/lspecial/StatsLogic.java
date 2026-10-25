@@ -254,7 +254,7 @@ public class StatsLogic {
         tag.removeTag("LSPECIALWasUnbreakable");
         tag.removeTag("LSPECIALWasUnbreakableRecorded");
 
-        if (tag.hasNoTags()) {
+        if (tag.isEmpty()) {
             // an empty tag would stop this stack from merging with identical ones
             stack.setTagCompound(null);
         }
