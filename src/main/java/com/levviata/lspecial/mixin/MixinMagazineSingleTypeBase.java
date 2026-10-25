@@ -3,13 +3,12 @@ package com.levviata.lspecial.mixin;
 import com.hbm.items.ModItems;
 import com.hbm.items.tool.ItemAmmoBag;
 import com.hbm.items.weapon.sedna.BulletConfig;
-import com.hbm.items.weapon.sedna.factory.XFactory10ga;
-import com.hbm.items.weapon.sedna.factory.XFactory44;
 import com.hbm.items.weapon.sedna.factory.XFactory50;
-import com.hbm.items.weapon.sedna.factory.XFactory556mm;
 import com.hbm.items.weapon.sedna.mags.MagazineSingleTypeBase;
 import com.levviata.lspecial.AMATRailgun;
 import com.levviata.lspecial.LSPECIALConfig;
+import com.levviata.lspecial.LSPECIALMod;
+import com.levviata.lspecial.PlayerAcceptedBullets;
 import com.levviata.lspecial.SPECIALPlayerContext;
 import com.levviata.lspecial.SPECIALScoreboard;
 import net.minecraft.entity.player.EntityPlayer;
@@ -27,7 +26,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 
 /**
- * Applies selected-caliber persistence and configured capacities to NTM single-type magazines.
+ * Applies selected-caliber persistence and configured capacities to NTM single-type magazines.<br>
+ * <br>
+ * Why: acceptedBullets is one mutable list per magazine definition, shared by every copy of the gun, so alternate
+ * calibers added to it would be unlocked for all players. How/where: the constructor swaps the field for a
+ * PlayerAcceptedBullets view that reads the player from SPECIALPlayerContext. Risks: NTM mods that reassign the field
+ * replace the view (they only touch their own dummy magazines), and outside a gun operation the view is base-only.
+ * Avoidable: not without NTM giving getType a player argument.
  */
 @Mixin(value = MagazineSingleTypeBase.class, remap = false)
 public abstract class MixinMagazineSingleTypeBase {
@@ -40,42 +45,12 @@ public abstract class MixinMagazineSingleTypeBase {
     public int capacity;
 
     /**
-     * Registers every supported bullet variant in each alternate caliber family before NTM validates saved types.
+     * Wraps NTM's shared acceptedBullets list so alternate calibers only show up for players who may use them.
      */
-    @Inject(method = "getType(Lnet/minecraft/item/ItemStack;Lnet/minecraft/inventory/IInventory;)Lcom/hbm/items/weapon/sedna/BulletConfig;", at = @At("HEAD"), remap = false)
-    private void lspecial$registerSavedAlternateCaliber(ItemStack stack, IInventory inventory,
-                                                        CallbackInfoReturnable<BulletConfig> callback) {
-        if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null || acceptedBullets == null)
-            return;
-        String itemId = stack.getItem().getRegistryName().toString();
-        Class<?> factory = null;
-        String prefix = null;
-        if ("hbm:gun_pepperbox".equals(itemId)) {
-            factory = XFactory44.class;
-            prefix = "m44_";
-        } else if ("hbm:gun_amat".equals(itemId)) {
-            BulletConfig requested = AMATRailgun.getBulletConfig();
-            if (requested != null && !acceptedBullets.contains(requested)) acceptedBullets.add(requested);
-            return;
-        } else if ("hbm:gun_star_f".equals(itemId) || "hbm:gun_star_f_akimbo".equals(itemId)) {
-            factory = XFactory50.class;
-            prefix = "bmg50_";
-        } else if ("hbm:gun_uzi".equals(itemId) || "hbm:gun_uzi_akimbo".equals(itemId)) {
-            factory = XFactory556mm.class;
-            prefix = "r556_";
-        } else if ("hbm:gun_g3".equals(itemId) || "hbm:gun_g3_zebra".equals(itemId)) {
-            factory = XFactory10ga.class;
-            prefix = "g10";
-        }
-        if (factory == null) return;
-        try {
-            for (java.lang.reflect.Field field : factory.getFields()) {
-                if (field.getType() != BulletConfig.class || !field.getName().startsWith(prefix)) continue;
-                BulletConfig config = (BulletConfig) field.get(null);
-                if (config != null && !acceptedBullets.contains(config)) acceptedBullets.add(config);
-            }
-        } catch (IllegalAccessException ignored) {
-            // Factory configs are public; ignore any unavailable entry without breaking native ammo lookup.
+    @Inject(method = "<init>(II)V", at = @At("RETURN"), remap = false)
+    private void lspecial$installPlayerAcceptedBullets(int index, int capacity, CallbackInfo callback) {
+        if (acceptedBullets != null && !(acceptedBullets instanceof PlayerAcceptedBullets)) {
+            acceptedBullets = new PlayerAcceptedBullets(acceptedBullets);
         }
     }
 
@@ -195,11 +170,6 @@ public abstract class MixinMagazineSingleTypeBase {
         if (stack == null || stack.isEmpty() || stack.getItem().getRegistryName() == null) return;
 
         String earlyRegistryName = stack.getItem().getRegistryName().toString();
-        if ("hbm:gun_amat".equals(earlyRegistryName) && stack.hasTagCompound()
-                && stack.getTagCompound().getInteger(lspecial$selectedCaliberKey()) == AMATRailgun.getBulletConfig().id) {
-            callback.setReturnValue(1);
-            return;
-        }
 
         if ("hbm:gun_amat".equals(earlyRegistryName) && stack.hasTagCompound()) {
             BulletConfig capsule = AMATRailgun.getBulletConfig();
@@ -223,9 +193,7 @@ public abstract class MixinMagazineSingleTypeBase {
         }
 
         EntityPlayer player = SPECIALPlayerContext.getPlayer();
-        if (SPECIALScoreboard.inst == null || player == null
-                || SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null
-                || SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) < 15
+        if (!LSPECIALMod.hasIntelligenceLevel(player, LSPECIALMod.HIGHER_PERK)
                 || stack.getItem().getRegistryName() == null) {
             return;
         }

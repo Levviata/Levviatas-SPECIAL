@@ -1,0 +1,3 @@
+# gradlew must keep LF line endings or ./gradlew fails on Linux/macOS/CI ("\r: not found")
+gradlew text eol=lf
+*.bat text eol=crlf

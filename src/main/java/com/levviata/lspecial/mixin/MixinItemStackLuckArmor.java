@@ -109,6 +109,9 @@ public abstract class MixinItemStackLuckArmor {
                 stack.getItem().getRegistryName(), player.getName(), amount,
                 stack.getItemDamage(), stack.getMaxDamage(), luck);
 
+        // the tail bonus doesn't depend on the failsafe, any regular damage call can get it
+        lspecial$armorDamageCall = stack.isItemStackDamageable();
+
         if (!LSPECIALConfig.luck || !LSPECIALConfig.luckArmorFailsafe) {
             return;
         }
@@ -126,9 +129,11 @@ public abstract class MixinItemStackLuckArmor {
             return;
         }
         if (amount < remainingDurability) {
-            lspecial$armorDamageCall = true;
             return;
         }
+
+        // the failsafe takes over and the damage is cancelled, so there is nothing left for the tail bonus to give back
+        lspecial$armorDamageCall = false;
 
         if (!stack.hasTagCompound()) {
             stack.setTagCompound(new NBTTagCompound());

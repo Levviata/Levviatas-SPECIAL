@@ -22,17 +22,24 @@ import java.util.UUID;
 public final class RocketJumpHandler {
     private static final String ROCKET_JUMPING = "LSPECIALRocketJumping";
     private static final String REWARD_PENDING = "LSPECIALRocketJumpRewardPending";
-    private static final Map<UUID, Integer> LAST_REWARD_TICK = new HashMap<>();
+    // world time, not ticksExisted: that counter restarts from 0 with every new player entity (respawn, dimension)
+    private static final Map<UUID, Long> LAST_REWARD_TICK = new HashMap<>();
 
     private RocketJumpHandler() {
+    }
+
+    /**
+     * Forgets all reward timers, used when the server stops.
+     */
+    public static void clearAll() {
+        LAST_REWARD_TICK.clear();
     }
 
     /**
      * Checks the Intelligence 5 lesser-perk gate for the supplied player's own scoreboard.
      */
     public static boolean isPerkActive(EntityPlayer player) {
-        if (player == null || SPECIALScoreboard.inst == null
-                || SPECIALScoreboard.inst.getPlayerScore(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD) == null)
+        if (player == null || SPECIALScoreboard.inst == null)
             return false;
         int intelligence = SPECIALScoreboard.inst.getPlayerScorePoints(player, SPECIALScoreboard.inst.INTELLIGENCE_BOARD);
         boolean active = LSPECIALConfig.intelligence && LSPECIALConfig.rocketJumpLesserPerk
@@ -142,8 +149,9 @@ public final class RocketJumpHandler {
      */
     private static void refundRocketOnSuccessfulJump(EntityPlayer player) {
         NBTTagCompound data = player.getEntityData();
-        int lastTick = LAST_REWARD_TICK.getOrDefault(player.getUniqueID(), Integer.MIN_VALUE / 2);
-        if (player.ticksExisted - lastTick < 10) return;
+        long worldTime = player.world.getTotalWorldTime();
+        Long lastTick = LAST_REWARD_TICK.get(player.getUniqueID());
+        if (lastTick != null && worldTime - lastTick < 10L) return;
 
         boolean rewardPending = data.getBoolean(REWARD_PENDING);
         data.removeTag(REWARD_PENDING);
@@ -203,7 +211,7 @@ public final class RocketJumpHandler {
         }
 
         if (refunded) {
-            LAST_REWARD_TICK.put(player.getUniqueID(), player.ticksExisted);
+            LAST_REWARD_TICK.put(player.getUniqueID(), worldTime);
             lspecial$playRefundSound(player);
         }
         data.setBoolean(REWARD_PENDING, true);

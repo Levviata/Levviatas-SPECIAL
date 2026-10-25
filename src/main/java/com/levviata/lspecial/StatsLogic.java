@@ -1,7 +1,6 @@
 package com.levviata.lspecial;
 
 import com.github.bsideup.jabel.Desugar;
-import com.hbm.inventory.RecipesCommon;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.sedna.*;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
@@ -13,7 +12,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.PlayerCapabilities;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -34,8 +32,10 @@ import static com.levviata.lspecial.command.CommandSetSpeed.getPlayerSpeed;
 import static com.levviata.lspecial.potion.PotionAmplifiedRegeneration.AMPLIFIED_REGENERATION_NAME;
 
 public class StatsLogic {
-    //vanilla uuids
+    // vanilla uuid, it belongs to the held weapon's own damage modifier so this mod must never write to it
     public static final UUID ATTACK_DAMAGE_UUID = UUID.fromString("CB3F55D3-645C-4F38-A497-9C13A33DB5CF");
+    // this mod's own strength modifier
+    private static final UUID STRENGTH_UUID = UUID.fromString("a3c9e7b1-2d54-4f86-8b1a-6e0d9c3f5a09");
     //private static final UUID ATTACK_SPEED_UUID = UUID.fromString("FA233E1C-4180-4865-B01B-BCCE9785ACA3");
     // randomized uuids, same UUIDs as my mod Attribute Modifier
     private static final UUID MAX_HEALTH_UUID = UUID.fromString("5b94c2f0-6a6e-4b7d-9f6f-8d2a4d7c1e01");
@@ -49,44 +49,24 @@ public class StatsLogic {
     private static final String nameIn = "Lev Attribute Modifier";
 
     private static final Map<UUID, PlayerState> playerStates = new HashMap<>();
-    private static final List<Item> g = new ArrayList<>();
     private static final List<String> r = new ArrayList<>();
-    private static final List<UUID> uuids = new ArrayList<>();
+    // native (unmodified) values of every receiver and bullet config a player has modified. NTM shares these objects
+    // between everyone using the same gun, so the first player to touch one records the native values and the last
+    // one to let go restores them. Server thread only.
+    private static final Map<Receiver, NativeReceiver> nativeReceivers = new IdentityHashMap<>();
+    private static final Map<BulletConfig, NativeBullet> nativeBullets = new IdentityHashMap<>();
 
     // server variable
     private boolean hasLoggedUnsupportedFeature = false;
 
     public static PlayerState getPlayerstate(EntityPlayer player) {
-        PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), id -> new PlayerState());
-        for (UUID u : playerStates.keySet()) {
-            if (u == player.getUniqueID()) {
-                return playerStates.get(u);
-            }
-        }
-        return state;
+        return playerStates.computeIfAbsent(player.getUniqueID(), PlayerState::new);
     }
 
     public static void init() {
-        g.clear();
+        // the buckshot gauge list isn't parsed here, MixinReceiver reads it itself (and ignores malformed entries)
         r.clear();
 
-        for (String raw : LSPECIALConfig.buckshotGaugeList.split(",")) {
-            String token = raw.trim();
-
-            if (token.isEmpty()) {
-                continue;
-            }
-
-            if (token.matches("\\d+")) {
-                g.add(new RecipesCommon.ComparableStack(ModItems.ammo_standard, 1, Integer.parseInt(token)).getStack().getItem());
-            } else {
-                String[] parts = token.split(":");
-
-                if (parts.length >= 3 && parts[0].equals("hbm") && parts[1].equals("ammo_secret")) {
-                    g.add(new RecipesCommon.ComparableStack(ModItems.ammo_secret, 1, Integer.parseInt(parts[2])).getStack().getItem());
-                }
-            }
-        }
         for (String raw : LSPECIALConfig.revolverList.split(",")) {
             if (!raw.trim().isEmpty()) {
                 r.add(raw.trim());
@@ -105,22 +85,6 @@ public class StatsLogic {
         return LSPECIALExpression.eval(formula, vars, value);
     }
 
-    public static List<UUID> getUUIDs() {
-        if (uuids.isEmpty()) {
-            uuids.add(ATTACK_DAMAGE_UUID);
-            //uuids.add(ATTACK_SPEED_UUID);
-            uuids.add(MAX_HEALTH_UUID);
-            //uuids.add(FOLLOW_RANGE_UUID);
-            //uuids.add(KNOCKBACK_RESISTANCE_UUID);
-            uuids.add(MOVEMENT_SPEED_UUID);
-            //uuids.add(FLYING_SPEED_UUID);
-            uuids.add(ARMOR_UUID);
-            uuids.add(ARMOR_TOUGHNESS_UUID);
-            // uuids.add(LUCK_UUID);
-        }
-        return uuids;
-    }
-
     @SubscribeEvent
     public void onTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
@@ -136,32 +100,10 @@ public class StatsLogic {
             return;
         }
 
-        PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), id -> new PlayerState());
+        PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), PlayerState::new);
 
         ItemStack heldStack = player.getHeldItemMainhand();
-        if (!heldStack.isEmpty() && heldStack.isItemStackDamageable()) {
-            boolean perkActive = LSPECIALConfig.infiniteItemDurability && LSPECIALConfig.intelligence
-                    && inst.getPlayerScorePoints(player, inst.INTELLIGENCE_BOARD) >= 5
-                    && !(heldStack.getItem() instanceof ItemArmor);
-            if (perkActive) {
-                if (!heldStack.hasTagCompound()) {
-                    heldStack.setTagCompound(new NBTTagCompound());
-                }
-                NBTTagCompound tag = heldStack.getTagCompound();
-                if (!tag.getBoolean("LSPECIALWasUnbreakableRecorded")) {
-                    tag.setBoolean("LSPECIALWasUnbreakable", tag.getBoolean("Unbreakable"));
-                    tag.setBoolean("LSPECIALWasUnbreakableRecorded", true);
-                }
-                tag.setBoolean("LSPECIALAppliedUnbreakable", true);
-                tag.setBoolean("Unbreakable", true);
-            } else if (heldStack.hasTagCompound() && heldStack.getTagCompound().getBoolean("LSPECIALAppliedUnbreakable")) {
-                NBTTagCompound tag = heldStack.getTagCompound();
-                tag.setBoolean("Unbreakable", tag.getBoolean("LSPECIALWasUnbreakable"));
-                tag.removeTag("LSPECIALAppliedUnbreakable");
-                tag.removeTag("LSPECIALWasUnbreakable");
-                tag.removeTag("LSPECIALWasUnbreakableRecorded");
-            }
-        }
+        updateInfiniteDurability(player, heldStack, state);
 
         if (heldStack.getItem() instanceof ItemGunBaseNT) {
             applyGunWearPolicy(player, heldStack, state);
@@ -194,10 +136,12 @@ public class StatsLogic {
         if (!heldStack.isEmpty() && heldStack.getItem() != Items.AIR) {
             if (LSPECIALConfig.modifyGuns && heldStack.getItem() instanceof ItemGunBaseNT gun) {
                 int perceptionScore = inst.getPlayerScorePoints(player, inst.PERCEPTION_BOARD);
+                int luckScore = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
 
                 if (!state.modified
                         || state.modifiedStackRef != heldStack
-                        || state.previousGunPerception != perceptionScore) {
+                        || state.previousGunPerception != perceptionScore
+                        || state.previousGunLuck != luckScore) {
 
                     int configs = gun.getConfigCount();
 
@@ -214,6 +158,7 @@ public class StatsLogic {
                     state.modifiedStackRef = heldStack;
                     state.modified = true;
                     state.previousGunPerception = perceptionScore;
+                    state.previousGunLuck = luckScore;
 
                     if (player instanceof EntityPlayerMP) {
                         syncGunState((EntityPlayerMP) player, state);
@@ -238,6 +183,81 @@ public class StatsLogic {
         }
 
         givePotions(player);
+    }
+
+    /**
+     * Marks the held tool as unbreakable while the perk is active and puts it back as soon as it stops being held.<br>
+     * A flagged stack counts as not damageable for vanilla, so this can't be gated on isItemStackDamageable().
+     */
+    private void updateInfiniteDurability(EntityPlayer player, ItemStack heldStack, PlayerState state) {
+        // anything flagged earlier that isn't the held stack anymore goes back to normal
+        if (state.unbreakableStack != null && state.unbreakableStack != heldStack) {
+            revertUnbreakable(state.unbreakableStack);
+            state.unbreakableStack = null;
+        }
+
+        boolean perkActive = !heldStack.isEmpty() && heldStack.getMaxDamage() > 0
+                && LSPECIALConfig.infiniteItemDurability
+                && LSPECIALMod.hasIntelligenceLevel(player, LSPECIALMod.LESSER_PERK)
+                && !(heldStack.getItem() instanceof ItemArmor);
+
+        if (perkActive) {
+            if (!heldStack.hasTagCompound()) {
+                heldStack.setTagCompound(new NBTTagCompound());
+            }
+            NBTTagCompound tag = heldStack.getTagCompound();
+            if (!tag.getBoolean("LSPECIALWasUnbreakableRecorded")) {
+                tag.setBoolean("LSPECIALWasUnbreakable", tag.getBoolean("Unbreakable"));
+                tag.setBoolean("LSPECIALWasUnbreakableRecorded", true);
+            }
+            tag.setBoolean("LSPECIALAppliedUnbreakable", true);
+            tag.setBoolean("Unbreakable", true);
+            state.unbreakableStack = heldStack;
+        } else {
+            revertUnbreakable(heldStack);
+        }
+
+        // a flagged stack can still end up somewhere else (shift-click copies it, trades, etc), sweep once a second
+        if (player.ticksExisted % 20 == 0) {
+            for (ItemStack stack : player.inventory.mainInventory) {
+                if (stack != heldStack) {
+                    revertUnbreakable(stack);
+                }
+            }
+            for (ItemStack stack : player.inventory.offHandInventory) {
+                revertUnbreakable(stack);
+            }
+        }
+    }
+
+    /**
+     * Undoes the perk's Unbreakable flag on a stack, restoring whatever it had before.
+     */
+    private static void revertUnbreakable(ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !stack.hasTagCompound()) {
+            return;
+        }
+
+        NBTTagCompound tag = stack.getTagCompound();
+
+        if (!tag.getBoolean("LSPECIALAppliedUnbreakable")) {
+            return;
+        }
+
+        if (tag.getBoolean("LSPECIALWasUnbreakable")) {
+            tag.setBoolean("Unbreakable", true);
+        } else {
+            tag.removeTag("Unbreakable");
+        }
+
+        tag.removeTag("LSPECIALAppliedUnbreakable");
+        tag.removeTag("LSPECIALWasUnbreakable");
+        tag.removeTag("LSPECIALWasUnbreakableRecorded");
+
+        if (tag.hasNoTags()) {
+            // an empty tag would stop this stack from merging with identical ones
+            stack.setTagCompound(null);
+        }
     }
 
     private void modifyGuns(ItemStack heldStack, EntityPlayer player, GunConfig cfg, PlayerState state) {
@@ -268,12 +288,12 @@ public class StatsLogic {
 
         setOriginalValues(bConfig, state.modifiedReceiver, heldStack, state);
 
-        if (!state.installedMagazine) {
-            if (LSPECIALConfig.refundMagazines && LSPECIALConfig.luck && inst.getPlayerScorePoints(player, inst.LUCK_BOARD) > 0) { // if i have luck, install a magazine that can refund bullets
-                state.modifiedReceiver.mag(new RefundMagazine(state.originalMagazine));
-
-                state.installedMagazine = true;
-            }
+        // if i have luck, install a magazine that can refund bullets. tracked per receiver so akimbo guns get both wrapped
+        NativeReceiver nativeReceiver = nativeReceivers.get(state.modifiedReceiver);
+        if (nativeReceiver != null && !nativeReceiver.refundInstalled
+                && LSPECIALConfig.refundMagazines && LSPECIALConfig.luck && inst.getPlayerScorePoints(player, inst.LUCK_BOARD) > 0) {
+            state.modifiedReceiver.mag(new RefundMagazine(state.originalMagazine));
+            nativeReceiver.refundInstalled = true;
         }
 
         processReceiver(state.modifiedReceiver, state.originalDamage, heldStack, player, state);
@@ -349,52 +369,122 @@ public class StatsLogic {
             return;
         }
 
-        // each akimbo/config receiver gets its own snapshot. Restoring only the final receiver
-        // was the source of the old left/right gun corruption and cumulative damage changes.
+        // each akimbo/config receiver is released on its own. The native values are only written back once
+        // nobody else is holding the same receiver, wear is left alone on purpose (restoring it undid real wear)
         for (int i = state.gunStates.size() - 1; i >= 0; i--) {
             GunState gunState = state.gunStates.get(i);
             if (gunState.bulletConfig != null) {
-                gunState.bulletConfig.armorPiercingPercent = gunState.armorPiercing;
-                gunState.bulletConfig.armorThresholdNegation = gunState.armorThresholdNegation;
-                gunState.bulletConfig.doesPenetrate = gunState.doesPenetrate;
-                gunState.bulletConfig.headshotMult = gunState.headshotMultiplier;
+                releaseBullet(gunState.bulletConfig, state.owner);
             }
-            gunState.receiver.dmg(gunState.damage);
-            gunState.receiver.auto(gunState.refireOnHold);
-            gunState.receiver.autoAfterDry(gunState.refireAfterDry);
-            gunState.receiver.rounds(gunState.rounds);
-            gunState.receiver.mag(gunState.magazine);
-            if (!heldStack.isEmpty() && heldStack.getItem() instanceof ItemGunBaseNT) {
-                ItemGunBaseNT.setWear(heldStack, gunState.index, gunState.wear);
-            }
+            releaseReceiver(gunState.receiver, state.owner);
         }
         resetGunTracking(state);
+    }
+
+    /**
+     * Drops a player's claim on a receiver and restores its native values if that was the last claim.
+     */
+    private static void releaseReceiver(Receiver receiver, UUID owner) {
+        NativeReceiver nativeValues = nativeReceivers.get(receiver);
+
+        if (nativeValues == null) {
+            return;
+        }
+
+        nativeValues.holders.remove(owner);
+
+        if (nativeValues.holders.isEmpty()) {
+            restoreReceiver(receiver, nativeValues);
+            nativeReceivers.remove(receiver);
+        }
+    }
+
+    private static void releaseBullet(BulletConfig bullet, UUID owner) {
+        NativeBullet nativeValues = nativeBullets.get(bullet);
+
+        if (nativeValues == null) {
+            return;
+        }
+
+        nativeValues.holders.remove(owner);
+
+        if (nativeValues.holders.isEmpty()) {
+            restoreBullet(bullet, nativeValues);
+            nativeBullets.remove(bullet);
+        }
+    }
+
+    private static void restoreReceiver(Receiver receiver, NativeReceiver nativeValues) {
+        receiver.dmg(nativeValues.damage);
+        receiver.auto(nativeValues.refireOnHold);
+        receiver.autoAfterDry(nativeValues.refireAfterDry);
+        receiver.rounds(nativeValues.rounds);
+        receiver.mag(nativeValues.magazine);
+    }
+
+    private static void restoreBullet(BulletConfig bullet, NativeBullet nativeValues) {
+        bullet.armorPiercingPercent = nativeValues.armorPiercing;
+        bullet.armorThresholdNegation = nativeValues.armorThresholdNegation;
+        bullet.doesPenetrate = nativeValues.doesPenetrate;
+        bullet.headshotMult = nativeValues.headshotMultiplier;
+    }
+
+    /**
+     * Puts every modified receiver and bullet config back to its native values and forgets all player state.
+     * Called when the server stops so nothing leaks into the next world in the same JVM.
+     */
+    public static void restoreAllNativeGuns() {
+        for (Map.Entry<Receiver, NativeReceiver> entry : nativeReceivers.entrySet()) {
+            restoreReceiver(entry.getKey(), entry.getValue());
+        }
+        for (Map.Entry<BulletConfig, NativeBullet> entry : nativeBullets.entrySet()) {
+            restoreBullet(entry.getKey(), entry.getValue());
+        }
+        nativeReceivers.clear();
+        nativeBullets.clear();
+
+        for (PlayerState state : playerStates.values()) {
+            revertUnbreakable(state.unbreakableStack);
+        }
+        playerStates.clear();
     }
 
     private void resetGunTracking(PlayerState state) {
         state.gunStates.clear();
         state.modifiedGunDamages.clear();
         state.gunIndex = 0;
-        state.installedMagazine = false;
         state.modifiedStackRef = ItemStack.EMPTY;
         state.modifiedReceiver = null;
         state.modified = false;
         state.previousGunPerception = -1;
+        state.previousGunLuck = -1;
         state.currentGunIndex = -1;
     }
 
     private void setOriginalValues(BulletConfig bCIn, Receiver rIn, ItemStack heldStack, PlayerState state) {
-        state.originalWear = ItemGunBaseNT.getWear(heldStack, state.gunIndex);
-        state.originalMagazine = rIn.getMagazine(heldStack);
-        state.originalAmmoPiercing = bCIn.armorPiercingPercent;
-        state.originalArmorThresholdNegation = bCIn.armorThresholdNegation;
-        state.originalDamage = rIn.getBaseDamage(heldStack);
-        state.originalProjectileAmount = rIn.getRoundsPerCycle(heldStack);
-        state.gunStates.add(new GunState(state.gunIndex, rIn, bCIn, state.originalDamage,
-                ((ReceiverStateAccess) rIn).lspecial$getNativeRefireOnHold(),
-                ((ReceiverStateAccess) rIn).lspecial$getNativeRefireAfterDry(),
-                bCIn.doesPenetrate, bCIn.headshotMult, state.originalProjectileAmount, state.originalMagazine,
-                state.originalWear, state.originalAmmoPiercing, state.originalArmorThresholdNegation));
+        // only the first holder records the values, anyone after that reads the recorded ones so they never
+        // mistake another player's perk values for the gun's native ones
+        NativeReceiver nativeReceiver = nativeReceivers.get(rIn);
+        if (nativeReceiver == null) {
+            nativeReceiver = new NativeReceiver(rIn.getBaseDamage(heldStack),
+                    ((ReceiverStateAccess) rIn).lspecial$getNativeRefireOnHold(),
+                    ((ReceiverStateAccess) rIn).lspecial$getNativeRefireAfterDry(),
+                    rIn.getRoundsPerCycle(heldStack), rIn.getMagazine(heldStack));
+            nativeReceivers.put(rIn, nativeReceiver);
+        }
+        nativeReceiver.holders.add(state.owner);
+
+        NativeBullet nativeBullet = nativeBullets.get(bCIn);
+        if (nativeBullet == null) {
+            nativeBullet = new NativeBullet(bCIn.armorPiercingPercent, bCIn.armorThresholdNegation, bCIn.doesPenetrate, bCIn.headshotMult);
+            nativeBullets.put(bCIn, nativeBullet);
+        }
+        nativeBullet.holders.add(state.owner);
+
+        state.originalMagazine = nativeReceiver.magazine;
+        state.originalArmorThresholdNegation = nativeBullet.armorThresholdNegation;
+        state.originalDamage = nativeReceiver.damage;
+        state.gunStates.add(new GunState(state.gunIndex, rIn, bCIn, nativeReceiver.damage));
     }
 
     private void givePotions(EntityPlayer player) {
@@ -490,6 +580,11 @@ public class StatsLogic {
             return;
         }
 
+        // the config goes first, the stats and gun sync below are read through it
+        if (player instanceof EntityPlayerMP) {
+            LSPECIALMod.syncConfig((EntityPlayerMP) player);
+        }
+
         synchronizePlayer(player);
     }
 
@@ -515,11 +610,29 @@ public class StatsLogic {
         synchronizePlayer(player);
     }
 
+    @SubscribeEvent
+    public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        EntityPlayer player = event.player;
+
+        if (player == null || player.world == null || player.world.isRemote) {
+            return;
+        }
+
+        // give back whatever this player was holding on to, otherwise the modified gun stays modified for everyone
+        PlayerState state = playerStates.remove(player.getUniqueID());
+
+        if (state != null) {
+            if (state.modified) {
+                cleanGun(state.modifiedStackRef, state);
+            }
+            revertUnbreakable(state.unbreakableStack);
+        }
+
+        revertUnbreakable(player.getHeldItemMainhand());
+    }
+
     private void synchronizePlayer(EntityPlayer player) {
-        PlayerState state = playerStates.computeIfAbsent(
-                player.getUniqueID(),
-                id -> new PlayerState()
-        );
+        PlayerState state = playerStates.computeIfAbsent(player.getUniqueID(), PlayerState::new);
 
         ItemStack heldStack = player.getHeldItemMainhand();
 
@@ -544,6 +657,7 @@ public class StatsLogic {
             state.modifiedStackRef = heldStack;
             state.modified = true;
             state.previousGunPerception = perceptionScore;
+            state.previousGunLuck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
 
             syncGunState((EntityPlayerMP) player, state);
         } else {
@@ -564,37 +678,38 @@ public class StatsLogic {
         // strength
         IAttributeInstance strength = player.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
 
-        Collection<AttributeModifier> damageCollection = heldStack.isEmpty() ? null : heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
+        // old versions wrote their modifier under vanilla's weapon id, which replaced the weapon's own damage.
+        // drop that once (it is recognisable by its name) and hand the held weapon its modifier back
+        if (!state.legacyStrengthChecked) {
+            state.legacyStrengthChecked = true;
+            AttributeModifier legacy = strength.getModifier(ATTACK_DAMAGE_UUID);
 
-        double baseHeldDamage = 0.0;
+            if (legacy != null && nameIn.equals(legacy.getName())) {
+                strength.removeModifier(ATTACK_DAMAGE_UUID);
 
-        if (damageCollection != null && !damageCollection.isEmpty()) {
-            for (AttributeModifier modifier : damageCollection) {
-                if (ATTACK_DAMAGE_UUID.equals(modifier.getID())) {
-                    baseHeldDamage += modifier.getAmount();
+                if (!heldStack.isEmpty()) {
+                    Collection<AttributeModifier> weaponModifiers = heldStack.getAttributeModifiers(EntityEquipmentSlot.MAINHAND).get(SharedMonsterAttributes.ATTACK_DAMAGE.getName());
+
+                    for (AttributeModifier weaponModifier : weaponModifiers) {
+                        if (strength.getModifier(weaponModifier.getID()) == null) {
+                            strength.applyModifier(weaponModifier);
+                        }
+                    }
                 }
             }
         }
 
+        // only the bonus is added, the held weapon keeps its own modifier so damage is vanilla + strength
         double strengthBonus = LSPECIALConfig.strength ? expression(LSPECIALConfig.attackDamageFormula, "strength", inst.getPlayerScorePoints(player, inst.STRENGTH_BOARD)) : 0.0;
-
-        int handDamage = 1;
-        double newDamage = handDamage + baseHeldDamage + strengthBonus;
-        AttributeModifier strengthModifier = strength.getModifier(ATTACK_DAMAGE_UUID);
-        boolean hasStrengthModifier = strengthModifier != null;
+        AttributeModifier strengthModifier = strength.getModifier(STRENGTH_UUID);
 
         if (!LSPECIALConfig.strength) {
-            if (hasStrengthModifier) {
-                strength.removeModifier(ATTACK_DAMAGE_UUID);
+            if (strengthModifier != null) {
+                strength.removeModifier(STRENGTH_UUID);
             }
-            state.previouStrengthDamage = Double.NaN;
-        } else if (!hasStrengthModifier
-                || Double.isNaN(state.previouStrengthDamage)
-                || Math.abs(newDamage - state.previouStrengthDamage) > 0.000001D) {
-            strength.removeModifier(ATTACK_DAMAGE_UUID);
-            strength.applyModifier(new AttributeModifier(ATTACK_DAMAGE_UUID, nameIn, newDamage, 0));
-
-            state.previouStrengthDamage = newDamage;
+        } else if (strengthModifier == null || Math.abs(strengthModifier.getAmount() - strengthBonus) > 0.000001D) {
+            strength.removeModifier(STRENGTH_UUID);
+            strength.applyModifier(new AttributeModifier(STRENGTH_UUID, nameIn, strengthBonus, 0));
         }
 
         // endurance
@@ -658,21 +773,19 @@ public class StatsLogic {
 
         int configuredPlayerSpeed = getPlayerSpeed(player);
 
+        // what the modifier should be built from, compared to what it was last built from (not to the raw score,
+        // otherwise a /setspeed override would rebuild the modifier every single tick)
+        int desiredAgility = configuredPlayerSpeed > -1 ? configuredPlayerSpeed : agilityScore;
+
         boolean hasMovementSpeedModifier = movementSpeed.getModifier(MOVEMENT_SPEED_UUID) != null;
 
-        if (agilityScore != state.previousAgility
+        if (desiredAgility != state.previousAgility
                 || state.previousAgilityEnabled != LSPECIALConfig.agility
-                || (configuredPlayerSpeed != -1 && agilityScore != configuredPlayerSpeed)
                 || (LSPECIALConfig.agility && !hasMovementSpeedModifier)
                 || (!LSPECIALConfig.agility && hasMovementSpeedModifier)) {
 
             state.previousAgilityEnabled = LSPECIALConfig.agility;
-
-            if (configuredPlayerSpeed > -1) {
-                state.previousAgility = configuredPlayerSpeed;
-            } else {
-                state.previousAgility = agilityScore;
-            }
+            state.previousAgility = desiredAgility;
 
             movementSpeed.removeModifier(MOVEMENT_SPEED_UUID);
 
@@ -684,11 +797,18 @@ public class StatsLogic {
         }
         MinecraftServer server = player.getServer();
 
-        // fly speed
+        // fly speed, only touched while this feature is on (and once more to hand it back when it gets turned off)
+        // so other mods that change the fly speed are left alone
+        boolean manageFlySpeed = LSPECIALConfig.agility && LSPECIALConfig.agilityFlyingSpeed;
+
+        if (!manageFlySpeed && !state.flySpeedManaged) {
+            return;
+        }
+
         float baseFlySpeed = 0.05F;
         float flySpeed = baseFlySpeed;
 
-        if (LSPECIALConfig.agility && LSPECIALConfig.agilityFlyingSpeed) {
+        if (manageFlySpeed) {
             int configuredFlySpeed = getPlayerFlySpeed(player);
 
             double agilityValue = configuredFlySpeed >= 0 ? configuredFlySpeed : agilityScore;
@@ -700,6 +820,8 @@ public class StatsLogic {
 
             flySpeed = (float) Math.max(minimum, Math.min(maximum, baseFlySpeed * (1.0 + multiplierBonus)));
         }
+
+        state.flySpeedManaged = manageFlySpeed;
 
         if (Float.isNaN(state.previousFlySpeed)
                 || Math.abs(player.capabilities.getFlySpeed() - flySpeed) > 0.0001F) {
@@ -720,25 +842,25 @@ public class StatsLogic {
     }
 
     public static class PlayerState {
+        final UUID owner;
         final List<GunState> gunStates = new ArrayList<>();
         int previousEndurance = -1;
         float previousMaxHealth = Float.NaN;
         int previousCharisma = -1;
         int previousAgility = -1;
-        double previouStrengthDamage = Double.NaN;
+        boolean legacyStrengthChecked;
+        boolean flySpeedManaged;
+        ItemStack unbreakableStack;
+        int previousGunLuck = -1;
         boolean previousEnduranceEnabled = true;
         boolean previousCharismaEnabled = true;
         boolean previousAgilityEnabled = true;
         ItemStack modifiedStackRef = ItemStack.EMPTY;
         Receiver modifiedReceiver;
         boolean modified;
-        boolean installedMagazine;
         float originalDamage;
-        int originalProjectileAmount;
-        float originalAmmoPiercing;
         float originalArmorThresholdNegation;
         float previousFlySpeed = Float.NaN;
-        float originalWear;
         IMagazine originalMagazine;
         ItemStack wearTrackedStack;
         float previousObservedWear = Float.NaN;
@@ -750,6 +872,10 @@ public class StatsLogic {
         final Map<Integer, Float> modifiedGunDamages = new HashMap<>();
 
         ItemStack loggedSednaGun = ItemStack.EMPTY;
+
+        PlayerState(UUID owner) {
+            this.owner = owner;
+        }
 
         GunStateView getGunStateView(int index) {
             GunState gunState = gunStates.get(index);
@@ -769,18 +895,45 @@ public class StatsLogic {
     }
 
     @Desugar
-    private record GunState(int index,
-                            Receiver receiver,
-                            BulletConfig bulletConfig,
-                            float damage,
-                            boolean refireOnHold,
-                            boolean refireAfterDry,
-                            boolean doesPenetrate,
-                            float headshotMultiplier,
-                            int rounds,
-                            IMagazine magazine,
-                            float wear,
-                            float armorPiercing,
-                            float armorThresholdNegation) {
+    private record GunState(int index, Receiver receiver, BulletConfig bulletConfig, float damage) {
+    }
+
+    /**
+     * Native values of a receiver, plus the players currently holding it.
+     */
+    private static final class NativeReceiver {
+        final float damage;
+        final boolean refireOnHold;
+        final boolean refireAfterDry;
+        final int rounds;
+        final IMagazine magazine;
+        final Set<UUID> holders = new HashSet<>();
+        boolean refundInstalled;
+
+        NativeReceiver(float damage, boolean refireOnHold, boolean refireAfterDry, int rounds, IMagazine magazine) {
+            this.damage = damage;
+            this.refireOnHold = refireOnHold;
+            this.refireAfterDry = refireAfterDry;
+            this.rounds = rounds;
+            this.magazine = magazine;
+        }
+    }
+
+    /**
+     * Native values of a bullet config, plus the players currently using it.
+     */
+    private static final class NativeBullet {
+        final float armorPiercing;
+        final float armorThresholdNegation;
+        final boolean doesPenetrate;
+        final float headshotMultiplier;
+        final Set<UUID> holders = new HashSet<>();
+
+        NativeBullet(float armorPiercing, float armorThresholdNegation, boolean doesPenetrate, float headshotMultiplier) {
+            this.armorPiercing = armorPiercing;
+            this.armorThresholdNegation = armorThresholdNegation;
+            this.doesPenetrate = doesPenetrate;
+            this.headshotMultiplier = headshotMultiplier;
+        }
     }
 }

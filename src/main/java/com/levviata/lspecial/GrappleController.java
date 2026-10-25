@@ -13,6 +13,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.HashMap;
@@ -26,6 +27,8 @@ public final class GrappleController {
     private static final Map<UUID, State> ACTIVE = new HashMap<>();
     private static final Map<UUID, Long> COOLDOWN_UNTIL = new HashMap<>();
     private static final Map<UUID, PendingKill> PENDING_KILLS = new HashMap<>();
+    // the pull releases on a jump packet from the client, this is the server's own limit in case that never comes (ticks)
+    private static final long MAX_GRAPPLE_TICKS = 200L;
 
     public GrappleController() {
     }
@@ -50,6 +53,7 @@ public final class GrappleController {
         }
 
         State state = new State(target, pullTarget, speed);
+        state.startedAt = player.world.getTotalWorldTime();
         ACTIVE.put(player.getUniqueID(), state);
         COOLDOWN_UNTIL.put(player.getUniqueID(), player.world.getTotalWorldTime() + 60L);
         if (LSPECIALConfig.doubleBarrelGrappleVisuals && target instanceof EntityLivingBase) {
@@ -71,6 +75,48 @@ public final class GrappleController {
             }
             if (state.chain != null) state.chain.setDead();
             LSPECIALMod.NETWORK.sendTo(new GrappleCameraPacket(-1, false), player);
+        }
+    }
+
+    /**
+     * Forgets everything about a player's grapple without talking to their client (they may be gone already).
+     */
+    public static void clear(UUID playerId) {
+        State state = ACTIVE.remove(playerId);
+        if (state != null && state.chain != null) {
+            state.chain.setDead();
+        }
+        COOLDOWN_UNTIL.remove(playerId);
+        PENDING_KILLS.remove(playerId);
+    }
+
+    /**
+     * Forgets every grapple, used when the server stops so nothing carries over to the next world.
+     */
+    public static void clearAll() {
+        for (State state : ACTIVE.values()) {
+            if (state.chain != null) {
+                state.chain.setDead();
+            }
+        }
+        ACTIVE.clear();
+        COOLDOWN_UNTIL.clear();
+        PENDING_KILLS.clear();
+    }
+
+    @SubscribeEvent
+    public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.player != null && !event.player.world.isRemote) {
+            clear(event.player.getUniqueID());
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.player instanceof EntityPlayerMP && !event.player.world.isRemote) {
+            // the target stays in the old dimension, so the pull can't continue
+            stop((EntityPlayerMP) event.player);
+            PENDING_KILLS.remove(event.player.getUniqueID());
         }
     }
 
@@ -116,7 +162,7 @@ public final class GrappleController {
         long worldTime = player.world.getTotalWorldTime();
         PendingKill pending = PENDING_KILLS.get(playerId);
         if (pending != null) {
-            if (pending.target == null || pending.target.isDead && pending.target.world != player.world
+            if (pending.target == null || pending.target.isDead || pending.target.world != player.world
                     || worldTime - pending.createdAt > 100L) {
                 PENDING_KILLS.remove(playerId);
                 pending = null;
@@ -131,13 +177,13 @@ public final class GrappleController {
 
         State state = ACTIVE.get(playerId);
         if (state == null) return;
+        if (worldTime - state.startedAt > MAX_GRAPPLE_TICKS) {
+            stop(player);
+            return;
+        }
         Entity target = state.targetEntity;
         if (target == null || target.isDead || !target.isEntityAlive()) {
-            if (!state.pullTarget && !state.killRewardGranted && target != null
-                    && (target.isDead || !target.isEntityAlive())) {
-                state.killRewardGranted = true;
-                grantKillRewards(player, target);
-            }
+            // the kill reward is only given from the death event, where we can tell who actually killed it
             if (state.targetDeathGraceUntil == 0L) {
                 state.targetDeathGraceUntil = worldTime + 20L;
             }
@@ -185,12 +231,16 @@ public final class GrappleController {
     public void onGrappledEntityDeath(LivingDeathEvent event) {
         if (event.getEntityLiving().world.isRemote) return;
         Entity deadTarget = event.getEntityLiving();
+        if (deadTarget instanceof EntityPlayerMP) {
+            // a dead grappler can't keep one going
+            clear(deadTarget.getUniqueID());
+        }
         for (Map.Entry<UUID, State> entry : ACTIVE.entrySet()) {
             State state = entry.getValue();
             if (state.pullTarget || state.killRewardGranted || state.targetEntity != deadTarget) continue;
             EntityPlayerMP player = deadTarget.world.getMinecraftServer() == null ? null
                     : deadTarget.world.getMinecraftServer().getPlayerList().getPlayerByUUID(entry.getKey());
-            if (player == null) continue;
+            if (player == null || event.getSource() == null || event.getSource().getTrueSource() != player) continue;
 
             state.killRewardGranted = true;
             state.targetDeathGraceUntil = deadTarget.world.getTotalWorldTime() + 20L;
@@ -203,7 +253,7 @@ public final class GrappleController {
             if (pending.pullTarget || pending.target != deadTarget) continue;
             EntityPlayerMP player = deadTarget.world.getMinecraftServer() == null ? null
                     : deadTarget.world.getMinecraftServer().getPlayerList().getPlayerByUUID(entry.getKey());
-            if (player == null) continue;
+            if (player == null || event.getSource() == null || event.getSource().getTrueSource() != player) continue;
             grantKillRewards(player, deadTarget);
             PENDING_KILLS.remove(entry.getKey());
             return;
@@ -241,6 +291,7 @@ public final class GrappleController {
         final boolean pullTarget;
         final double speed;
         EntityGrappleChain chain;
+        long startedAt;
         long targetDeathGraceUntil;
         boolean killRewardGranted;
 

@@ -77,7 +77,8 @@ public final class LSPECIALNTMLootHandler {
         NBTTagCompound data = tile.getTileData();
         LSPECIALMod.info("LSPECIAL Loot", "Open callback: player={} tile={} pos={} tagged={} pool={} min={} max={}", player.getName(), tile.getClass().getName(), tile.getPos(), data.getBoolean(CONTAINER_TAG), data.getString(POOL_TAG), data.getInteger(MIN_ITEMS_TAG), data.getInteger(MAX_ITEMS_TAG));
         if (!data.getBoolean(CONTAINER_TAG)) {
-            LSPECIALMod.logWarn("[LSPECIAL Loot] Ignoring untagged container at {} ({})", tile.getPos(), tile.getClass().getName());
+            // every vanilla chest and crate lands here, that is normal play and not a warning
+            LSPECIALMod.info("LSPECIAL Loot", "Ignoring untagged container at {} ({})", tile.getPos(), tile.getClass().getName());
             return;
         }
 

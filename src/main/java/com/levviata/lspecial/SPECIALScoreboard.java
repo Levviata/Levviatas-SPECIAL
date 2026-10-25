@@ -39,7 +39,8 @@ public class SPECIALScoreboard {
     private int clientIntelligence;
     private int clientAgility;
     private int clientLuck;
-    private int clientLimit;
+    private int clientLimit = 10;
+    private String clientPlayerName;
 
     public int getPlayerScorePoints(EntityPlayer player, String boardName) {
         if (player == null) {
@@ -57,6 +58,11 @@ public class SPECIALScoreboard {
             LSPECIALMod.logWarn("getPlayerScorePoints(): boardName is null. Player: "
                     + player.getName());
             return 0;
+        }
+
+        // the client never receives these hidden dummy objectives, use the values synced by the server instead
+        if (player.getEntityWorld().isRemote) {
+            return getClientScorePoints(player, boardName);
         }
 
         // 1. get player's current scoreboard
@@ -158,6 +164,44 @@ public class SPECIALScoreboard {
 
         // 7. get or create the score for the player
         return playerScoreboard.getOrCreateScore(player.getName(), objective);
+    }
+
+    /**
+     * Returns the synced score for the local player on a client world. Other players are unknown to the client, so they read as 0.
+     */
+    private int getClientScorePoints(EntityPlayer player, String boardName) {
+        if (clientPlayerName != null && !clientPlayerName.equals(player.getName())) {
+            return 0;
+        }
+
+        switch (boardName) {
+            case STRENGTH_BOARD:
+                return clientStrength;
+            case PERCEPTION_BOARD:
+                return clientPerception;
+            case ENDURANCE_BOARD:
+                return clientEndurance;
+            case ENDURANCE_BONUS_BOARD:
+                return clientEnduranceBonus;
+            case CHARISMA_BOARD:
+                return clientCharisma;
+            case CHARISMA_BONUS_BOARD:
+                return clientCharismaBonus;
+            case INTELLIGENCE_BOARD:
+                return clientIntelligence;
+            case AGILITY_BOARD:
+                return clientAgility;
+            case LUCK_BOARD:
+                return clientLuck;
+            case LIMIT_BOARD:
+                return clientLimit;
+            default:
+                return 0;
+        }
+    }
+
+    public void setClientPlayerName(String name) {
+        clientPlayerName = name;
     }
 
     public void setClientScores(int strength, int perception, int endurance, int enduranceBonus, int charisma, int charismaBonus, int intelligence, int agility, int luck, int limit) {
