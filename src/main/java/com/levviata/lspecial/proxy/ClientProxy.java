@@ -20,6 +20,12 @@ import org.lwjgl.input.Keyboard;
 public class ClientProxy extends CommonProxy { // client only
     public static final KeyBinding toggleSpecial = new KeyBinding("toggleSpecial", Keyboard.KEY_P, "key.categories.misc");
 
+    public static KeyBinding toggleSpecial = new KeyBinding(
+            "toggleSpecial",
+            Keyboard.KEY_P,
+            "key.categories.misc"
+    );
+
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
