@@ -3,7 +3,7 @@ package com.levviata.lspecial;
 import java.util.Map;
 
 /**
- * Safe arithmetic-only expression evaluator; never executes Java code.
+ * safe arithmetic-only expression evaluator; never executes Java code.
  */
 public final class LSPECIALExpression {
 
@@ -11,7 +11,7 @@ public final class LSPECIALExpression {
     }
 
     /**
-     * Evaluates an arithmetic expression using the supplied variables.
+     * evaluates an arithmetic expression using the supplied variables.
      *
      * @param source   the expression to evaluate
      * @param vars     variable names and their values
@@ -64,7 +64,7 @@ public final class LSPECIALExpression {
         }
 
         /*
-         * Grammar:
+         * grammar:
          * expression = term (('+' | '-') term)*
          */
         private double expression() {

@@ -1,5 +1,6 @@
 package com.levviata.lspecial;
 
+import com.github.bsideup.jabel.Desugar;
 import com.levviata.lspecial.network.RequestSPECIALStatsPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
@@ -31,7 +32,6 @@ public class GuiSPECIAL extends GuiScreen {
 
     private String footerMessage;
 
-
     @Override
     public void initGui() {
         super.initGui();
@@ -60,23 +60,22 @@ public class GuiSPECIAL extends GuiScreen {
         return available.get(new java.util.Random().nextInt(available.size()));
     }
 
-    // todo make a clickable row inside stats that have perks, will be separated in Lesser and Higher perk, this will then show another screen with the current GUI style, this screen will be over the SPECIAL screen and it should be smaller, if possible also make it scrollable (mouse, keyboard, and joystick)
-    //  when this is added i want you to add the new perks to each stat's description
+    // clicking a stat opens its lesser/higher perk overlay when enabled.
     private void rebuildRows() {
         rows.clear();
 
-        addStat("Strength", inst.getClientStrength(), LSPECIALConfig.strength, "Gives on-hit attack damage, currently doesn't display on the held item.");
-        addStat("Perception", inst.getClientPerception(), LSPECIALConfig.perception, "Increases gun damage.");
-        addStat("Endurance", inst.getClientEndurance(), LSPECIALConfig.endurance, "Gives max health, one heart per level.");
+        addStat("Strength", inst.getClientStrength(), LSPECIALConfig.strength, "Adds attack damage. The held-item tooltip displays the total, including the Strength bonus.");
+        addStat("Perception", inst.getClientPerception(), LSPECIALConfig.perception, "Increase gun damage.");
+        addStat("Endurance", inst.getClientEndurance(), LSPECIALConfig.endurance, "Increases maximum health");
 
         if (LSPECIALConfig.enduranceBonus) {
-            rows.add(new StatRow("Endurance Bonus", inst.getClientEnduranceBonus(), true, "Gives you permanent regeneration 2. If you already have regeneration, increase by one it's amplifier (ex: regen 1 to 2)"));
+            rows.add(new StatRow("Endurance Bonus", inst.getClientEnduranceBonus(), true, "Endurance Level 5. Adds amplified regeneration, which amplifies current regeneration by +1 or gives Regeneration I."));
         }
 
-        addStat("Charisma", inst.getClientCharisma(), LSPECIALConfig.charisma, "Increases armor and armor toughness.");
+        addStat("Charisma", inst.getClientCharisma(), LSPECIALConfig.charisma, "Increases armor and armor toughness; higher-level social effects are configurable.");
 
         if (LSPECIALConfig.charismaBonus) {
-            rows.add(new StatRow("Charisma Bonus", inst.getClientCharismaBonus(), true, "Gives you permanent resistance effect."));
+            rows.add(new StatRow("Charisma Bonus", inst.getClientCharismaBonus(), true, "Charisma Level 5. Grants permanent Resistance."));
         }
 
         String m1 = "";
@@ -89,14 +88,14 @@ public class GuiSPECIAL extends GuiScreen {
         if (LSPECIALConfig.gunWearMode.equals("FORMULA")) {
             m1 = "reduces gun wear";
         }
-        String m2 = "The flesh obeys the will. Increases gun fire rate, " + m1 + " and gives infinite item durability. At level 5, makes the Pepperbox shot 6 rounds at once. At level 10, makes all revolvers penetrate more than one entity and x3 headshot damage";
+        String m2 = "The flesh obeys the will. Increases gun fire rate, " + m1 + ", and infinite item durability.";
         addStat("Intelligence", inst.getClientIntelligence(), LSPECIALConfig.intelligence, m2);
 
-        addStat("Agility", inst.getClientAgility(), LSPECIALConfig.agility, "Gives speed, can be configured with command /setspeed");
-        addStat("Luck", inst.getClientLuck(), LSPECIALConfig.luck, "Gives a chance to refund a magazine on gun reload.");
+        addStat("Agility", inst.getClientAgility(), LSPECIALConfig.agility, "Increases movement speed including flight speed. Can be configured with /setspeed or /setflyspeed.");
+        addStat("Luck", inst.getClientLuck(), LSPECIALConfig.luck, "Chance to refund ammunition when reloading a gun.");
 
         if (LSPECIALConfig.statLimit) {
-            rows.add(new StatRow("Stat Limit", inst.getClientLimit(), true, "The current maximum for each SPECIAL stat."));
+            rows.add(new StatRow("Stat Limit", inst.getClientLimit(), true, "Maximum level for each SPECIAL stat."));
         }
     }
 
@@ -111,10 +110,11 @@ public class GuiSPECIAL extends GuiScreen {
         drawDefaultBackground();
         rebuildRows();
 
-        panelWidth = Math.min(620, width - 24);
-        panelHeight = Math.min(height - 28, Math.max(250, 104 + rows.size() * ROW_HEIGHT));
-        panelLeft = (width - panelWidth) / 2;
-        panelTop = (height - panelHeight) / 2;
+        // keep the panel and all of its content within even unusually small GUI resolutions.
+        panelWidth = Math.max(1, Math.min(620, width - 24));
+        panelHeight = Math.max(1, Math.min(Math.max(1, height - 16), Math.max(250, 104 + rows.size() * ROW_HEIGHT)));
+        panelLeft = Math.max(0, (width - panelWidth) / 2);
+        panelTop = Math.max(0, (height - panelHeight) / 2);
 
         drawBackdrop();
         drawFrame();
@@ -150,7 +150,8 @@ public class GuiSPECIAL extends GuiScreen {
     }
 
     private void drawHeader() {
-        drawString(fontRenderer, "S.P.E.C.I.A.L // CHARACTER STATS", panelLeft + 22, panelTop + 12, AMBER_BRIGHT);
+        drawClippedString("S.P.E.C.I.A.L // CHARACTER STATS", panelLeft + 22, panelTop + 12,
+                Math.max(1, panelWidth - 44), AMBER_BRIGHT);
 
         drawRect(panelLeft + 18, panelTop + 30, panelLeft + panelWidth - 18, panelTop + 31, AMBER_MUTED);
     }
@@ -160,8 +161,8 @@ public class GuiSPECIAL extends GuiScreen {
         int listTop = panelTop + 42;
         int listWidth = Math.min(270, panelWidth / 2 - 22);
 
-        drawString(fontRenderer, "STATS", listLeft + 8, listTop, AMBER_MUTED);
-        drawString(fontRenderer, "VALUE", listLeft + listWidth - 48, listTop, AMBER_MUTED);
+        drawClippedString("STATS", listLeft + 8, listTop, Math.max(1, listWidth - 62), AMBER_MUTED);
+        drawClippedString("VALUE", listLeft + listWidth - 48, listTop, 44, AMBER_MUTED);
 
         int rowTop = listTop + 17;
         selectedRow = -1;
@@ -186,10 +187,13 @@ public class GuiSPECIAL extends GuiScreen {
 
             int color = hovered ? AMBER_BRIGHT : (row.enabled ? AMBER : AMBER_MUTED);
             String label = row.enabled ? row.name : "\u00a7m" + row.name + "\u00a7r";
-            drawString(fontRenderer, label, listLeft + 9, y + 4, color);
+            int labelX = listLeft + 9;
+            int valueX = listLeft + listWidth - 42;
+            drawClippedString(label, labelX, y + 4, Math.max(1, valueX - labelX - 5), color);
 
-            String value = Integer.toString(row.value);
-            drawString(fontRenderer, value, listLeft + listWidth - 42, y + 4, color);
+            String value = row.name.endsWith("Bonus")
+                    ? Boolean.toString(row.value == 1) : Integer.toString(row.value);
+            drawClippedString(value, valueX, y + 4, Math.max(1, listLeft + listWidth - 4 - valueX), color);
         }
 
         int dividerX = panelLeft + panelWidth / 2 - 2;
@@ -203,82 +207,135 @@ public class GuiSPECIAL extends GuiScreen {
         int infoRight = panelLeft + panelWidth - 18;
         int infoWidth = infoRight - infoLeft;
 
-        drawString(fontRenderer, "NOTES", infoLeft + 8, infoTop, AMBER_MUTED);
+        drawClippedString("NOTES", infoLeft + 8, infoTop, Math.max(1, infoWidth - 16), AMBER_MUTED);
         drawRect(infoLeft, infoTop + 17, infoRight, infoTop + 18, AMBER_MUTED);
 
         String heading = selectedRow >= 0 && selectedRow < rows.size()
                 ? rows.get(selectedRow).name.toUpperCase()
                 : "S.P.E.C.I.A.L";
-        drawString(fontRenderer, heading, infoLeft + 8, infoTop + 29, AMBER_BRIGHT);
+        drawClippedString(heading, infoLeft + 8, infoTop + 29, Math.max(1, infoWidth - 16), AMBER_BRIGHT);
 
         // todo make another row that says "Lesser perks are usually obtained at level 5 while Higher perks are acquired at level 10-15"
         String description = selectedRow >= 0 && selectedRow < rows.size()
                 ? rows.get(selectedRow).description
                 : "Select a stat to see what it does.";
 
-        drawWrappedText(description, infoLeft + 8, infoTop + 49,
-                Math.max(90, infoWidth - 16), AMBER);
-
+        int textX = infoLeft + 8;
+        int textWidth = Math.max(1, infoWidth - 16);
         int statusY = panelTop + panelHeight - 67;
+        int textBottom = LSPECIALConfig.showSystemStatusInfo ? statusY - 5 : panelTop + panelHeight - 30;
+        int textY = infoTop + 49;
+        int availableLines = Math.max(0, (textBottom - textY) / 12);
+        int usedLines = drawWrappedText(description, textX, textY, textWidth, AMBER, availableLines);
+        textY += usedLines * 12;
+        if (LSPECIALConfig.showPerkTierHint && textY < textBottom) {
+            textY += 3;
+            drawWrappedText("Lesser perks are usually obtained at level 5; Higher perks at levels 10–15. Click a stat row to inspect its perk notes.",
+                    textX, textY, textWidth, AMBER_MUTED, Math.max(0, (textBottom - textY) / 12));
+        }
+
         if (LSPECIALConfig.showSystemStatusInfo) {
             drawRect(infoLeft, statusY, infoRight, statusY + 1, AMBER_MUTED);
-            drawString(fontRenderer, LSPECIALConfig.systemStatusText,
-                    infoLeft + 8, statusY + 9, AMBER_MUTED);
-            drawString(fontRenderer, LSPECIALConfig.neuralLinkText,
-                    infoLeft + 8, statusY + 24, AMBER);
+            int statusTextWidth = Math.max(1, infoRight - (infoLeft + 8) - 6);
+            drawClippedString(LSPECIALConfig.systemStatusText,
+                    infoLeft + 8, statusY + 9, statusTextWidth, AMBER_MUTED);
+            drawClippedString(LSPECIALConfig.neuralLinkText,
+                    infoLeft + 8, statusY + 24, statusTextWidth, AMBER);
         }
     }
 
-    private void drawWrappedText(String text, int x, int y, int maxWidth, int color) {
+    @Override
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws java.io.IOException {
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+        if (mouseButton != 0 || !LSPECIALConfig.showPerkScreens) return;
+        int listLeft = panelLeft + 18;
+        int listTop = panelTop + 42;
+        int listWidth = Math.min(270, panelWidth / 2 - 22);
+        int rowTop = listTop + 17;
+        int maxBottom = panelTop + panelHeight - 35;
+        for (int i = 0; i < rows.size(); i++) {
+            int y = rowTop + i * ROW_HEIGHT;
+            if (y + ROW_HEIGHT > maxBottom) break;
+            if (mouseX >= listLeft && mouseX < listLeft + listWidth && mouseY >= y && mouseY < y + ROW_HEIGHT) {
+                StatRow row = rows.get(i);
+                if (row.enabled && !"Stat Limit".equals(row.name) && !row.name.endsWith("Bonus")) {
+                    mc.displayGuiScreen(new GuiSPECIALPerks(this, row.name));
+                }
+                return;
+            }
+        }
+    }
+
+    private int drawWrappedText(String text, int x, int y, int maxWidth, int color, int maxLines) {
+        if (text == null || text.isEmpty() || maxLines <= 0 || maxWidth <= 0) return 0;
+        List<String> wrapped = new ArrayList<>();
         StringBuilder line = new StringBuilder();
-        int currentY = y;
-
-        for (String word : text.split(" ")) {
+        for (String word : text.split("\\s+")) {
+            // split unusually long words too, so even a narrow GUI cannot overflow horizontally.
+            while (fontRenderer.getStringWidth(word) > maxWidth) {
+                if (line.length() > 0) {
+                    wrapped.add(line.toString());
+                    line.setLength(0);
+                }
+                String part = fontRenderer.trimStringToWidth(word, maxWidth);
+                if (part.isEmpty()) break;
+                wrapped.add(part);
+                word = word.substring(part.length());
+            }
             String candidate = line.length() == 0 ? word : line + " " + word;
-
             if (fontRenderer.getStringWidth(candidate) > maxWidth && line.length() > 0) {
-                drawString(fontRenderer, line.toString(), x, currentY, color);
-                currentY += 12;
+                wrapped.add(line.toString());
                 line.setLength(0);
                 line.append(word);
-            } else {
-                if (line.length() > 0) {
-                    line.append(' ');
-                }
+            } else if (!word.isEmpty()) {
+                if (line.length() > 0) line.append(' ');
                 line.append(word);
             }
         }
+        if (line.length() > 0) wrapped.add(line.toString());
 
-        if (line.length() > 0) {
-            drawString(fontRenderer, line.toString(), x, currentY, color);
+        int count = Math.min(maxLines, wrapped.size());
+        for (int i = 0; i < count; i++) {
+            String visible = wrapped.get(i);
+            if (i == maxLines - 1 && wrapped.size() > maxLines) {
+                String ellipsis = "...";
+                visible = fontRenderer.trimStringToWidth(visible, Math.max(1, maxWidth - fontRenderer.getStringWidth(ellipsis))) + ellipsis;
+            }
+            drawString(fontRenderer, visible, x, y + i * 12, color);
         }
+        return count;
+    }
+
+    /**
+     * Draws a single line within its allotted width, adding an ellipsis when clipped.
+     */
+    private void drawClippedString(String text, int x, int y, int maxWidth, int color) {
+        if (text == null || text.isEmpty() || maxWidth <= 0) return;
+        if (fontRenderer.getStringWidth(text) <= maxWidth) {
+            drawString(fontRenderer, text, x, y, color);
+            return;
+        }
+        String ellipsis = "...";
+        int textWidth = Math.max(1, maxWidth - fontRenderer.getStringWidth(ellipsis));
+        String clipped = fontRenderer.trimStringToWidth(text, textWidth);
+        drawString(fontRenderer, clipped + ellipsis, x, y, color);
     }
 
     private void drawFooter() {
         int footerY = panelTop + panelHeight - 23;
-        if (LSPECIALConfig.showRandomFooter && footerMessage != null && !footerMessage.isEmpty()) {
-            drawRect(panelLeft + 18, footerY - 5, panelLeft + panelWidth - 18, footerY - 4, AMBER_MUTED);
-            drawString(fontRenderer, "LSPECIAL  /  " + footerMessage,
-                    panelLeft + 22, footerY + 2, AMBER_MUTED);
-        }
-
         String hint = "PRESS ESC TO CLOSE";
+        int hintWidth = Math.min(fontRenderer.getStringWidth(hint), Math.max(1, panelWidth - 16));
+        int hintX = Math.max(panelLeft + 4, panelLeft + panelWidth - hintWidth - 10);
 
-        drawString(fontRenderer, hint, panelLeft + panelWidth - fontRenderer.getStringWidth(hint) - 22, footerY + 2, AMBER);
-    }
-
-    private static final class StatRow {
-        private final String name;
-        private final int value;
-        private final boolean enabled;
-        private final String description;
-
-        private StatRow(String name, int value, boolean enabled, String description) {
-            this.name = name;
-            this.value = value;
-            this.enabled = enabled;
-            this.description = description;
+        if (LSPECIALConfig.showRandomFooter && footerMessage != null && !footerMessage.isEmpty()) {
+            drawRect(panelLeft + Math.min(18, panelWidth / 2), footerY - 5,
+                    Math.max(panelLeft + 1, panelLeft + panelWidth - Math.min(18, panelWidth / 2)), footerY - 4, AMBER_MUTED);
+            int messageX = panelLeft + Math.min(22, Math.max(2, panelWidth / 4));
+            int messageWidth = Math.max(1, hintX - messageX - 8);
+            drawClippedString("LSPECIAL  /  " + footerMessage, messageX, footerY + 2, messageWidth, AMBER_MUTED);
         }
+
+        drawClippedString(hint, hintX, footerY + 2, Math.max(1, panelLeft + panelWidth - hintX - 4), AMBER);
     }
 
     @Override
@@ -300,5 +357,9 @@ public class GuiSPECIAL extends GuiScreen {
             LSPECIALMod.NETWORK.sendToServer(new RequestSPECIALStatsPacket());
             minecraft.displayGuiScreen(new GuiSPECIAL());
         }
+    }
+
+    @Desugar
+    private record StatRow(String name, int value, boolean enabled, String description) {
     }
 }

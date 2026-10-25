@@ -1,11 +1,36 @@
 {
-	"package": "",
-	"required": false,
-	"refmap": "mixins.lspecial.refmap.json",
-	"target": "@env(DEFAULT)",
-	"minVersion": "0.8.5",
-	"compatibilityLevel": "JAVA_8",
-	"mixins": [],
-	"server": [],
-	"client": []
+  "package": "com.levviata.lspecial.mixin",
+  "required": false,
+  "refmap": "mixins.lspecial.refmap.json",
+  "target": "@env(DEFAULT)",
+  "minVersion": "0.8.5",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MixinBeamProjectile",
+    "MixinEntityBulletBaseMK4",
+    "MixinEntityLivingBaseRetaliation",
+    "MixinEntityLivingCharismaNeutrality",
+    "MixinEntityRailgunBlast",
+    "MixinEntityRocket",
+    "MixinEntityVillager",
+    "MixinItemGunBaseNT",
+    "MixinItemStackLuckArmor",
+    "MixinMagazineBelt",
+    "MixinMagazineFluid",
+    "MixinMagazineSingleTypeBase",
+    "MixinMissileProjectile",
+    "MixinNTMCrateLootBonus",
+    "MixinNTMItemPoolChestTag",
+    "MixinNTMWandLoot",
+    "MixinProjectileShooter",
+    "MixinReceiver",
+    "MixinRocketJumpBulletMK4",
+    "MixinVanillaChestLootBonus",
+    "MixinWeaponSecondary",
+    "MixinWorldRailgunBlast"
+  ],
+  "server": [],
+  "client": [
+    "MixinEntityRenderer"
+  ]
 }

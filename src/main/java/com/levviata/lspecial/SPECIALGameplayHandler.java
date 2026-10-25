@@ -1,0 +1,540 @@
+package com.levviata.lspecial;
+
+import com.hbm.entity.projectile.EntityBulletBaseMK4;
+import com.hbm.items.armor.ArmorFSBPowered;
+import com.hbm.items.weapon.sedna.BulletConfig;
+import com.hbm.items.weapon.sedna.GunConfig;
+import com.hbm.items.weapon.sedna.ItemGunBaseNT;
+import com.hbm.items.weapon.sedna.Receiver;
+import com.hbm.items.weapon.sedna.mags.IMagazine;
+import com.hbm.render.anim.sedna.AnimationEnums.GunAnimation;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.SoundCategory;
+import net.minecraft.util.SoundEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+
+import java.util.*;
+
+import static com.levviata.lspecial.SPECIALScoreboard.inst;
+
+/**
+ * Server-side SPECIAL effects that need Forge events rather than per-frame GUI code.
+ */
+public final class SPECIALGameplayHandler {
+    private static final Map<EntityPlayer, LockedGun> rapidFireLocks = new WeakHashMap<>();
+    private static final Map<EntityPlayer, PendingSelfKill> pendingSelfKills = new WeakHashMap<>();
+    private static final Map<EntityPlayer, List<PendingProjectile>> pendingProjectileBursts = new WeakHashMap<>();
+
+    /**
+     * Starts a native rapid-fire burst and locks selection to the exact stack that triggered it.
+     */
+    public static boolean startLightRevolverRapidFire(EntityPlayer player, ItemStack stack) {
+        if (!canUseLightRevolverRapidFire(player) || !isLightRevolver(stack)) return false;
+        int slot = findHotbarStack(player, stack);
+        if (slot < 0) {
+            ItemStack held = player.getHeldItemMainhand();
+            if (!held.isEmpty() && ItemStack.areItemsEqual(held, stack)) {
+                slot = player.inventory.currentItem;
+            }
+        }
+        if (slot < 0) return false;
+
+        // use the actual inventory object: keybind callbacks can supply an equivalent stack copy.
+        ItemStack actualStack = player.inventory.getStackInSlot(slot);
+        if (actualStack.isEmpty() || !isLightRevolver(actualStack)) return false;
+        LockedGun previous = rapidFireLocks.put(player,
+                new LockedGun(actualStack, slot, LSPECIALConfig.lightRevolverRapidFireTicks));
+        if (previous != null && previous.stack != actualStack) lspecial$setRapidFire(previous.stack, false);
+        lspecial$setRapidFire(actualStack, true);
+        return true;
+    }
+
+    /**
+     * Reports whether this exact stack currently owns the player's rapid-fire burst.
+     */
+    public static boolean isLightRevolverRapidFireLocked(EntityPlayer player, ItemStack stack) {
+        LockedGun locked = rapidFireLocks.get(player);
+        return locked != null && locked.stack == stack && canUseLightRevolverRapidFire(player);
+    }
+
+    /**
+     * Releases the lock and clears native primary input so firing cannot continue after the burst.
+     */
+    private static void releaseRapidFire(EntityPlayer player, LockedGun locked) {
+        rapidFireLocks.remove(player);
+        lspecial$setRapidFire(locked.stack, false);
+    }
+
+    /**
+     * Checks the configured perk and its Intelligence threshold before forcing fire input.
+     */
+    private static boolean canUseLightRevolverRapidFire(EntityPlayer player) {
+        return player != null && !player.isDead && LSPECIALConfig.modifyGuns
+                && LSPECIALConfig.lightRevolverRapidFirePerk
+                && LSPECIALMod.hasIntelligenceLevel(player, LSPECIALMod.LESSER_PERK);
+    }
+
+    /**
+     * Identifies the NTM light revolver without relying on its translated name.
+     */
+    private static boolean isLightRevolver(ItemStack stack) {
+        return stack != null && !stack.isEmpty() && stack.getItem().getRegistryName() != null
+                && "hbm:gun_light_revolver".equals(stack.getItem().getRegistryName().toString());
+    }
+
+    /**
+     * Finds the exact stack identity in the hotbar so a replacement stack cannot inherit the lock.
+     */
+    private static int findHotbarStack(EntityPlayer player, ItemStack target) {
+        for (int slot = 0; slot < 9; slot++) {
+            if (player.inventory.getStackInSlot(slot) == target) return slot;
+        }
+        return -1;
+    }
+
+    /**
+     * Sets the native primary-fire state for each NTM configuration on the locked stack.
+     */
+    private static void lspecial$setRapidFire(ItemStack stack, boolean firing) {
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return;
+        for (int config = 0; config < gun.getConfigCount(); config++) {
+            ItemGunBaseNT.setPrimary(stack, config, firing);
+        }
+    }
+
+    private static void lspecial$tickPendingProjectiles(EntityPlayer player) {
+        List<PendingProjectile> pending = pendingProjectileBursts.get(player);
+        if (pending == null || pending.isEmpty()) return;
+        Iterator<PendingProjectile> iterator = pending.iterator();
+        while (iterator.hasNext()) {
+            PendingProjectile shot = iterator.next();
+            if (--shot.ticksRemaining > 0) continue;
+            if (!player.isDead && player.world != null && !player.world.isRemote) {
+                player.world.spawnEntity(shot.spawn(player));
+            }
+            iterator.remove();
+        }
+        if (pending.isEmpty()) pendingProjectileBursts.remove(player);
+    }
+
+    /**
+     * Starts the Lag self-kill countdown and plays its inspect animation.
+     */
+    public static boolean startLagSelfKill(EntityPlayer player, ItemStack stack) {
+        if (player == null || player.world.isRemote || player.isDead || stack == null || stack.isEmpty()
+                || player.getHeldItemMainhand() != stack
+                || !LSPECIALConfig.modifyGuns || !LSPECIALConfig.lagSecondarySelfKill
+                || !lspecial$isLag(stack) || !lspecial$hasLagSelfKillPerk(player)) return false;
+
+        pendingSelfKills.put(player, new PendingSelfKill(stack, 20));
+        if (stack.getItem() instanceof ItemGunBaseNT) {
+            ItemGunBaseNT.playAnimation(player, stack, GunAnimation.INSPECT, 0);
+        }
+        return true;
+    }
+
+    /**
+     * Checks the Lag's Intelligence requirement using the same lesser-perk setting as its other actions.
+     */
+    private static boolean lspecial$hasLagSelfKillPerk(EntityPlayer player) {
+        return LSPECIALConfig.pepperboxPerk && LSPECIALMod.hasIntelligenceLevel(player, LSPECIALMod.LESSER_PERK);
+    }
+
+    /**
+     * Identifies the Lag by registry id rather than its translated item name.
+     */
+    private static boolean lspecial$isLag(ItemStack stack) {
+        return stack.getItem().getRegistryName() != null
+                && "hbm:gun_lag".equals(stack.getItem().getRegistryName().toString());
+    }
+
+    /**
+     * Plays the gun's native fire sound and consumes one loaded round for the final cue.
+     */
+    private static void lspecial$playLagFireCue(EntityPlayer player, ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemGunBaseNT gun)) return;
+        GunConfig config = gun.getConfig(stack, 0);
+        if (config == null) return;
+        Receiver[] receivers = config.getReceivers(stack);
+        if (receivers == null) return;
+
+        SoundEvent sound = null;
+        for (Receiver receiver : receivers) {
+            if (receiver == null) continue;
+            if (sound == null) sound = receiver.getFireSound(stack);
+            IMagazine magazine = receiver.getMagazine(stack);
+            if (magazine == null) continue;
+            int amount = magazine.getAmount(stack, null);
+            if (amount > 0) {
+                magazine.setAmount(stack, amount - 1);
+                break;
+            }
+        }
+        if (sound != null) {
+            player.world.playSound(null, player.getPosition(), sound, SoundCategory.PLAYERS, 1.0F, 1.0F);
+        }
+    }
+
+    /**
+     * Restores all equipped NTM power armor below 50% when one piece reaches 1% charge.
+     */
+    private static void lspecial$tickPoweredArmorCooldown(EntityPlayer player) {
+        StatsLogic.PlayerState state = StatsLogic.getPlayerstate(player);
+        if (state.poweredArmorRechargeCooldown > 0) {
+            state.poweredArmorRechargeCooldown--;
+        }
+    }
+
+    private static void lspecial$tickPoweredArmorRecovery(EntityPlayer player) {
+        StatsLogic.PlayerState state = StatsLogic.getPlayerstate(player);
+        boolean recoveryTriggered = false;
+
+        if (LSPECIALConfig.luck && LSPECIALConfig.luckArmorFailsafe
+                && state.poweredArmorRechargeCooldown <= 0) {
+            int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
+
+            if (luck >= LSPECIALConfig.luckArmorFailsafeLevel
+                    && lspecial$hasFullPoweredArmorSet(player)) {
+                for (ItemStack stack : player.inventory.armorInventory) {
+                    if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+                        continue;
+                    }
+
+                    long maxCharge = poweredArmor.getMaxCharge(stack);
+                    if (maxCharge <= 0L) {
+                        continue;
+                    }
+
+                    if (poweredArmor.getCharge(stack) <= maxCharge * 0.01D) {
+                        recoveryTriggered = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (recoveryTriggered) {
+            boolean recovered = false;
+            state.poweredArmorRechargeCooldown = 6000;
+            int cooldown = state.poweredArmorRechargeCooldown;
+            int luck = inst.getPlayerScorePoints(player, inst.LUCK_BOARD);
+
+            for (ItemStack stack : player.inventory.armorInventory) {
+                if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+                    continue;
+                }
+
+                long maxCharge = poweredArmor.getMaxCharge(stack);
+                if (maxCharge <= 0L) {
+                    continue;
+                }
+
+                long charge = poweredArmor.getCharge(stack);
+                if (charge >= maxCharge * 0.50D) {
+                    continue;
+                }
+
+                long restoredCharge = maxCharge / 2L;
+                poweredArmor.setCharge(stack, restoredCharge);
+
+                if (!stack.hasTagCompound()) {
+                    stack.setTagCompound(new NBTTagCompound());
+                }
+
+                NBTTagCompound tag = stack.getTagCompound();
+                tag.setBoolean("LSPECIALArmorRecharged", true);
+                tag.setLong("LSPECIALArmorRechargedCharge", restoredCharge);
+                tag.setLong("LSPECIALArmorRechargedMaxCharge", maxCharge);
+                tag.setInteger("LSPECIALArmorRechargeCooldown", cooldown);
+                recovered = true;
+
+                LSPECIALMod.info("LuckArmor",
+                        "POWER_ARMOR_RECHARGED item={} player={} luck={} chargeBefore={} maxCharge={} chargeAfter={}",
+                        stack.getItem().getRegistryName(), player.getName(), luck, charge, maxCharge, restoredCharge);
+            }
+
+            if (recovered) {
+                player.playSound(LSPECIALSounds.ARMOR_FAILSAFE_POWERED, 1.0F, 1.0F);
+            } else {
+                state.poweredArmorRechargeCooldown = 0;
+            }
+        }
+
+        int cooldown = state.poweredArmorRechargeCooldown;
+
+        // Keep the global cooldown visible on every powered armor stack the player owns.
+        // The cooldown itself belongs to the player, not to an individual armor piece.
+        for (ItemStack stack : player.inventory.armorInventory) {
+            lspecial$updatePoweredArmorTooltipState(stack, cooldown);
+        }
+
+        for (ItemStack stack : player.inventory.mainInventory) {
+            lspecial$updatePoweredArmorTooltipState(stack, cooldown);
+        }
+
+        for (ItemStack stack : player.inventory.offHandInventory) {
+            lspecial$updatePoweredArmorTooltipState(stack, cooldown);
+        }
+    }
+
+    private static boolean lspecial$hasFullPoweredArmorSet(EntityPlayer player) {
+        net.minecraft.item.ItemArmor.ArmorMaterial material = null;
+
+        for (ItemStack stack : player.inventory.armorInventory) {
+            if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+                return false;
+            }
+
+            if (material == null) {
+                material = poweredArmor.getArmorMaterial();
+            } else if (poweredArmor.getArmorMaterial() != material) {
+                return false;
+            }
+        }
+
+        return material != null;
+    }
+
+    private static void lspecial$updatePoweredArmorTooltipState(ItemStack stack, int cooldown) {
+        if (stack.isEmpty() || !(stack.getItem() instanceof ArmorFSBPowered poweredArmor)) {
+            return;
+        }
+
+        if (!stack.hasTagCompound()) {
+            if (cooldown <= 0) {
+                return;
+            }
+            stack.setTagCompound(new NBTTagCompound());
+        }
+
+        NBTTagCompound tag = stack.getTagCompound();
+
+        if (tag.getBoolean("LSPECIALArmorRecharged")) {
+            long savedCharge = tag.getLong("LSPECIALArmorRechargedCharge");
+            long maxCharge = tag.getLong("LSPECIALArmorRechargedMaxCharge");
+            long charge = poweredArmor.getCharge(stack);
+
+            if (maxCharge > 0L && Math.abs(charge - savedCharge) >= maxCharge * 0.20D) {
+                tag.removeTag("LSPECIALArmorRecharged");
+                tag.removeTag("LSPECIALArmorRechargedCharge");
+                tag.removeTag("LSPECIALArmorRechargedMaxCharge");
+            }
+        }
+
+        if (cooldown > 0) {
+            // the tooltip shows whole seconds, so rounding up to 20 ticks means the stack only changes once per second
+            int rounded = ((cooldown + 19) / 20) * 20;
+            if (tag.getInteger("LSPECIALArmorRechargeCooldown") != rounded) {
+                tag.setInteger("LSPECIALArmorRechargeCooldown", rounded);
+            }
+        } else if (tag.hasKey("LSPECIALArmorRechargeCooldown")) {
+            tag.removeTag("LSPECIALArmorRechargeCooldown");
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerUseItem(PlayerInteractEvent.RightClickItem event) {
+        EntityPlayer player = event.getEntityPlayer();
+        if (player == null || player.world.isRemote) {
+            return;
+        }
+
+        ItemStack stack = event.getItemStack();
+        if (stack.isEmpty() || stack.getItem().getRegistryName() == null) {
+            return;
+        }
+        if (!"hbm:hev_battery".equals(stack.getItem().getRegistryName().toString())) {
+            return;
+        }
+
+        StatsLogic.PlayerState state = StatsLogic.getPlayerstate(player);
+        state.poweredArmorRechargeCooldown = 0;
+
+        for (ItemStack armorStack : player.inventory.armorInventory) {
+            if (armorStack.isEmpty() || !(armorStack.getItem() instanceof ArmorFSBPowered)) {
+                continue;
+            }
+            if (armorStack.hasTagCompound()) {
+                armorStack.getTagCompound().removeTag("LSPECIALArmorRechargeCooldown");
+            }
+        }
+
+        LSPECIALMod.info("LuckArmor",
+                "POWER_ARMOR_RECHARGE_COOLDOWN_RESET player={} item={}",
+                player.getName(), stack.getItem().getRegistryName());
+    }
+
+    /**
+     * Keeps the selected light revolver locked while its triggered rapid-fire burst is active.
+     */
+    @SubscribeEvent
+    public void onRapidFirePlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        EntityPlayer player = event.player;
+        LockedGun locked = rapidFireLocks.get(player);
+        if (locked == null) return;
+
+        if (!canUseLightRevolverRapidFire(player)) {
+            releaseRapidFire(player, locked);
+            return;
+        }
+
+        int actualSlot = findHotbarStack(player, locked.stack);
+        if (actualSlot < 0 || locked.stack.isEmpty() || --locked.ticksRemaining <= 0) {
+            releaseRapidFire(player, locked);
+            return;
+        }
+
+        if (player.inventory.currentItem != actualSlot) {
+            player.inventory.currentItem = actualSlot;
+        }
+        lspecial$setRapidFire(locked.stack, true);
+    }
+
+    /**
+     * Snapshots native Sedna projectiles and queues two matching follow-up shots 0.4 seconds apart.
+     */
+    @SubscribeEvent
+    public void onBurstProjectileSpawn(EntityJoinWorldEvent event) {
+        if (event.getWorld().isRemote || !(event.getEntity() instanceof EntityBulletBaseMK4 bullet)) return;
+        if (bullet.getEntityData().getBoolean("LSPECIALBurstClone") || bullet.getBulletConfig() == null) return;
+        EntityLivingBase owner = bullet.getThrower();
+        if (!(owner instanceof EntityPlayer player)) return;
+        ItemStack held = player.getHeldItemMainhand();
+        if (held.isEmpty() || held.getItem().getRegistryName() == null || !held.hasTagCompound()
+                || !held.getTagCompound().getBoolean("LSPECIALSecondaryMode")) return;
+        String id = held.getItem().getRegistryName().toString();
+        int requiredLevel;
+        boolean enabled;
+        if ("hbm:gun_lag".equals(id)) {
+            requiredLevel = 5;
+            enabled = LSPECIALConfig.lagSecondaryBurst;
+        } else if ("hbm:gun_henry_lincoln".equals(id)) {
+            requiredLevel = 15;
+            enabled = LSPECIALConfig.henryLincolnSecondaryBurst;
+        } else return;
+        if (!enabled || !LSPECIALConfig.modifyGuns || !LSPECIALMod.hasIntelligenceLevel(player, requiredLevel)) return;
+
+        List<PendingProjectile> pending = pendingProjectileBursts.computeIfAbsent(player, k -> new ArrayList<>());
+        pending.add(new PendingProjectile(bullet, 5));
+        pending.add(new PendingProjectile(bullet, 10));
+    }
+
+    /**
+     * Plays the Lag firing cue on tick 19 and applies the self-kill on tick 20.
+     */
+    private void lspecial$tickPendingSelfKill(EntityPlayer player) {
+        PendingSelfKill pending = pendingSelfKills.get(player);
+        if (pending == null) return;
+        if (player.isDead || player.world == null || player.world.isRemote
+                || player.getHeldItemMainhand() != pending.stack) {
+            pendingSelfKills.remove(player);
+            return;
+        }
+        if (--pending.ticksRemaining == 1 && !pending.firedCue) {
+            pending.firedCue = true;
+            lspecial$playLagFireCue(player, pending.stack);
+        }
+        if (pending.ticksRemaining <= 0) {
+            pendingSelfKills.remove(player);
+            player.onKillCommand();
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || event.player.world.isRemote) return;
+        EntityPlayer player = event.player;
+        lspecial$tickPendingSelfKill(player);
+        lspecial$tickPendingProjectiles(player);
+        lspecial$tickPoweredArmorCooldown(player);
+        lspecial$tickPoweredArmorRecovery(player);
+
+    }
+
+    private static final class PendingProjectile {
+        private final BulletConfig config;
+        private final float yaw;
+        private final float pitch;
+        private final double x, y, z, motionX, motionY, motionZ, velocity, previousVelocity, acceleration;
+        private final float damage;
+        private final int ricochets;
+        private final Entity lockonTarget;
+        private final NBTTagCompound entityData;
+        private int ticksRemaining;
+
+        private PendingProjectile(EntityBulletBaseMK4 bullet, int delay) {
+            config = bullet.getBulletConfig();
+            yaw = bullet.rotationYaw;
+            pitch = bullet.rotationPitch;
+            x = bullet.posX;
+            y = bullet.posY;
+            z = bullet.posZ;
+            motionX = bullet.motionX;
+            motionY = bullet.motionY;
+            motionZ = bullet.motionZ;
+            velocity = bullet.velocity;
+            previousVelocity = bullet.prevVelocity;
+            acceleration = bullet.accel;
+            damage = bullet.damage;
+            ricochets = bullet.ricochets;
+            lockonTarget = bullet.lockonTarget;
+            entityData = bullet.getEntityData().copy();
+            ticksRemaining = delay;
+        }
+
+        private EntityBulletBaseMK4 spawn(EntityPlayer shooter) {
+            // use the data captured when the original bullet spawned, the shooter may have moved or turned since
+            EntityBulletBaseMK4 clone = new EntityBulletBaseMK4(shooter.world, shooter, config,
+                    yaw, pitch, x, y, z, motionX, motionY, motionZ);
+            clone.setPosition(x, y, z);
+            clone.rotationYaw = yaw;
+            clone.rotationPitch = pitch;
+            clone.prevRotationYaw = yaw;
+            clone.prevRotationPitch = pitch;
+            clone.motionX = motionX;
+            clone.motionY = motionY;
+            clone.motionZ = motionZ;
+            clone.damage = damage;
+            clone.velocity = velocity;
+            clone.prevVelocity = previousVelocity;
+            clone.accel = acceleration;
+            clone.ricochets = 0;
+            clone.lockonTarget = lockonTarget;
+            clone.getEntityData().merge(entityData.copy());
+            clone.getEntityData().setBoolean("LSPECIALBurstClone", true);
+            return clone;
+        }
+    }
+
+    private static final class PendingSelfKill {
+        private final ItemStack stack;
+        private int ticksRemaining;
+        private boolean firedCue;
+
+        private PendingSelfKill(ItemStack stack, int ticksRemaining) {
+            this.stack = stack;
+            this.ticksRemaining = ticksRemaining;
+        }
+    }
+
+    private static final class LockedGun {
+        private final ItemStack stack;
+        private final int slot;
+        private int ticksRemaining;
+        private boolean firedCue;
+
+        private LockedGun(ItemStack stack, int slot, int ticksRemaining) {
+            this.stack = stack;
+            this.slot = slot;
+            this.ticksRemaining = ticksRemaining;
+        }
+    }
+}

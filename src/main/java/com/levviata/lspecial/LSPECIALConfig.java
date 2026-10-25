@@ -4,9 +4,9 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.ConfigElement;
 import net.minecraftforge.common.config.Configuration;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.client.config.GuiConfig;
 import net.minecraftforge.fml.client.config.IConfigElement;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -15,15 +15,21 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID, value = Side.CLIENT)
 public final class LSPECIALConfig {
-
-    private LSPECIALConfig() {
-    }
-
     public static Configuration config;
+
+    public static boolean loggingInfo = false;
+    public static boolean loggingWarn = true;
+    public static boolean loggingError = true;
+    public static String listeningThisInfo = "RocketDebug,LSPECIAL Loot,CharismaRetaliation,CharismaNeutrality,LuckArmor,SPECIALScoreboard,StatsLogic,GunDebug";
 
     private static final String STATS = "1_special_stats";
     private static final String BOB = "2_bobbleheads_consumption";
@@ -34,7 +40,8 @@ public final class LSPECIALConfig {
     private static final String CLIENT = "7_client";
     private static final String COMMANDS = "8_commands";
     private static final String ADV = "9_advanced";
-
+    private static final String PERKS = "10_perks_gui";
+    private static final String LOGGING = "11_logging";
     public static boolean strength = true;
     public static boolean perception = true;
     public static boolean endurance = true;
@@ -44,14 +51,12 @@ public final class LSPECIALConfig {
     public static boolean luck = true;
     public static boolean statLimit = true;
     public static boolean hideDisabledStats = true;
-
     public static int statsPerBobblehead = 1;
     public static int potionTimeTicks = 115;
     public static int charismaPotionAmplifier = 0;
     public static int endurancePotionAmplifier = 1;
-    //public static int bobbleheadUsesPerConsumption = 1;
-
     public static boolean infiniteItemDurability = true;
+    //public static int bobbleheadusesPerConsumption = 1;
     public static boolean charismaBonus = true;
     public static boolean enduranceBonus = true;
     public static boolean amplifiedRegeneration = true;
@@ -60,6 +65,8 @@ public final class LSPECIALConfig {
     public static boolean buckshotDelayNerf = true;
     public static boolean revolverPerk = true;
     public static boolean pepperboxPerk = true;
+    public static boolean lightRevolverRapidFirePerk = false;
+    public static int lightRevolverRapidFireTicks = 20;
     public static boolean refundMagazines = true;
     public static boolean bobbleheadRename = true;
     public static boolean hotbarMessages = true;
@@ -67,6 +74,106 @@ public final class LSPECIALConfig {
     public static boolean toggleSpecial = true;
     public static boolean showSystemStatusInfo = true;
     public static boolean showRandomFooter = true;
+    public static boolean showLSplashText = true;
+    public static boolean showPerkScreens = true;
+    public static boolean showPerkTierHint = true;
+    public static boolean enduranceModelScaling = true;
+    public static double enduranceModelScalePerHeart = 0.25;
+    public static double enduranceModelScaleThresholdHearts = 10.0;
+    public static boolean strengthTooltip = true;
+    public static boolean agilityFlyingSpeed = true;
+    public static String agilityFlyingSpeedFormula = "agility * 0.075";
+    public static double agilityFlyingSpeedMinimum = 0.05;
+    public static double agilityFlyingSpeedMaximum = 0.25;
+    public static boolean charismaNeutralMobs = true;
+    public static int charismaNeutralLevel = 5;
+    public static String charismaNeutralRetaliationMode = "DYNAMIC";
+    public static String charismaNeutralEntityList = "minecraft:zombie,minecraft:skeleton,minecraft:creeper,minecraft:spider,minecraft:cave_spider,minecraft:enderman,minecraft:witch,minecraft:slime,minecraft:ghast,minecraft:blaze,minecraft:magma_cube,minecraft:silverfish,minecraft:guardian,minecraft:shulker,minecraft:vex,minecraft:vindication_illager,minecraft:evocation_illager,minecraft:zombie_pigman,minecraft:ender_dragon,minecraft:wither";
+    public static boolean charismaNeutralBlacklistMobs = true;
+    public static String charismaNeutralBlacklistEntityList = "";
+    public static boolean charismaNeutralBlacklistNonPositiveHealth = true;
+    public static double charismaNeutralBlacklistNonPositiveHealthThreshold = 0.0;
+    public static boolean charismaNeutralBlacklistHighHealth = true;
+    public static double charismaNeutralBlacklistHighHealthThreshold = 100.0;
+    public static boolean charismaVillagerDiscount = true;
+    public static int charismaVillagerDiscountLevel = 5;
+    public static String charismaVillagerDiscountFormula = "min(charisma * 0.05, 0.75)";
+    public static boolean luckArmorDurabilityProtection = true;
+    public static double luckArmorDurabilityChancePerPoint = 0.00025;
+    public static double luckArmorDurabilityChanceCap = 0.05;
+    public static boolean luckArmorFailsafe = true;
+    public static int luckArmorFailsafeLevel = 5;
+    public static boolean perceptionArmorThresholdNegation = true;
+    public static double perceptionArmorThresholdNegationPerPoint = 0.01;
+    public static int perceptionArmorThresholdNegationLevel = 15;
+    public static boolean pepperboxSixShotPerk = true;
+    public static boolean revolverPenetrationPerk = true;
+    public static float revolverHeadshotMultiplier = 3.0f;
+    public static boolean laserPistolDelayBalance = true;
+    public static int laserPistolDelayTicks = 10;
+    public static boolean fatmanHigherPerk = true;
+    public static boolean fatmanHigherPerkDelay = true;
+    public static int fatmanHigherPerkDelayTicks = 80;
+    public static int fatmanMagazineCapacity = 3;
+    public static boolean laserPewPewHigherPerk = true;
+    public static int laserPewPewMagazineCapacity = 30;
+    public static boolean drillHigherPerkCapacity = true;
+    public static int drillAdditionalCapacityMb = 4000;
+    public static boolean weaponSecondaryAmmoCycling = true;
+    public static boolean hereticStyleScoping = true;
+    public static boolean minigunLaserModePerk = true;
+    public static int minigunLaserModeDelayTicks = 4;
+    public static int starFFiftyBmgDelayTicks = 20;
+    public static int uzi556DelayTicks = 2;
+    public static int g3TenGaugeDelayTicks = 10;
+    public static boolean secondaryFireToggle = true;
+    public static int tf2AmmoGuiOffsetX = 8;
+    public static int tf2AmmoGuiOffsetY = 8;
+    public static String tf2AmmoGuiPosition = "BOTTOM_RIGHT";
+    public static double tf2AmmoGuiScale = 1.0D;
+    public static String tf2AmmoGuiWeaponList = "hbm:gun_flamer,hbm:gun_flamer_topaz,hbm:gun_chemthrower,hbm:gun_drill";
+    public static int tf2AmmoGuiShadowOffsetX = 10;
+    public static int tf2AmmoGuiShadowOffsetY = 10;
+    public static int starFCapacity = 30;
+    public static boolean doubleBarrelGrapple = true;
+    public static boolean doubleBarrelGrappleVisuals = true;
+    public static boolean doubleBarrelGrappleCamera = true;
+    public static double doubleBarrelGrappleCrosshairScale = 1.0;
+    public static double doubleBarrelGrappleHookScale = 1.0;
+    public static int doubleBarrelGrappleVisualTicks = 12;
+    public static double doubleBarrelGrappleRange = 20;
+    public static double doubleBarrelGrappleTargetCone = 10.0;
+    public static double doubleBarrelGrapplePullSpeed = 1.35;
+    public static double doubleBarrelGrappleAcceleration = 0.32;
+    public static double doubleBarrelGrappleAirStrafe = 0.16;
+    public static boolean tauSecondaryDamageBonus = true;
+    public static double tauSecondaryDamageMultiplier = 6.0;
+    public static boolean lagSecondarySelfKill = true;
+    public static boolean lagSecondaryBurst = true;
+    public static boolean henryLincolnSecondaryBurst = true;
+    public static boolean scopedSecondarySpread = true;
+    public static double scopedSpreadMultiplier = 0.5;
+    public static boolean AMATRailgunProjectile = true;
+    public static boolean stingerSelfDamageProtection = true;
+    public static boolean dragonsFuryPerk = false;
+    public static boolean flamethrowerPerk = false;
+    public static boolean rocketJumpLesserPerk = true;
+    public static int rocketJumpLesserPerkLevel = 5;
+    public static double rocketJumpStrength = 1.2D;
+    public static double rocketJumpVerticalBias = 0.65D;
+    public static double rocketJumpForwardVelocityFactor = 0.5D;
+    public static double rocketJumpVelocityCap = 0.0D;
+
+    public static boolean carbineHigherPerkCapacity = true;
+    public static int carbineMagazineCapacity = 30;
+    public static boolean carbineSemiAutoPerk = true;
+    public static double carbineRecoilMultiplier = 0.5;
+
+    public static boolean perceptionLootDuplication = true;
+    public static int perceptionLootDuplicationLevel = 10;
+    public static boolean luckPerceptionLootBonus = true;
+    public static int luckPerceptionLootBonusLevel = 10;
+    public static String luckPerceptionLootPool = "POOL_MACHINE_PARTS";
 
     public static String systemStatusText = "SYSTEM STATUS";
     public static String neuralLinkText = "LEVVIATA NEURA-LINK  //  ACTIVE";
@@ -74,7 +181,7 @@ public final class LSPECIALConfig {
     public static boolean setSpeedCommand = true;
     public static boolean setFlySpeedCommand = true;
 
-    //public static String bobbleheadConsumption = "ON_USE";
+    //public static string bobbleheadConsumption = "ON_USE";
     // bug: cant put '' in cfg strings or it will make everything a string
     public static String limitMessage = "I have reached my limit, I cant consume more.";
     public static String augLimitMessage = "Augmented SPECIAL limit by one";
@@ -99,7 +206,7 @@ public final class LSPECIALConfig {
     public static String refundAmmoFormula = "min(luck * 0.05, 0.5)";
 
     public static String buckshotGaugeList = "41,42,43,44,45,46,47,48,49,78,79,80,81,84,hbm:ammo_secret:3";
-    public static String revolverList = "hbm:gun_flaregun,hbm:gun_heavy_revolver,hbm:gun_light_revolver_atlas,hbm:gun_light_revolver";
+    public static String revolverList = "hbm:gun_flaregun,hbm:gun_heavy_revolver,hbm:gun_light_revolver_atlas";
 
     public static boolean[] recipeEnabled = {true, true, true, true, true, true, true};
 
@@ -109,7 +216,7 @@ public final class LSPECIALConfig {
     public static String oreLuckAccessory = "luckAccessory";
     public static String oreLuckyGem = "luckyGem";
 
-    public static String oreBobbleheadEntries = "hbm:bobblehead:8-28";
+    public static String oreBobbleheadEntries = "hbm:bobblehead:0-28";
     public static String oreAppleLeadEntries = "hbm:apple_lead:0-2";
     public static String oreAmmoEntries = "hbm:ammo_standard:0-94";
     public static String oreLuckAccessoryEntries = "hbm:bandaid,hbm:serum,hbm:spider_milk,hbm:heart_piece,hbm:wd40";
@@ -118,12 +225,68 @@ public final class LSPECIALConfig {
     public static String[] recipeIngredients = {
             "bobblehead,hbm:schnitzel_vegan,appleLead,hbm:ingot_u235",
             "bobblehead,hbm:weapon_mod_special:1,hbm:weapon_mod_special:6,ammo",
-            "bobblehead,hbm:med_bag,hbm:crackpipe,potion:healing|strong_healing",
-            "bobblehead,hbm:cobalt_helmet,hbm:steel_helmet,hbm:titanium_helmet",
-            "bobblehead,hbm:part_mechanism:34,hbm:circuit:9,hbm:gun_kit_2",
+            "bobblehead,hbm:med_bag,hbm:syringe_metal_stimpak,potion:healing|strong_healing",
+            "bobblehead,luckyGem,minecraft:diamond_chestplate,hbm:plate_kevlar",
+            "bobblehead,hbm:part_mechanism:50,hbm:circuit:9,hbm:gun_kit_2",
             "bobblehead,hbm:cotton_candy,potion:swiftness|long_swiftness|strong_swiftness,minecraft:sugar",
             "bobblehead,ammo,luckyGem,luckAccessory"
     };
+
+    private LSPECIALConfig() {
+    }
+
+    // categories whose values the server sends to clients. Recipes and commands are only read at startup, and the
+    // client, perks and logging categories are personal preferences
+    private static final Set<String> SYNCED_CATEGORIES = new HashSet<>(Arrays.asList(STATS, BOB, GUNS, POTIONS, ADV));
+    // display-only options that live in a synced category but belong to the player's own screen
+    private static final Set<String> CLIENT_PREFERENCE_KEYS = new HashSet<>(Arrays.asList(
+            "doubleBarrelGrappleCamera", "doubleBarrelGrappleCrosshairScale", "doubleBarrelGrappleHookScale",
+            "doubleBarrelGrappleTargetCone", "enduranceModelScaling", "enduranceModelScaleThresholdHearts",
+            "enduranceModelScalePerHeart", "hideDisabledStats", "strengthTooltip"));
+    // values received from the server, kept in memory only and never written to the local config file
+    private static final Map<String, String> serverOverrides = new HashMap<>();
+    // this side's own values, which is what a server sends to the players that join it
+    private static final Map<String, String> syncSnapshot = new LinkedHashMap<>();
+
+    /**
+     * Returns this side's own synced config values, to be sent to a joining client.
+     */
+    public static synchronized Map<String, String> syncSnapshot() {
+        return new LinkedHashMap<>(syncSnapshot);
+    }
+
+    /**
+     * Makes the server's values win over the local config until clearServerOverrides is called.
+     */
+    public static synchronized void applyServerOverrides(Map<String, String> values) {
+        serverOverrides.clear();
+        serverOverrides.putAll(values);
+        load();
+    }
+
+    public static synchronized void clearServerOverrides() {
+        if (serverOverrides.isEmpty()) {
+            return;
+        }
+
+        serverOverrides.clear();
+        load();
+    }
+
+    /**
+     * Records the local value for syncing and returns the one that applies (the server's, when connected to one).
+     */
+    private static synchronized String effective(String category, String key, String local) {
+        if (!SYNCED_CATEGORIES.contains(category) || CLIENT_PREFERENCE_KEYS.contains(key)) {
+            return local;
+        }
+
+        String id = category + "/" + key;
+        syncSnapshot.put(id, local);
+
+        String override = serverOverrides.get(id);
+        return override == null ? local : override;
+    }
 
     public static void init(File file) {
         config = new Configuration(file);
@@ -136,6 +299,13 @@ public final class LSPECIALConfig {
         }
 
         config.load();
+        config.getCategory(STATS).remove("strengthTooltipFormat");
+
+        // logging
+        loggingInfo = b(LOGGING, "info", false, "Enable INFO-level logs from LSPECIAL");
+        loggingWarn = b(LOGGING, "warn", true, "Enable WARN-level logs from LSPECIAL");
+        loggingError = b(LOGGING, "error", true, "Enable ERROR-level logs from LSPECIAL");
+        listeningThisInfo = s(LOGGING, "listeningThisInfo", listeningThisInfo, "Comma-separated INFO identifiers to log. Identifiers are passed to LSPECIALMod.info without brackets.");
 
         // SPECIAL stats
         strength = b(STATS, "strength", true, "Enable Strength");
@@ -151,16 +321,18 @@ public final class LSPECIALConfig {
         enduranceBonus = b(STATS, "enduranceBonus", true, "Enable Endurance bonus");
         infiniteItemDurability = b(STATS, "infiniteItemDurability", true, "Intelligence level 5 perk. Held damageable items do not lose durability");
 
-       // Bobblehead consumption
+        // bobblehead consumption
         statsPerBobblehead = i(BOB, "statsPerBobblehead", 1, 1, Integer.MAX_VALUE, "Points per bobblehead");
         bobbleheadRename = b(BOB, "rename", true, "Give bobbleheads their stats in their display name");
 
-        // Guns and ammunition
+        // guns and ammunition
         refundAmmoFormula = s(GUNS, "refundAmmoFormula", refundAmmoFormula, "Validated expression; variable: luck");
         modifyGuns = b(GUNS, "modifyGuns", true, "Master switch for gun modifications. Whether to modify Nuclear Tech guns at all.");
         buckshotDelayNerf = b(GUNS, "buckshotDelayNerf", true, "Use the nerfed delay formula for guns that use buckshot (shotguns)");
         revolverPerk = b(GUNS, "revolverHigherPerk", true, "Enable Intelligence revolver perk");
         pepperboxPerk = b(GUNS, "pepperboxLesserPerk", true, "Enable Pepperbox lesser perk");
+        lightRevolverRapidFirePerk = b(GUNS, "lightRevolverRapidFirePerk", false, "Deprecated (scheduled for removal, see todo). Intelligence level 5 perk. Secondary fire triggers a rapid-fire burst and locks the player to that exact hotbar stack");
+        lightRevolverRapidFireTicks = i(GUNS, "lightRevolverRapidFireTicks", 20, 1, 200, "Duration of the light revolver rapid-fire burst in ticks");
         refundMagazines = b(GUNS, "refundMagazines", true, "Enable magazine refunds");
         gunWearMode = s(GUNS, "gunWearMode", "INFINITE_AT_INTELLIGENCE_5", "INFINITE_AT_INTELLIGENCE_5, PERCENT_REDUCTION, FORMULA");
         if (!gunWearMode.equals("INFINITE_AT_INTELLIGENCE_5") && !gunWearMode.equals("PERCENT_REDUCTION") && !gunWearMode.equals("FORMULA")) {
@@ -170,7 +342,7 @@ public final class LSPECIALConfig {
         buckshotGaugeList = s(GUNS, "buckshotGaugeList", buckshotGaugeList, "Comma separated list of hbm:ammo_standard but ONLY with the Metadata. Also supports hbm:ammo_secret:Metadata");
         revolverList = s(GUNS, "revolverList", revolverList, "Comma separated list of ModID:ItemID");
 
-        // Potions and effects
+        // potions and effects
         amplifiedRegeneration = b(POTIONS, "amplifiedRegeneration", true, "Endurance level 5 perk. Enable amplified regeneration.");
         respectHigherRegenAmplifier = b(POTIONS, "respectHigherRegenAmplifier", false, "Whether to amplify existing regeneration or not. Might fix issues with other mods");
         regenAmplifierBonus = d(POTIONS, "regenAmplifierBonus", 1.0, 0, 255, "Amplifier bonus");
@@ -178,7 +350,7 @@ public final class LSPECIALConfig {
         charismaPotionAmplifier = i(POTIONS, "charismaPotionAmplifier", 0, 0, 255, "Resistance amplifier");
         endurancePotionAmplifier = i(POTIONS, "endurancePotionAmplifier", 1, 0, 255, "Regeneration amplifier bonus");
 
-        // Gameplay messages
+        // gameplay messages
         hotbarMessages = b(MESSAGES, "hotbarMessages", true, "Show hotbar messages");
         limitMessage = s(MESSAGES, "limitMessage", limitMessage, "Stat limit reached message");
         variedAugLimitMessages = b(MESSAGES, "variedAugLimitMessages", true, "Use varied messages when increment stat limit");
@@ -188,17 +360,115 @@ public final class LSPECIALConfig {
         aug10 = s(MESSAGES, "aug10", aug10, "Triggers above 10 limit increases");
         aug20 = s(MESSAGES, "aug20", aug20, "Triggers above 20 increases");
 
-        // Client interface and commands
+        // client interface and commands
         toggleSpecial = b(CLIENT, "toggleSpecial", true, "Enable toggleSpecial keybind");
         showSystemStatusInfo = b(CLIENT, "showSystemStatusInfo", true, "Show the SYSTEM STATUS and 'Neura-Link' information in the stats screen");
         showRandomFooter = b(CLIENT, "showRandomFooter", true, "Show the randomized footer in the stats screen");
+        showLSplashText = b(CLIENT, "showLSplashText", true, "Allow LSPECIAL custom main-menu splashes");
+        enduranceModelScaling = b(STATS, "enduranceModelScaling", true, "Scale the rendered player model from Endurance health without changing the hitbox");
+        enduranceModelScalePerHeart = d(STATS, "enduranceModelScalePerHeart", 0.25, 0, 5, "Rendered model scale added per full heart above the threshold");
+        enduranceModelScaleThresholdHearts = d(STATS, "enduranceModelScaleThresholdHearts", 10.0, 0, 2048, "Maximum-health hearts at which Endurance model scaling begins");
+        strengthTooltip = b(STATS, "strengthTooltip", true, "Show Strength damage breakdown in held-item tooltips");
+        agilityFlyingSpeed = b(STATS, "agilityFlyingSpeed", true, "Apply Agility to player flying speed");
+        agilityFlyingSpeedFormula = s(ADV, "agilityFlyingSpeedFormula", "agility * 0.075", "Variables: agility; output is a multiplier bonus above vanilla flying speed");
+        agilityFlyingSpeedMinimum = d(STATS, "agilityFlyingSpeedMinimum", 0.05, 0.01, 1.0, "Minimum flying speed");
+        agilityFlyingSpeedMaximum = d(STATS, "agilityFlyingSpeedMaximum", 0.25, 0.01, 1.0, "Maximum flying speed");
+        charismaNeutralMobs = b(STATS, "charismaNeutralMobs", true, "Charisma can stop configured mobs targeting the player");
+        charismaNeutralLevel = i(STATS, "charismaNeutralLevel", 5, 1, 100, "Minimum Charisma level for mob neutrality");
+        charismaNeutralRetaliationMode = s(STATS, "charismaNeutralRetaliationMode", "DYNAMIC", "Retaliation mode: NORMAL uses vanilla revenge-target behavior; PERSISTENT keeps retaliation until the player dies; DYNAMIC switches to persistent retaliation after the player has dealt at least one third of the entity maximum health as cumulative damage.");
+        charismaNeutralEntityList = s(STATS, "charismaNeutralEntityList", charismaNeutralEntityList, "Comma-separated entity registry ID patterns affected by Charisma. Supports wildcards in mod IDs and entity IDs, for example hbm:* or *:zombie");
+        charismaNeutralBlacklistMobs = b(STATS, "charismaNeutralBlacklistMobs", true, "Enable the entity blacklist for Charisma neutrality");
+        charismaNeutralBlacklistEntityList = s(STATS, "charismaNeutralBlacklistEntityList", "", "Comma-separated entity registry ID patterns excluded from Charisma neutrality. Supports wildcards, for example minecraft:*, hbm:boss_* or *:ender_dragon");
+        charismaNeutralBlacklistNonPositiveHealth = b(STATS, "charismaNeutralBlacklistNonPositiveHealth", true, "Blacklist entities whose base maximum health is less than or equal to the configured threshold");
+        charismaNeutralBlacklistNonPositiveHealthThreshold = d(STATS, "charismaNeutralBlacklistNonPositiveHealthThreshold", 0.0, -2048.0, 2048.0, "Base maximum-health threshold for the non-positive-health blacklist");
+        charismaNeutralBlacklistHighHealth = b(STATS, "charismaNeutralBlacklistHighHealth", true, "Blacklist entities whose base maximum health is greater than or equal to the configured threshold");
+        charismaNeutralBlacklistHighHealthThreshold = d(STATS, "charismaNeutralBlacklistHighHealthThreshold", 100.0, 0.0, 2048.0, "Base maximum-health threshold for the high-health blacklist");
+        charismaVillagerDiscount = b(STATS, "charismaVillagerDiscount", true, "Charisma reduces villager trade prices");
+        charismaVillagerDiscountLevel = i(STATS, "charismaVillagerDiscountLevel", 5, 1, 100, "Minimum Charisma level for villager trade discounts");
+        charismaVillagerDiscountFormula = s(ADV, "charismaVillagerDiscountFormula", "min(charisma * 0.05, 0.75)", "Variables: charisma; output is a discount fraction from 0 to 0.75. Default: 5% per Charisma level, capped at 75%");
+        luckArmorDurabilityProtection = b(STATS, "luckArmorDurabilityProtection", true, "Luck can prevent armor durability loss when hurt");
+        luckArmorDurabilityChancePerPoint = d(STATS, "luckArmorDurabilityChancePerPoint", 0.00025, 0, 1, "Chance per Luck point to prevent armor durability loss (0.00025 = 0.025%)");
+        luckArmorDurabilityChanceCap = d(STATS, "luckArmorDurabilityChanceCap", 0.05, 0, 1, "Maximum armor durability protection chance");
+        luckArmorFailsafe = b(STATS, "luckArmorFailsafe", true, "Luck can protect regular armor from breaking and restore all powered armor below 50% when one reaches 1% energy");
+        luckArmorFailsafeLevel = i(STATS, "luckArmorFailsafeLevel", 5, 1, 100, "Minimum Luck level required for armor failsafe and powered-armor energy recovery");
+        perceptionArmorThresholdNegation = b(STATS, "perceptionArmorThresholdNegation", true, "Perception adds armor-threshold negation to supported NTM bullets");
+        perceptionArmorThresholdNegationPerPoint = d(STATS, "perceptionArmorThresholdNegationPerPoint", 0.01, 0, 1, "Armor-threshold negation added per Perception point above threshold");
+        perceptionArmorThresholdNegationLevel = i(STATS, "perceptionArmorThresholdNegationLevel", 15, 0, 100, "Perception level at which armor-threshold negation starts");
+        pepperboxSixShotPerk = b(GUNS, "pepperboxSixShotPerk", true, "Intelligence 5: Pepperbox fires six rounds per cycle");
+        revolverPenetrationPerk = b(GUNS, "revolverPenetrationPerk", true, "Intelligence 15: configured revolvers penetrate and deal increased headshot damage");
+        revolverHeadshotMultiplier = (float) d(GUNS, "revolverHeadshotMultiplier", 3.0, 1, 20, "Headshot multiplier for the Intelligence revolver perk");
+        laserPistolDelayBalance = b(GUNS, "laserPistolDelayBalance", true, "[Not implemented yet, no effect] Apply the higher-perk laser pistol delay balance");
+        laserPistolDelayTicks = i(GUNS, "laserPistolDelayTicks", 10, 0, 1200, "[Not implemented yet, no effect] Laser pistol delay in ticks");
+        fatmanHigherPerk = b(GUNS, "fatmanHigherPerk", true, "Intelligence 15: increase Fat Man magazine capacity and apply its delay");
+        fatmanHigherPerkDelay = b(GUNS, "fatmanHigherPerkDelay", true, "Intelligence 15: apply the Fat Man firing delay");
+        fatmanHigherPerkDelayTicks = i(GUNS, "fatmanHigherPerkDelayTicks", 80, 0, 1200, "Fat Man firing delay in ticks (80 = 4 seconds)");
+        fatmanMagazineCapacity = i(GUNS, "fatmanMagazineCapacity", 3, 1, 100, "Fat Man magazine capacity with the higher perk");
+        laserPewPewHigherPerk = b(GUNS, "laserPewPewHigherPerk", true, "Intelligence 15: increase the Pew-Pew laser pistol magazine capacity");
+        laserPewPewMagazineCapacity = i(GUNS, "laserPewPewMagazineCapacity", 30, 1, 1000, "Pew-Pew laser pistol magazine capacity with the higher perk");
+        drillHigherPerkCapacity = b(GUNS, "drillHigherPerkCapacity", true, "Intelligence 15: add fluid capacity to the drill");
+        drillAdditionalCapacityMb = i(GUNS, "drillAdditionalCapacityMb", 4000, 0, 1000000, "Additional drill fluid capacity in mB");
+        weaponSecondaryAmmoCycling = b(GUNS, "weaponSecondaryAmmoCycling", true, "Allow crouch + secondary to cycle supported single-magazine alternate calibers");
+        hereticStyleScoping = b(GUNS, "hereticStyleScoping", true, "[Not implemented yet, no effect] Allow secondary-fire hold-to-scope behavior on supported lesser-perk weapons");
+        minigunLaserModePerk = b(GUNS, "minigunLaserModePerk", true, "Legacy setting retained for config compatibility; the minigun uses the caliber of its loaded magazine");
+        minigunLaserModeDelayTicks = i(GUNS, "minigunLaserModeDelayTicks", 4, 0, 1200, "[Not implemented yet, no effect] Minigun laser-mode firing delay in ticks");
+        starFFiftyBmgDelayTicks = i(GUNS, "starFFiftyBmgDelayTicks", 20, 0, 1200, "Star-F .50 BMG mode firing delay in ticks (20 = 1 second)");
+        uzi556DelayTicks = i(GUNS, "uzi556DelayTicks", 2, 0, 1200, "UZI 5.56 mm mode firing delay in ticks");
+        g3TenGaugeDelayTicks = i(GUNS, "g3TenGaugeDelayTicks", 10, 0, 1200, "G3 10 gauge mode firing delay in ticks");
+        lagSecondarySelfKill = b(GUNS, "lagSecondarySelfKill", true, "Intelligence 5: crouch + secondary with the Lag starts the delayed self-kill sequence");
+        secondaryFireToggle = b(GUNS, "secondaryFireToggle", true, "Toggle supported secondary-fire modes with Secondary Fire; primary fire then fires the selected mode");
+        tf2AmmoGuiOffsetX = i(CLIENT, "tf2AmmoGuiOffsetX", 8, -2000, 2000, "Ammo GUI horizontal offset from the selected preset anchor");
+        tf2AmmoGuiOffsetY = i(CLIENT, "tf2AmmoGuiOffsetY", 8, -2000, 2000, "Ammo GUI vertical offset from the selected preset anchor");
+        tf2AmmoGuiPosition = s(CLIENT, "tf2AmmoGuiPosition", "BOTTOM_RIGHT", "Ammo GUI anchor: BOTTOM_RIGHT, BOTTOM_CENTER, BOTTOM_LEFT, CENTER_LEFT, CENTER_RIGHT, TOP_LEFT, TOP_CENTER, or TOP_RIGHT");
+        tf2AmmoGuiScale = d(CLIENT, "tf2AmmoGuiScale", 1.0D, 0.25D, 3.0D, "Ammo GUI scale before screen-fit constraints");
+        tf2AmmoGuiWeaponList = s(CLIENT, "tf2AmmoGuiWeaponList", "hbm:gun_flamer,hbm:gun_flamer_topaz,hbm:gun_chemthrower,hbm:gun_drill", "Comma-separated registry IDs allowed to show the ammo GUI; no Intelligence limit is applied");
+        tf2AmmoGuiShadowOffsetX = i(CLIENT, "tf2AmmoGuiShadowOffsetX", 10, -32, 32, "Ammo number shadow horizontal offset in texture pixels");
+        tf2AmmoGuiShadowOffsetY = i(CLIENT, "tf2AmmoGuiShadowOffsetY", 10, -32, 32, "Ammo number shadow vertical offset in texture pixels");
+        starFCapacity = i(GUNS, "starFCapacity", 30, 1, 1000, "Star-F magazine capacity at Intelligence 15");
+        doubleBarrelGrapple = b(GUNS, "doubleBarrelGrapple", true, "Intelligence 15: secondary fire grapples toward the targeted entity with the double barrel");
+        doubleBarrelGrappleVisuals = b(GUNS, "doubleBarrelGrappleVisuals", true, "Render the double-barrel grapple chain and HUD");
+        doubleBarrelGrappleCamera = b(GUNS, "doubleBarrelGrappleCamera", true, "Smoothly turn the camera toward the grapple target while grappling");
+        doubleBarrelGrappleCrosshairScale = d(GUNS, "doubleBarrelGrappleCrosshairScale", 1.0, 0.25, 4.0, "Scale multiplier for the double-barrel grapple crosshair");
+        doubleBarrelGrappleHookScale = d(GUNS, "doubleBarrelGrappleHookScale", 1.0, 0.25, 4.0, "Scale multiplier for the double-barrel meathook icon");
+        doubleBarrelGrappleVisualTicks = i(GUNS, "doubleBarrelGrappleVisualTicks", 12, 1, 100, "Duration of the double-barrel grapple chain text, in ticks");
+        doubleBarrelGrappleRange = d(GUNS, "doubleBarrelGrappleRange", 20.0, 1.0, 128.0, "Maximum entity grapple range in blocks");
+        doubleBarrelGrappleTargetCone = d(GUNS, "doubleBarrelGrappleTargetCone", 20.0, 0.1, 45.0, "Maximum angle in degrees from the crosshair for grapple target acquisition");
+        doubleBarrelGrapplePullSpeed = d(GUNS, "doubleBarrelGrapplePullSpeed", 1.35, 0.1, 5.0, "Maximum grapple travel speed");
+        doubleBarrelGrappleAcceleration = d(GUNS, "doubleBarrelGrappleAcceleration", 0.32, 0.01, 1.0, "Grapple velocity acceleration; higher values reach the configured speed faster");
+        doubleBarrelGrappleAirStrafe = d(GUNS, "doubleBarrelGrappleAirStrafe", 0.16, 0.0, 1.0, "Air-strafing control while grappling; set to 1 for very strong air control");
+        tauSecondaryDamageBonus = b(GUNS, "tauSecondaryDamageBonus", true, "Intelligence 5: multiply damage from the Tau's charged secondary projectile");
+        tauSecondaryDamageMultiplier = d(GUNS, "tauSecondaryDamageMultiplier", 6.0, 1.0, 20.0, "Tau secondary-fire damage multiplier");
+        lagSecondaryBurst = b(GUNS, "lagSecondaryBurst", true, "Intelligence 5: Lag secondary fire uses a three-projectile burst");
+        scopedSecondarySpread = b(GUNS, "scopedSecondarySpread", true, "Reduce spread while aiming with configured lesser-perk weapons");
+        scopedSpreadMultiplier = d(GUNS, "scopedSpreadMultiplier", 0.5, 0.05, 1.0, "Spread multiplier while aiming");
+        henryLincolnSecondaryBurst = b(GUNS, "henryLincolnSecondaryBurst", true, "Intelligence 15: Henry Lincoln secondary fire uses a three-shot sequential burst");
+        AMATRailgunProjectile = b(GUNS, "bmgQuackosRailgun", true, "Intelligence 15: crouch + secondary selects the deuterium plasma capsule caliber for the AMAT; its native Sedna projectile homes to Quackos");
+        stingerSelfDamageProtection = b(GUNS, "stingerSelfDamageProtection", true, "Suppress self-inflicted damage from configured Stinger-family projectiles");
+        dragonsFuryPerk = b(GUNS, "dragonsFuryPerk", false, "[Experimental, unfinished: its mixins are not registered in this build] Enable the incomplete Dragon's Fury perk logic");
+        flamethrowerPerk = b(GUNS, "flamethrowerPerk", false, "[Experimental, unfinished: its mixins are not registered in this build] Enable the incomplete TF2-style flamethrower perk logic");
+        rocketJumpLesserPerk = b(GUNS, "rocketJumpLesserPerk", true, "Intelligence level 5 lesser perk. Replace the owner's native NTM rocket blast propulsion with TF2-style rocket jumping for the configured Stinger-family launchers");
+        rocketJumpLesserPerkLevel = i(GUNS, "rocketJumpLesserPerkLevel", 5, 5, 100, "Minimum Intelligence required for the TF2-style rocket-jumping lesser perk");
+        rocketJumpStrength = d(GUNS, "rocketJumpStrength", 1.2D, 0.1D, 5.0D, "Base velocity impulse applied to the rocket owner when the rocket explodes");
+        rocketJumpVerticalBias = d(GUNS, "rocketJumpVerticalBias", 0.65D, 0.0D, 2.0D, "Upward bias added to the blast direction for TF2-style rocket jumping");
+        rocketJumpForwardVelocityFactor = d(GUNS, "rocketJumpForwardVelocityFactor", 0.5D, 0.0D, 4.0D, "Fraction of the player's forward velocity added during a rocket jump");
+        rocketJumpVelocityCap = d(GUNS, "rocketJumpVelocityCap", 0.0D, 0.0D, 100.0D, "Maximum rocket-jump velocity in blocks per tick; 0 disables the cap");
+        carbineHigherPerkCapacity = b(GUNS, "carbineHigherPerkCapacity", true, "Intelligence 15: increase the carbine magazine capacity");
+        carbineMagazineCapacity = i(GUNS, "carbineMagazineCapacity", 30, 1, 1000, "Carbine magazine capacity with the higher perk");
+        carbineSemiAutoPerk = b(GUNS, "carbineSemiAutoPerk", true, "Intelligence 15: right-click fires one Carbine shot per press; left-click retains native fire behavior");
+        carbineRecoilMultiplier = d(GUNS, "carbineRecoilMultiplier", 0.5, 0, 1, "Carbine recoil multiplier with the higher perk; 0 disables recoil and 1 keeps native recoil");
+        perceptionLootDuplication = b(STATS, "perceptionLootDuplication", true, "Perception duplicates the original NTM wand-loot pool in tagged crates");
+        perceptionLootDuplicationLevel = i(STATS, "perceptionLootDuplicationLevel", 10, 1, 100, "Perception level required to duplicate tagged NTM container loot");
+        luckPerceptionLootBonus = b(STATS, "luckPerceptionLootBonus", true, "Luck and Perception can fill tagged NTM crates from a configured NTM item pool");
+        luckPerceptionLootBonusLevel = i(STATS, "luckPerceptionLootBonusLevel", 10, 1, 100, "Minimum Luck and Perception level required for configured bonus loot");
+        luckPerceptionLootPool = s(STATS, "luckPerceptionLootPool", "POOL_MACHINE_PARTS", "NTM ItemPool name used for bonus loot when both Luck and Perception meet the configured level");
+        showPerkScreens = b(PERKS, "showPerkScreens", true, "Allow clicking a SPECIAL row to open its perk overlay");
+        showPerkTierHint = b(PERKS, "showPerkTierHint", true, "Show the Lesser/Higher perk level explanation");
         systemStatusText = s(CLIENT, "systemStatusText", "SYSTEM STATUS", "Text used for the SYSTEM STATUS heading in the stats screen");
         neuralLinkText = s(CLIENT, "neuralLinkText", "LEVVIATA NEURA-LINK  //  ACTIVE", "Text used for the 'Neura-Link' line in the stats screen");
         randomFooterMessages = s(CLIENT, "randomFooterMessages", randomFooterMessages, "Random footer options separated by |. Leave empty to show no random message.");
         setSpeedCommand = b(COMMANDS, "setSpeedCommand", true, "Register /setspeed");
-        setFlySpeedCommand = b(COMMANDS, "setFlySpeedCommand", true, "Register /setflyspeed. Currently doesn't work");
+        setFlySpeedCommand = b(COMMANDS, "setFlySpeedCommand", true, "Register /setflyspeed and use its per-player speed override");
 
-        // Recipe switches
+        // recipe switches
         String[] recipeNames = {
                 "recipeStrength",
                 "recipePerception",
@@ -223,26 +493,26 @@ public final class LSPECIALConfig {
             recipeEnabled[n] = b(RECIPES, recipeNames[n], true, "Enable " + specialNames[n] + " bobblehead recipe");
         }
 
-        // Ore dictionary names
+        // ore dictionary names
         oreBobblehead = s(RECIPES, "oreBobblehead", "bobblehead", "Ore dictionary name");
         oreAppleLead = s(RECIPES, "oreAppleLead", "appleLead", "Ore dictionary name");
         oreAmmo = s(RECIPES, "oreAmmo", "ammo", "Ore dictionary name");
         oreLuckAccessory = s(RECIPES, "oreLuckAccessory", "luckAccessory", "Ore dictionary name");
         oreLuckyGem = s(RECIPES, "oreLuckyGem", "luckyGem", "Ore dictionary name");
 
-        // Ore dictionary entries
+        // ore dictionary entries
         oreBobbleheadEntries = s(RECIPES, "oreBobbleheadEntries", oreBobbleheadEntries, "ModID:ItemID:[:Metadata or a metadata range of :start-end], comma separated");
         oreAppleLeadEntries = s(RECIPES, "oreAppleLeadEntries", oreAppleLeadEntries, "Ore dictionary entries");
         oreAmmoEntries = s(RECIPES, "oreAmmoEntries", oreAmmoEntries, "Ore dictionary entries");
         oreLuckAccessoryEntries = s(RECIPES, "oreLuckAccessoryEntries", oreLuckAccessoryEntries, "Ore dictionary entries");
         oreLuckyGemEntries = s(RECIPES, "oreLuckyGemEntries", oreLuckyGemEntries, "Ore dictionary entries");
 
-        // Recipe ingredients
+        // recipe ingredients
         for (int n = 0; n < recipeIngredients.length; n++) {
             recipeIngredients[n] = s(RECIPES, "recipe" + (n + 1) + "Ingredients", recipeIngredients[n], "Comma separated entries of: oreDictionary, ModID:ItemID[:Metadata], potion:type|type");
         }
 
-        // Advanced formulas
+        // advanced formulas
         agilityFormula = s(ADV, "agilityFormula", agilityFormula, "Variables: agility");
         enduranceFormula = s(ADV, "enduranceFormula", enduranceFormula, "Variables: endurance");
         attackDamageFormula = s(ADV, "attackDamageFormula", attackDamageFormula, "Variables: strength");
@@ -254,7 +524,7 @@ public final class LSPECIALConfig {
         gunWearFormula = s(ADV, "gunWearFormula", gunWearFormula, "Variables: intelligence, originalWear; output is reduction fraction");
 
         for (String category : Arrays.asList(
-                STATS, BOB, GUNS, POTIONS, RECIPES, MESSAGES, CLIENT, COMMANDS, ADV)) {
+                STATS, BOB, GUNS, POTIONS, RECIPES, MESSAGES, CLIENT, COMMANDS, ADV, PERKS, LOGGING)) {
             config.setCategoryComment(category, categoryComment(category));
         }
 
@@ -265,6 +535,10 @@ public final class LSPECIALConfig {
 
     private static String categoryComment(String category) {
         switch (category) {
+            case PERKS:
+                return "Client-side perk overlay settings.";
+            case LOGGING:
+                return "Enable or disable LSPECIAL log levels. INFO logging is disabled by default.";
             case ADV:
                 return "Arithmetic expressions support + - * / %, parentheses, variables, min/max/abs/sqrt/floor/ceil/round.";
             case POTIONS:
@@ -291,16 +565,32 @@ public final class LSPECIALConfig {
 
     // boolean, integer, double, or string
     private static boolean b(String category, String key, boolean defaultValue, String comment) {
-        return config.get(category, key, defaultValue, sideComment(category, comment)).getBoolean(defaultValue);
+        boolean local = config.get(category, key, defaultValue, sideComment(category, comment)).getBoolean(defaultValue);
+        return Boolean.parseBoolean(effective(category, key, Boolean.toString(local)));
     }
+
     private static int i(String category, String key, int defaultValue, int min, int max, String comment) {
-        return config.get(category, key, defaultValue, sideComment(category, comment), min, max).getInt(defaultValue);
+        int local = config.get(category, key, defaultValue, sideComment(category, comment), min, max).getInt(defaultValue);
+
+        try {
+            return Integer.parseInt(effective(category, key, Integer.toString(local)));
+        } catch (NumberFormatException e) {
+            return local;
+        }
     }
+
     private static double d(String category, String key, double defaultValue, double min, double max, String comment) {
-        return config.get(category, key, defaultValue, sideComment(category, comment), min, max).getDouble(defaultValue);
+        double local = config.get(category, key, defaultValue, sideComment(category, comment), min, max).getDouble(defaultValue);
+
+        try {
+            return Double.parseDouble(effective(category, key, Double.toString(local)));
+        } catch (NumberFormatException e) {
+            return local;
+        }
     }
+
     private static String s(String category, String key, String defaultValue, String comment) {
-        return config.get(category, key, defaultValue, sideComment(category, comment)).getString();
+        return effective(category, key, config.get(category, key, defaultValue, sideComment(category, comment)).getString());
     }
 
     @SubscribeEvent
@@ -315,7 +605,7 @@ public final class LSPECIALConfig {
     public static GuiScreen gui(GuiScreen parent) {
         List<IConfigElement> elements = new ArrayList<>();
 
-        for (String categoryName : Arrays.asList(STATS, BOB, GUNS, POTIONS, MESSAGES, RECIPES, CLIENT, COMMANDS, ADV)) {
+        for (String categoryName : Arrays.asList(STATS, BOB, GUNS, POTIONS, RECIPES, MESSAGES, CLIENT, COMMANDS, ADV, PERKS, LOGGING)) {
             ConfigCategory category = config.getCategory(categoryName);
             elements.add(new ConfigElement(category));
         }

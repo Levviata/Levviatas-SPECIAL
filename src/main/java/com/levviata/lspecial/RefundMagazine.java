@@ -1,5 +1,7 @@
 package com.levviata.lspecial;
 
+import com.hbm.items.ModItems;
+import com.hbm.items.tool.ItemAmmoBag;
 import com.hbm.items.weapon.sedna.BulletConfig;
 import com.hbm.items.weapon.sedna.mags.IMagazine;
 import com.hbm.particle.SpentCasing;
@@ -19,6 +21,34 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
 
     public RefundMagazine(IMagazine<BulletConfig> original) {
         this.original = original;
+    }
+
+    /**
+     * Counts only the selected ammunition, including stacks stored inside NTM ammo bags.
+     */
+    private static int countAmmo(IInventory inventory, BulletConfig config) {
+        if (inventory == null || config == null || config.ammo == null) return 0;
+        int count = 0;
+        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
+            ItemStack stack = inventory.getStackInSlot(slot);
+            if (stack.isEmpty()) continue;
+            if (config.ammo.matchesRecipe(stack, true)) {
+                count += stack.getCount();
+            } else if (stack.getItem() == ModItems.ammo_bag || stack.getItem() == ModItems.ammo_bag_infinite) {
+                ItemAmmoBag.InventoryAmmoBag bag = new ItemAmmoBag.InventoryAmmoBag(stack);
+                for (int bagSlot = 0; bagSlot < bag.getSlots(); bagSlot++) {
+                    ItemStack bagStack = bag.getStackInSlot(bagSlot);
+                    if (!bagStack.isEmpty() && config.ammo.matchesRecipe(bagStack, true)) {
+                        count += bagStack.getCount();
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    public IMagazine<BulletConfig> getOriginalMagazine() {
+        return original;
     }
 
     @Override
@@ -62,51 +92,46 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
     }
 
     @Override
-    public void reloadAction(ItemStack stack, IInventory inventory) { // bug: when reloading with less than a full mags worth of bullet, the gun tries to reload twice doubling ammo and stopping the reloading for a sec
+    public void reloadAction(ItemStack stack, IInventory inventory) {
+        BulletConfig selectedConfig = original.getType(stack, inventory);
 
-        int before = original.getAmount(stack, inventory);
+        int ammoBefore = countAmmo(inventory, selectedConfig);
 
         original.reloadAction(stack, inventory);
 
-        int after = original.getAmount(stack, inventory);
+        if (selectedConfig != null && selectedConfig == AMATRailgun.getBulletConfig()) return;
 
-        int ammoDebt = Math.abs(after - before);
+        int ammoAfter = countAmmo(inventory, selectedConfig);
 
+        int ammoDebt = Math.max(0, ammoBefore - ammoAfter);
         if (ammoDebt <= 0) {
             return;
         }
 
-        int luck = LSPECIALConfig.luck ? inst.getLuckScore().getScorePoints() : 0;
-        Map<String, Double> vars = new HashMap<>();
-        vars.put("luck", (double)luck);
-        double chance = LSPECIALExpression.eval(LSPECIALConfig.refundAmmoFormula, vars, Math.min(luck * 0.05, 0.5));
-        boolean refundAmmo = Math.random() < Math.max(0.0, Math.min(1.0, chance));
-
-        if (!refundAmmo) {
+        // another IInventory can end up here through the shared receiver, check before casting
+        if (!(inventory instanceof InventoryPlayer playerInventory)) {
+            return;
+        }
+        EntityPlayer player = playerInventory.player;
+        int luck = LSPECIALConfig.luck ? inst.getPlayerScorePoints(player, inst.LUCK_BOARD) : 0;
+        Map<String, Double> variables = new HashMap<>();
+        variables.put("luck", (double) luck);
+        double chance = LSPECIALExpression.eval(LSPECIALConfig.refundAmmoFormula, variables, Math.min(luck * 0.05, 0.5));
+        if (Math.random() >= Math.max(0.0, Math.min(1.0, chance))) {
+            return;
+        }
+        if (selectedConfig == null || selectedConfig.ammo == null) {
             return;
         }
 
-        BulletConfig config = original.getType(stack, inventory);
-
-        if (config == null || config.ammo == null) {
-            return;
-        }
-
-       // int ogAmount = config.ammo.getStack().getCount();
-        ItemStack refund = config.ammo.getStack().copy();
+        ItemStack refund = selectedConfig.ammo.getStack().copy();
         refund.setCount(ammoDebt);
-
-        if (inventory instanceof InventoryPlayer) {
-            EntityPlayer player = ((InventoryPlayer) inventory).player;
-            player.inventory.addItemStackToInventory(refund);
+        player.inventory.addItemStackToInventory(refund);
+        if (!refund.isEmpty()) {
+            player.dropItem(refund, false);
         }
-/*      no work, wontfix for now
-        if (getAmount(stack, inventory) < getCapacity(stack) && config.ammo.getStack().getCount() < getCapacity(stack)) {
-            config.ammo.getStack().setCount(getCapacity(stack));
-        }
-
-        config.ammo.getStack().setCount(ogAmount);*/
     }
+
     @Override
     public ItemStack getIconForHUD(ItemStack stack, EntityPlayer player) {
         return original.getIconForHUD(stack, player);

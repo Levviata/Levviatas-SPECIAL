@@ -1,3 +1,58 @@
+# v2.0.0
+
+### Features
+!Server config sync -> on a multiplayer server the server's gameplay config (stats, bobbleheads, guns, potions, advanced) overrides the client's, so what the server decides is what you see in the GUI, tooltips and HUD. Client-only options (grapple crosshair/hook scale and camera, endurance model scaling, hide disabled stats, strength tooltip) stay yours. Restored on disconnect
+!Alternate calibers are now per player -> crouch + secondary (pepperbox, star-f, uzi, g3, AMAT and the minigun's capacitors) no longer unlocks the calibers for everyone holding that gun, only for players that meet the Intelligence requirement. If a player stops meeting it, the loaded rounds are refunded and the gun goes back to its base caliber
+Add
+- Agility flying speed (+ formula)
+- Charisma mob neutrality (retaliation modes, entity and health blacklists) and villager trade discount
+- Endurance player model scaling (hitbox untouched)
+- Luck armor durability protection and armor failsafe (powered armor energy recovery)
+- Luck + Perception bonus loot, Perception loot duplication and armor threshold negation
+- Strength damage breakdown tooltip
+- Intelligence gun perks -> carbine, fat man, laser pistol, pew-pew, star-f, drill, lag, henry lincoln, tau, uzi, g3, minigun, revolver penetration, heretic style scoping and scoped spread
+- Double barrel grapple (Intelligence 15) with chain and HUD visuals
+- TF2-style rocket jumping for Stinger-family launchers (Intelligence 5) and self damage protection
+- AMAT deuterium plasma capsule caliber (Intelligence 15)
+- Perk overlay screens in the SPECIAL GUI
+- TF2 ammo GUI (position, scale and weapon list configurable) and custom main-menu splashes
+
+### Bugs
+Fixed
+- grapple kill reward being given for kills that were not yours
+- grapple never ending if the target was lost, now times out after 200 ticks and also clears on death, logout and dimension change
+- rocket jump reward timer running on the wrong clock
+- rocket damage being attributed to whatever Stinger-family weapon you held, now it needs recent rocket activity
+- client reading scoreboard values it never receives, now it uses the synced values (GUI, tooltips, HUD)
+- guns staying modified after the perk was gone, native receiver, bullet and magazine values are now restored (ref-counted per holder, also on logout and server stop)
+- gun wear getting restored when cleaning a gun
+- infinite item durability leaving items unbreakable after losing the perk
+- Strength attribute modifier stacking, legacy modifiers are migrated
+- Agility overwriting fly speed even when the feature is off
+- stray level check in the Intelligence helper and null score checks making perks fail silently
+- AMAT magazine reading a null bullet config
+- armor durability protection only working while the failsafe was on
+- bobblehead augment count being read from the wrong place, now it is the player's own limit minus the default limit
+- unsafe inventory cast in RefundMagazine
+- GrappleCameraPacket not being registered on both sides
+- StatsLogic.init() running twice
+- burst clones following the live player instead of the values captured when the burst started
+- armor cooldown NBT being rewritten every tick, now once a second
+- untagged container log spamming at warn level, now info
+- gradlew line endings (LF)
+
+### Configuration
+Rapid fire revolver perk now defaults to false and is labeled deprecated
+Options that do nothing yet are labeled "[Not implemented yet, no effect]", Dragon's Fury and flamethrower are labeled experimental
+Add logging options (error, warn, info and a list of info identifiers to listen to)
+
+### General
+Declare Nuclear Tech as a required dependency and Minecraft 1.12.2 as the accepted version
+Add GitHub build workflow (build + tests on push and PR, uploads the jar)
+Add unit tests for the expression parser
+Add .gitattributes to keep gradlew LF and bats CRLF
+
+
 # v1.2.0
 
 ### Features

@@ -8,44 +8,51 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
 public class CommandSetFlySpeed extends CommandBase {
 
-    // Each player has their own speed value
+    // each player has their own speed value
     public static final Map<UUID, Integer> playerSpeeds = new HashMap<>();
 
+    // helper method for getting a player's speed
+    public static int getPlayerFlySpeed(EntityPlayer player) {
+        return playerSpeeds.getOrDefault(player.getUniqueID(), -1);
+    }
+
     @Override
+    @Nonnull
     public String getName() {
         return "setflyspeed";
     }
 
     @Override
-    public String getUsage(ICommandSender sender) {
+    @Nonnull
+    public String getUsage(@Nonnull ICommandSender sender) {
         return "/setflyspeed <speed>. Proportional to your Agility stat. -1 to reset";
     }
 
     @Override
+    @Nonnull
     public List<String> getAliases() {
         return Collections.emptyList();
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+    public void execute(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender, @Nonnull String[] args) throws CommandException {
 
-        // Players only
-        if (!(sender instanceof EntityPlayer)) {
+        // players only
+        if (!(sender instanceof EntityPlayer player)) {
             throw new CommandException("This command can only be used by players.");
         }
 
-        EntityPlayer player = (EntityPlayer) sender;
+        // get this player's agility score
+        int maxSpeed = inst.getPlayerScorePoints(player, inst.AGILITY_BOARD);
 
-        // Get this player's agility score
-        int maxSpeed = inst.getAgilityScore().getScorePoints();
-
-        // No argument
+        // no argument
         if (args.length != 1) {
             player.sendMessage(new TextComponentString(
                     TextFormatting.YELLOW + "Usage: /setflyspeed <speed>. -1 to reset"
@@ -81,14 +88,14 @@ public class CommandSetFlySpeed extends CommandBase {
             return;
         }
 
-        // Clamp the requested value between 0 and the player's agility
+        // clamp the requested value between 0 and the player's agility
         int actualSpeed = Math.max(0, Math.min(requestedSpeed, maxSpeed));
 
         if (requestedSpeed == -1) {
             actualSpeed = -1;
         }
 
-        // Store this player's speed
+        // store this player's speed
         playerSpeeds.put(player.getUniqueID(), actualSpeed);
 
         player.sendMessage(new TextComponentString(
@@ -107,12 +114,7 @@ public class CommandSetFlySpeed extends CommandBase {
     }
 
     @Override
-    public boolean checkPermission(MinecraftServer server, ICommandSender sender) {
+    public boolean checkPermission(@Nonnull MinecraftServer server, @Nonnull ICommandSender sender) {
         return sender instanceof EntityPlayer;
-    }
-
-    // Helper method for getting a player's speed
-    public static int getPlayerFlySpeed(EntityPlayer player) {
-        return playerSpeeds.getOrDefault(player.getUniqueID(), -1);
     }
 }

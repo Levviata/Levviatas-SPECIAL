@@ -1,9 +1,5 @@
 package com.levviata.lspecial;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -18,6 +14,10 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class BobbleheadRecipeManager {
 
@@ -138,7 +138,7 @@ public class BobbleheadRecipeManager {
 
     @SubscribeEvent
     public void registerRecipes(RegistryEvent.Register<IRecipe> event) {
-        // Item registration has progressed beyond preInit by this point.
+        // item registration has progressed beyond preInit by this point.
         if (!oreDictRegistered) {
             registerOreDict();
             oreDictRegistered = true;
@@ -152,7 +152,7 @@ public class BobbleheadRecipeManager {
             try {
                 addConfiguredRecipe(event, i + 1, LSPECIALConfig.recipeIngredients[i]);
             } catch (RuntimeException exception) {
-                LSPECIALMod.LOGGER.error("Could not register configurable bobblehead recipe {}. " + "Keeping it disabled for this launch: {}", i + 1, exception.getMessage());
+                LSPECIALMod.logError("Could not register configurable bobblehead recipe {}. " + "Keeping it disabled for this launch: {}", i + 1, exception.getMessage());
             }
         }
     }

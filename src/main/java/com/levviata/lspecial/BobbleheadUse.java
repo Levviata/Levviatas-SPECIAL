@@ -13,7 +13,8 @@ import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
 public class BobbleheadUse {
 
-    private int augLimit = 0;
+    // the limit starts at 10 and every augment adds 1 (see SPECIALScoreboard), so the player's own score says how many they used
+    private static final int DEFAULT_LIMIT = 10;
 
     @SubscribeEvent
     public void use(PlayerInteractEvent.RightClickItem event) {
@@ -33,24 +34,20 @@ public class BobbleheadUse {
             return;
         }
 
-        inst.scoreboard = player.getEntityWorld().getScoreboard();
-        inst.startBoards();
-        inst.startScores(player);
-
         int metadata = stack.getMetadata();
         boolean granted = false;
 
         switch (metadata) {
             case 1:
-                granted = grant(inst.getStrengthScore(), LSPECIALConfig.strength, stack, player);
+                granted = grant(inst.getPlayerScore(player, inst.STRENGTH_BOARD), LSPECIALConfig.strength, stack, player);
                 break;
             case 2:
-                granted = grant(inst.getPerceptionScore(), LSPECIALConfig.perception, stack, player);
+                granted = grant(inst.getPlayerScore(player, inst.PERCEPTION_BOARD), LSPECIALConfig.perception, stack, player);
                 break;
             case 3:
                 granted = grantWithPerk(
-                        inst.getEnduranceScore(),
-                        inst.getEnduranceBonusScore(),
+                        inst.getPlayerScore(player, inst.ENDURANCE_BOARD),
+                        inst.getPlayerScore(player, inst.ENDURANCE_BONUS_BOARD),
                         LSPECIALConfig.endurance,
                         LSPECIALConfig.enduranceBonus,
                         stack,
@@ -59,8 +56,8 @@ public class BobbleheadUse {
                 break;
             case 4:
                 granted = grantWithPerk(
-                        inst.getCharismaScore(),
-                        inst.getCharismaBonusScore(),
+                        inst.getPlayerScore(player, inst.CHARISMA_BOARD),
+                        inst.getPlayerScore(player, inst.CHARISMA_BONUS_BOARD),
                         LSPECIALConfig.charisma,
                         LSPECIALConfig.charismaBonus,
                         stack,
@@ -68,18 +65,18 @@ public class BobbleheadUse {
                 );
                 break;
             case 5:
-                granted = grant(inst.getIntelligenceScore(), LSPECIALConfig.intelligence, stack, player);
+                granted = grant(inst.getPlayerScore(player, inst.INTELLIGENCE_BOARD), LSPECIALConfig.intelligence, stack, player);
                 break;
             case 6:
-                granted = grant(inst.getAgilityScore(), LSPECIALConfig.agility, stack, player);
+                granted = grant(inst.getPlayerScore(player, inst.AGILITY_BOARD), LSPECIALConfig.agility, stack, player);
                 break;
             case 7:
-                granted = grant(inst.getLuckScore(), LSPECIALConfig.luck, stack, player);
+                granted = grant(inst.getPlayerScore(player, inst.LUCK_BOARD), LSPECIALConfig.luck, stack, player);
                 break;
             default:
-                if (metadata > 7 && LSPECIALConfig.statLimit && inst.getLimitScore().getScorePoints() < Integer.MAX_VALUE) {
+                if (metadata > 7 && LSPECIALConfig.statLimit && inst.getPlayerScore(player, inst.LIMIT_BOARD).getScorePoints() < Integer.MAX_VALUE) {
 
-                    inst.getLimitScore().setScorePoints(inst.getLimitScore().getScorePoints() + 1);
+                    inst.getPlayerScore(player, inst.LIMIT_BOARD).setScorePoints(inst.getPlayerScorePoints(player, inst.LIMIT_BOARD) + 1);
 
                     showAugLimit(player);
                     granted = true;
@@ -99,7 +96,7 @@ public class BobbleheadUse {
         }
 
         if (LSPECIALConfig.statLimit
-                && score.getScorePoints() >= inst.getLimitScore().getScorePoints()) {
+                && score.getScorePoints() >= inst.getPlayerScorePoints(player, inst.LIMIT_BOARD)) {
             message(player, LSPECIALConfig.limitMessage);
             return false;
         }
@@ -107,7 +104,7 @@ public class BobbleheadUse {
         int gain = LSPECIALConfig.statsPerBobblehead;
 
         if (LSPECIALConfig.statLimit) {
-            int remaining = Math.max(0, inst.getLimitScore().getScorePoints() - score.getScorePoints());
+            int remaining = Math.max(0, inst.getPlayerScorePoints(player, inst.LIMIT_BOARD) - score.getScorePoints());
             gain = Math.min(gain, remaining);
         }
 
@@ -143,7 +140,8 @@ public class BobbleheadUse {
             return;
         }
 
-        augLimit++;
+        // the score was already raised for this augment, and it belongs to this player only
+        int augLimit = Math.max(0, inst.getPlayerScorePoints(player, inst.LIMIT_BOARD) - DEFAULT_LIMIT);
 
         if (!LSPECIALConfig.variedAugLimitMessages) {
             message(player, LSPECIALConfig.augLimitMessage);

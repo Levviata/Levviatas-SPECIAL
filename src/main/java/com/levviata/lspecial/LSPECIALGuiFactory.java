@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * Registers LSPECIAL's configuration screen with Forge's mod GUI system.
+ * registers LSPECIAL's configuration screen with Forge's mod GUI system.
  */
 @SideOnly(Side.CLIENT)
 public class LSPECIALGuiFactory implements IModGuiFactory {

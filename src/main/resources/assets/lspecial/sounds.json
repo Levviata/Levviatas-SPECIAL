@@ -1,0 +1,114 @@
+{
+  "rocket_refund1": {
+    "sounds": [
+      {
+        "name": "lspecial:rocket_refund1",
+        "stream": false
+      }
+    ]
+  },
+  "rocket_refund2": {
+    "sounds": [
+      {
+        "name": "lspecial:rocket_refund2",
+        "stream": false
+      }
+    ]
+  },
+  "rocket_refund3": {
+    "sounds": [
+      {
+        "name": "lspecial:rocket_refund3",
+        "stream": false
+      }
+    ]
+  },
+  "dragons_fury_shoot": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_shoot",
+        "stream": false
+      }
+    ]
+  },
+  "grapple_start": {
+    "sounds": [
+      {
+        "name": "lspecial:grapple_start",
+        "stream": false
+      }
+    ]
+  },
+  "grapple_cycle": {
+    "sounds": [
+      {
+        "name": "lspecial:grapple_cycle",
+        "stream": false
+      }
+    ]
+  },
+  "grapple_out": {
+    "sounds": [
+      {
+        "name": "lspecial:grapple_out",
+        "stream": false
+      }
+    ]
+  },
+  "grapple_reset": {
+    "sounds": [
+      {
+        "name": "lspecial:grapple_reset",
+        "stream": false
+      }
+    ]
+  },
+  "grapple_resetclink": {
+    "sounds": [
+      {
+        "name": "lspecial:grapple_resetclink",
+        "stream": false
+      }
+    ]
+  },
+  "dragons_fury_shoot_crit": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_shoot_crit",
+        "stream": false
+      }
+    ]
+  },
+  "dragons_fury_impact": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_impact",
+        "stream": false
+      }
+    ]
+  },
+  "dragons_fury_impact_bonus_damage": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_impact_bonus_damage",
+        "stream": false
+      }
+    ]
+  },
+  "dragons_fury_impact_bonus_damage_pain": {
+    "sounds": [
+      {
+        "name": "lspecial:dragons_fury_impact_bonus_damage_pain",
+        "stream": false
+      }
+    ]
+  },
+  "armor_failsafe_powerarmor": {
+    "sounds": [
+      {
+        "name": "lspecial:armor_failsafe_powerarmor",
+        "stream": false
+      }
+    ]
+  }
+}
