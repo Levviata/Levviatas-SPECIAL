@@ -12,6 +12,7 @@ import net.minecraft.item.ItemStack;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.levviata.lspecial.SPECIALScoreboard.inst;
 
@@ -23,28 +24,70 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
         this.original = original;
     }
 
+    // both guns of an akimbo pair reload on the same tick, so they share one roll per player and tick
+    private static final Map<UUID, long[]> SHARED_ROLLS = new HashMap<>();
+
     /**
-     * Counts only the selected ammunition, including stacks stored inside NTM ammo bags.
+     * Counts the selected ammunition, loose in the inventory and inside ammo bags (the infinite one never runs out).
      */
-    private static int countAmmo(IInventory inventory, BulletConfig config) {
-        if (inventory == null || config == null || config.ammo == null) return 0;
-        int count = 0;
+    private static int[] countAmmo(IInventory inventory, BulletConfig config) {
+        int loose = 0;
+        int bagged = 0;
+        if (inventory == null || config == null || config.ammo == null) return new int[]{0, 0};
         for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
             ItemStack stack = inventory.getStackInSlot(slot);
             if (stack.isEmpty()) continue;
             if (config.ammo.matchesRecipe(stack, true)) {
-                count += stack.getCount();
+                loose += stack.getCount();
             } else if (stack.getItem() == ModItems.ammo_bag || stack.getItem() == ModItems.ammo_bag_infinite) {
                 ItemAmmoBag.InventoryAmmoBag bag = new ItemAmmoBag.InventoryAmmoBag(stack);
                 for (int bagSlot = 0; bagSlot < bag.getSlots(); bagSlot++) {
                     ItemStack bagStack = bag.getStackInSlot(bagSlot);
                     if (!bagStack.isEmpty() && config.ammo.matchesRecipe(bagStack, true)) {
-                        count += bagStack.getCount();
+                        bagged += bagStack.getCount();
                     }
                 }
             }
         }
-        return count;
+        return new int[]{loose, bagged};
+    }
+
+    /**
+     * Puts refunded ammunition back into the ammo bags that still have room, whatever doesn't fit is returned.
+     */
+    private static ItemStack refillBags(IInventory inventory, ItemStack refund) {
+        for (int slot = 0; slot < inventory.getSizeInventory() && !refund.isEmpty(); slot++) {
+            ItemStack stack = inventory.getStackInSlot(slot);
+            // the infinite bag doesn't consume anything, so there is nothing to give back to it
+            if (stack.isEmpty() || stack.getItem() != ModItems.ammo_bag) continue;
+
+            ItemAmmoBag.InventoryAmmoBag bag = new ItemAmmoBag.InventoryAmmoBag(stack);
+            for (int bagSlot = 0; bagSlot < bag.getSlots() && !refund.isEmpty(); bagSlot++) {
+                refund = bag.insertItem(bagSlot, refund, false);
+            }
+        }
+        return refund;
+    }
+
+    /**
+     * Decides once per player and tick whether the refund happens.
+     */
+    private static boolean rollRefund(EntityPlayer player, double chance) {
+        long tick = player.world.getTotalWorldTime();
+        long[] shared = SHARED_ROLLS.get(player.getUniqueID());
+        if (shared != null && shared[0] == tick) {
+            return shared[1] == 1L;
+        }
+        boolean refund = Math.random() < Math.max(0.0, Math.min(1.0, chance));
+        SHARED_ROLLS.put(player.getUniqueID(), new long[]{tick, refund ? 1L : 0L});
+        return refund;
+    }
+
+    /**
+     * Forgets the shared rolls, they only matter within a tick.
+     */
+    public static void clearSharedRolls() {
+        SHARED_ROLLS.clear();
     }
 
     public IMagazine<BulletConfig> getOriginalMagazine() {
@@ -95,16 +138,17 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
     public void reloadAction(ItemStack stack, IInventory inventory) {
         BulletConfig selectedConfig = original.getType(stack, inventory);
 
-        int ammoBefore = countAmmo(inventory, selectedConfig);
+        int[] before = countAmmo(inventory, selectedConfig);
 
         original.reloadAction(stack, inventory);
 
         if (selectedConfig != null && selectedConfig == AMATRailgun.getBulletConfig()) return;
 
-        int ammoAfter = countAmmo(inventory, selectedConfig);
+        int[] after = countAmmo(inventory, selectedConfig);
 
-        int ammoDebt = Math.max(0, ammoBefore - ammoAfter);
-        if (ammoDebt <= 0) {
+        int looseDebt = Math.max(0, before[0] - after[0]);
+        int baggedDebt = Math.max(0, before[1] - after[1]);
+        if (looseDebt + baggedDebt <= 0) {
             return;
         }
 
@@ -117,19 +161,35 @@ public class RefundMagazine implements IMagazine<BulletConfig> {
         Map<String, Double> variables = new HashMap<>();
         variables.put("luck", (double) luck);
         double chance = LSPECIALExpression.eval(LSPECIALConfig.refundAmmoFormula, variables, Math.min(luck * 0.05, 0.5));
-        if (Math.random() >= Math.max(0.0, Math.min(1.0, chance))) {
+        if (!rollRefund(player, chance)) {
             return;
         }
         if (selectedConfig == null || selectedConfig.ammo == null) {
             return;
         }
 
-        ItemStack refund = selectedConfig.ammo.getStack().copy();
-        refund.setCount(ammoDebt);
-        player.inventory.addItemStackToInventory(refund);
-        if (!refund.isEmpty()) {
-            player.dropItem(refund, false);
+        // what came out of an ammo bag goes back into it while it has room, the rest into the inventory
+        // and, if that is full too, onto the ground
+        ItemStack template = selectedConfig.ammo.getStack();
+        int remaining = baggedDebt;
+        while (remaining > 0) {
+            ItemStack part = template.copy();
+            part.setCount(Math.min(remaining, part.getMaxStackSize()));
+            remaining -= part.getCount();
+            ItemStack leftover = refillBags(inventory, part);
+            if (!leftover.isEmpty()) {
+                CaliberAccess.giveToPlayer(player, leftover);
+            }
         }
+
+        remaining = looseDebt;
+        while (remaining > 0) {
+            ItemStack part = template.copy();
+            part.setCount(Math.min(remaining, part.getMaxStackSize()));
+            remaining -= part.getCount();
+            CaliberAccess.giveToPlayer(player, part);
+        }
+        playerInventory.markDirty();
     }
 
     @Override

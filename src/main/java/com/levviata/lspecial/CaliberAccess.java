@@ -16,6 +16,8 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.items.ItemHandlerHelper;
+import net.minecraftforge.items.wrapper.PlayerMainInvWrapper;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -220,13 +222,21 @@ public final class CaliberAccess {
             ItemStack refund = template.copy();
             int stackCount = Math.min(remaining, refund.getMaxStackSize());
             refund.setCount(stackCount);
-            player.inventory.addItemStackToInventory(refund);
-            if (!refund.isEmpty()) {
-                player.dropItem(refund, false);
-            }
+            giveToPlayer(player, refund);
             remaining -= stackCount;
         }
         return true;
+    }
+
+    /**
+     * Gives the stack to the player, whatever doesn't fit drops beside them.<br>
+     * Creative mode can't be trusted with addItemStackToInventory: a full inventory there swallows the stack.
+     */
+    public static void giveToPlayer(EntityPlayer player, ItemStack stack) {
+        ItemStack leftover = ItemHandlerHelper.insertItemStacked(new PlayerMainInvWrapper(player.inventory), stack, false);
+        if (!leftover.isEmpty()) {
+            player.dropItem(leftover, false);
+        }
     }
 
     /**

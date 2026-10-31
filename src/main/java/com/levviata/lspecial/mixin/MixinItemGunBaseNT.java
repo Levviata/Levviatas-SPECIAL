@@ -33,7 +33,7 @@ public abstract class MixinItemGunBaseNT {
                                            HbmKeybinds.EnumKeybind keybind, boolean newState,
                                            CallbackInfo callback) {
         EntityPlayer player = entity instanceof EntityPlayer ? (EntityPlayer) entity : null;
-        SPECIALPlayerContext.setContext(player, stack);
+        SPECIALPlayerContext.push(player, stack);
         // takes back an alternate caliber the player lost access to before it can be fired
         CaliberAccess.validateSelection(player, stack);
     }
@@ -42,14 +42,14 @@ public abstract class MixinItemGunBaseNT {
     private void lspecial$clearPlayerContext(EntityLivingBase entity, IInventory inventory, ItemStack stack,
                                              HbmKeybinds.EnumKeybind keybind, boolean newState,
                                              CallbackInfo callback) {
-        SPECIALPlayerContext.clear();
+        SPECIALPlayerContext.pop();
     }
 
     @Inject(method = "onUpdate(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;IZ)V", at = @At("HEAD"), remap = false)
     private void lspecial$setUpdatePlayerContext(ItemStack stack, World world, Entity entity, int slot,
                                                  boolean isHeld, CallbackInfo callback) {
         EntityPlayer player = entity instanceof EntityPlayer ? (EntityPlayer) entity : null;
-        SPECIALPlayerContext.setContext(player, stack);
+        SPECIALPlayerContext.push(player, stack);
         // once a second per slot is plenty, handleKeybind covers the moment of firing
         if (player != null && !world.isRemote && (player.ticksExisted + slot) % 20 == 0) {
             CaliberAccess.validateSelection(player, stack);
@@ -59,6 +59,6 @@ public abstract class MixinItemGunBaseNT {
     @Inject(method = "onUpdate(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;IZ)V", at = @At("RETURN"), remap = false)
     private void lspecial$clearUpdatePlayerContext(ItemStack stack, World world, Entity entity, int slot,
                                                    boolean isHeld, CallbackInfo callback) {
-        SPECIALPlayerContext.clear();
+        SPECIALPlayerContext.pop();
     }
 }

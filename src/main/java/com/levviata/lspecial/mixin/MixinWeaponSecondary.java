@@ -101,13 +101,11 @@ public abstract class MixinWeaponSecondary {
     @Unique
     private static boolean lspecial$cycleSupportedAmmo(EntityPlayer player, ItemStack stack, IInventory inventory, String itemId) {
         // the per-player caliber view reads the context, so make sure it is this player's even if hook order changes
-        EntityPlayer previousPlayer = SPECIALPlayerContext.getPlayer();
-        ItemStack previousStack = SPECIALPlayerContext.getStack();
-        SPECIALPlayerContext.setContext(player, stack);
+        SPECIALPlayerContext.push(player, stack);
         try {
             return lspecial$cycleSupportedAmmoInContext(player, stack, inventory, itemId);
         } finally {
-            SPECIALPlayerContext.setContext(previousPlayer, previousStack);
+            SPECIALPlayerContext.pop();
         }
     }
 
@@ -205,7 +203,10 @@ public abstract class MixinWeaponSecondary {
             if (config != null && config != defaultAmmo && !alternateOptions.contains(config))
                 alternateOptions.add(config);
         }
-        if (alternateOptions.isEmpty()) return false;
+        if (alternateOptions.isEmpty()) {
+            LSPECIALMod.info("AmmoCycle", "no alternate caliber available for {}", lspecial$registryId(stack));
+            return false;
+        }
         int currentAlternate = alternateOptions.indexOf(current);
         BulletConfig target;
         if (lspecial$isStarF(lspecial$registryId(stack))) {
@@ -235,7 +236,13 @@ public abstract class MixinWeaponSecondary {
         single.setAmountBeforeReload(stack, 0);
         single.setAmountAfterReload(stack, 0);
         if (!stack.hasTagCompound()) stack.setTagCompound(new net.minecraft.nbt.NBTTagCompound());
-        stack.getTagCompound().setInteger("LSPECIALSelectedCaliber_" + single.index, target.id);
+        if (target == defaultAmmo) {
+            // back on the native calibers, nothing to remember (and every native round stays loadable)
+            stack.getTagCompound().removeTag("LSPECIALSelectedCaliber_" + single.index);
+        } else {
+            stack.getTagCompound().setInteger("LSPECIALSelectedCaliber_" + single.index, target.id);
+        }
+        LSPECIALMod.info("AmmoCycle", "{} switched magazine {} to caliber {}", player.getName(), single.index, target.id);
         return true;
     }
 
@@ -457,7 +464,16 @@ public abstract class MixinWeaponSecondary {
         boolean lincolnSecondary = "hbm:gun_henry_lincoln".equals(itemId) && LSPECIALConfig.henryLincolnSecondaryBurst && lspecial$hasIntelligence(player, 15);
         boolean tauSecondary = "hbm:gun_tau".equals(itemId) && LSPECIALConfig.tauSecondaryDamageBonus && lspecial$hasIntelligence(player, 5);
         boolean lightRevolverSecondary = "hbm:gun_light_revolver".equals(itemId) && LSPECIALConfig.lightRevolverRapidFirePerk && lspecial$hasIntelligence(player, 5);
-        if (carbineSecondary || lagSecondary || lincolnSecondary
+        if (carbineSecondary && stack.getItem() instanceof ItemGunBaseNT carbine) {
+            // right click is the single shot: the held secondary stops the automatic refire, and the primary goes through
+            // NTM's own input handling so the press actually fires (flipping the stored flag alone never did)
+            lspecial$setSecondaryForAllConfigs(stack, newState);
+            carbine.handleKeybind(entity, inventory, stack, HbmKeybinds.EnumKeybind.GUN_PRIMARY, newState);
+            callback.cancel();
+            return;
+        }
+
+        if (lagSecondary || lincolnSecondary
                 || tauSecondary || lightRevolverSecondary) {
             // NTM reads the secondary state for the modified mode, but still needs primary input to run its firing pipeline.
             lspecial$setPrimaryForAllConfigs(stack, newState);

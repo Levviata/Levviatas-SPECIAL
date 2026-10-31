@@ -12,6 +12,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -41,7 +42,9 @@ public final class GrappleOverlayHandler {
     private boolean hookWasFollowingTarget;
     private int previousTargetId = -1;
 
-    @SubscribeEvent
+    // goes first: NTM draws its own crosshair and cancels the event from inside its handler, so anything
+    // that comes after it never gets to hide the native one
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onCrosshair(RenderGameOverlayEvent.Pre event) {
         if (event.getType() != RenderGameOverlayEvent.ElementType.CROSSHAIRS) {
             return;
